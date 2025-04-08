@@ -2,7 +2,8 @@
     "compilerOptions": {
         "outDir": "dist",
         "target": "ES2024",
-        "module": "commonjs",
+        "module": "NodeNext",
+        "moduleResolution": "nodenext"
     },
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "test/**/*"]
 }

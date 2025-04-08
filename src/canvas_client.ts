@@ -8,6 +8,14 @@ export interface SectionResponse {
     id: number;
     name: string;
     course_id: number;
+    students: {
+        id: number;
+        name: string;
+        sortable_name: string;
+        short_name: string;
+        sis_user_id: string;
+        login_id: string;
+    }[]
 }
 
 type PageResponse<T> = {
@@ -36,18 +44,45 @@ function formatQueryString(params: SimpleDict) {
         .join('&');
 }
 
+export function getUsernameFromUrl(url: string, assignmentName: string){
+    if(url.indexOf('github.com') === -1){
+        return null;
+    }
+
+    //Https url
+    if(url.startsWith('https://github.com')){
+        const exp = `https\:\/\/github\.com\/(.+?)\/${assignmentName}-(.+)`;
+        const match = url.match(exp);
+        if(match && match.length > 2){ 
+            let username = match[2].replace('.git', '').split('/')[0];
+            return username;
+        }
+    }
+
+    //SSH url
+    if(url.startsWith('git@github.com')){
+        const exp = `git\@github\.com\:(.+?)\/${assignmentName}-(.+)`;
+        const match = url.match(exp);
+        if(match && match.length > 2){ 
+            let username = match[2].replace('.git', '').split('/')[0];
+            return username;
+        }
+    }
+    return null;
+}
+
 export class CanvasClient {
     #token = process.env.CANVAS_TOKEN;
     #baseUrl = "https://canvas.hu.nl/api/v1";
 
 
-    async #getPage(url: string, page: number, pageSize: number, otherOptions: SimpleDict = {}) : Promise<PageResponse<CourseResponse>> {
+    async #getPage<T>(url: string, page: number, pageSize: number, otherOptions: SimpleDict = {}): Promise<PageResponse<T>> {
         let options = {
             page: page,
             per_page: pageSize,
             ...otherOptions
         };
-        
+
         let response = await fetch(`${this.#baseUrl}/${url}?${formatQueryString(options)}`, {
             method: 'GET',
             headers: {
@@ -55,7 +90,7 @@ export class CanvasClient {
             }
         });
         if (!response.ok) {
-            throw new Error(`Error fetching courses: ${response.statusText}`);
+            throw new Error(`Error fetching ${url}: ${response.statusText}`);
         }
         let linkHeader = response.headers.get('link');
         let links = linkHeader ? parseLinkHeader(linkHeader) : {};
@@ -71,29 +106,51 @@ export class CanvasClient {
         };
     }
 
-    async getPages(url: string, options = {}) : Promise<CourseResponse[]> {
+    async getPages<T>(url: string, options = {}): Promise<T> {
         let pageNr = 1;
         let page = await this.#getPage(url, pageNr, 100, options);
-        let data = page.data;
-        while(page.hasNext){
+        let data: any = page.data;
+        while (page.hasNext) {
             pageNr++;
             page = await this.#getPage(url, pageNr, 100, options);
             data = data.concat(page.data);
         }
-    
+
         return data;
     }
 
-    getCourses(){
+    getCourses(): Promise<CourseResponse[]> {
         return this.getPages('courses');
     }
 
-    getSections() {
+    getSections(course: { course_id: number }): Promise<SectionResponse[]> {
+        return this.getPages(`courses/${course.course_id}/sections`, { 'include[]': 'students' });
+    }
 
+    async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string): Promise<SimpleDict> {
+        let mapping = {};
+        let result: any = await this.getPages(`courses/${course.course_id}/assignments/${assignment.assignment_id}/submissions`, { 'include[]': 'user' });
+        for (let r of result) {
+            let user = r.user;
+            if (user && user.login_id) {
+                mapping[user.login_id] = getUsernameFromUrl(r.url, ghAssignmentName);
+            }
+        }
+        return mapping;
     }
 }
 
-if(require.main === module) {
+if (require.main === module) {
     const client = new CanvasClient();
-    client.getCourses().then(r => console.log(r.length));
+    // client.getCourses().then(r => console.log(r.length));
+    // client.getSections({
+    //     course_id: 44633
+    // }).then(r => console.log(r));
+
+
+    // client.getGithubMapping({
+    //     course_id: 44633
+    // }, {
+    //     assignment_id: 331688
+    // }).then(r => console.log(r));
 }
