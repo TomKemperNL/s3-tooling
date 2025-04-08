@@ -1,3 +1,5 @@
+import { s2 } from './temp';
+
 export interface CourseResponse {
     id: number;
     name: string;
@@ -45,6 +47,10 @@ function formatQueryString(params: SimpleDict) {
 }
 
 export function getUsernameFromUrl(url: string, assignmentName: string){
+    if(!url){
+        return null;
+    }
+
     if(url.indexOf('github.com') === -1){
         return null;
     }
@@ -75,6 +81,18 @@ export class CanvasClient {
     #token = process.env.CANVAS_TOKEN;
     #baseUrl = "https://canvas.hu.nl/api/v1";
 
+    async getSelf() {
+        let response = await fetch(`${this.#baseUrl}/users/self`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${this.#token}`
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`Error fetching self: ${response.statusText}`);
+        }
+        return await response.json();
+    }
 
     async #getPage<T>(url: string, page: number, pageSize: number, otherOptions: SimpleDict = {}): Promise<PageResponse<T>> {
         let options = {
@@ -148,9 +166,9 @@ if (require.main === module) {
     // }).then(r => console.log(r));
 
 
-    // client.getGithubMapping({
-    //     course_id: 44633
-    // }, {
-    //     assignment_id: 331688
-    // }).then(r => console.log(r));
+    client.getGithubMapping({
+        course_id: s2.canvasCourseId
+    }, {
+        assignment_id: s2.canvasVerantwoordingAssignmentId
+    }, s2.verantwoordingAssignmentName).then(r => console.log(r));
 }

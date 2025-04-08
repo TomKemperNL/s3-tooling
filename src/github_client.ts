@@ -7,12 +7,8 @@ export class GithubClient {
         log: console
     });
 
-    test() {
-        this.#kit.request('GET /users/{username}', {
-            username: 'TomKemperNL'
-        }).then(response => {
-            console.log(response.data);
-        });
+    async getSelf() {
+        return this.#kit.request('GET /user').then(response => response.data);
     }
 
     async listRepos(org) {
