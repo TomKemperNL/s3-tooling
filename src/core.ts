@@ -12,15 +12,15 @@ type Team = {
 
 export class Repo {
     name: string;
-    apiUrl: string;
-    sshUrl: string;
-    httpUrl: string;
+    api_url: string;
+    ssh_url: string;
+    http_url: string;
 
     constructor(public response: RepoResponse, private config: CourseConfig){
         this.name = response.name;
-        this.apiUrl = response.url;
-        this.sshUrl = response.ssh_url;
-        this.httpUrl = response.html_url;
+        this.api_url = response.url;
+        this.ssh_url = response.ssh_url;
+        this.http_url = response.html_url;
     }
 
     get isVerantwoordingRepo(){
@@ -28,7 +28,7 @@ export class Repo {
     }
 
     get owner(){
-        return getUsernameFromUrl(this.httpUrl, this.config.verantwoordingAssignmentName);
+        return getUsernameFromUrl(this.http_url, this.config.verantwoordingAssignmentName);
     }
 
     get isProjectRepo(){
