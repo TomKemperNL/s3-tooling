@@ -6,18 +6,27 @@ export interface CourseResponse {
     course_code: string;
 }
 
+export interface StudentResponse {
+    id: number;
+    name: string;
+    sortable_name: string;
+    short_name: string;
+    sis_user_id: string;
+    login_id: string;
+}
+
 export interface SectionResponse {
     id: number;
     name: string;
     course_id: number;
-    students: {
-        id: number;
-        name: string;
-        sortable_name: string;
-        short_name: string;
-        sis_user_id: string;
-        login_id: string;
-    }[]
+    students: StudentResponse[]
+}
+
+export interface GroupResponse {
+    id: number;
+    category_id: number;
+    name: string;
+    students: StudentResponse[]
 }
 
 type PageResponse<T> = {
@@ -144,6 +153,20 @@ export class CanvasClient {
     getSections(course: { course_id: number }): Promise<SectionResponse[]> {
         return this.getPages(`courses/${course.course_id}/sections`, { 'include[]': 'students' });
     }
+
+    async getGroups(course: { course_id: number }, category_name: string): Promise<GroupResponse[]> {
+        let categories : any = await this.getPages(`courses/${course.course_id}/group_categories`);
+        let category = categories.find(c => c.name === category_name);
+        if (!category) {
+            throw new Error(`Category ${category_name} not found`);
+        }
+        let groups : any = await this.getPages(`group_categories/${category.id}/groups`);
+        for(let g of groups){
+            g.students = await this.getPages(`groups/${g.id}/users`);
+        }
+        return groups;
+    }
+
 
     async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string): Promise<SimpleDict> {
         let mapping = {};
