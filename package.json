@@ -1,10 +1,11 @@
 {
   "name": "gittools",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "./dist/src/main.js",
   "scripts": {
     "build": "tsc",
-    "test": "vitest"
+    "test": "vitest",
+    "start": "electron ."
   },
   "author": "",
   "license": "ISC",
@@ -15,7 +16,9 @@
     "vitest": "^3.1.1"
   },
   "dependencies": {
-    "@octokit/rest": "^21.1.1"
-    
+    "@octokit/rest": "^21.1.1",
+    "electron": "^35.1.5",
+    "sequelize": "^6.37.7",
+    "sqlite3": "^5.1.7"
   }
 }
