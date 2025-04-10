@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "./dist/src/main.js",
   "scripts": {
-    "build": "tsc",
+    "dev": "vite",
+    "build": "tsc && vite build",
     "test": "vitest",
     "start": "electron ."
   },
@@ -12,13 +13,17 @@
   "description": "",
   "devDependencies": {
     "@types/node": "^22.13.17",
+    "@types/trusted-types": "^2.0.7",
+    "electron": "^35.1.5",
     "typescript": "^5.8.2",
+    "vite": "^6.2.6",
     "vitest": "^3.1.1"
   },
   "dependencies": {
     "@octokit/rest": "^21.1.1",
-    "electron": "^35.1.5",
+    "lit": "^3.2.1",
     "sequelize": "^6.37.7",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "trusted-types": "^2.0.0"
   }
 }

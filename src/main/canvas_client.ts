@@ -1,4 +1,4 @@
-import { s2 } from './temp';
+import { s2 } from '../temp';
 
 export interface CourseResponse {
     id: number;

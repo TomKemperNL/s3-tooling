@@ -1,6 +1,6 @@
-import { getUsernameFromUrl } from "./canvas_client";
-import { LoggedCommit } from "./filesystem_client";
-import { RepoResponse } from "./github_client";
+import { getUsernameFromUrl } from "./main/canvas_client";
+import { LoggedCommit } from "./main/filesystem_client";
+import { RepoResponse } from "./main/github_client";
 
 type User = {
     name: string;

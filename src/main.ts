@@ -1,6 +1,6 @@
-import { GithubClient } from "./github_client";
-import { FileSystem } from "./filesystem_client";
-import { CanvasClient } from "./canvas_client";
+import { GithubClient } from "./main/github_client";
+import { FileSystem } from "./main/filesystem_client";
+import { CanvasClient } from "./main/canvas_client";
 import { s2 } from "./temp";
 import { Repo, RepositoryStatistics } from "./core";
 
@@ -69,7 +69,7 @@ async function main() {
             height: 600
         })
 
-        win.loadFile('./src/index.html')
+        win.loadFile('./src/renderer/index.html')
     }
 
     app.whenReady().then(() => {
@@ -92,5 +92,7 @@ async function main() {
             console.log(res);
         })
     });
+
+    await klooienMetRepos();
 }
 main();
