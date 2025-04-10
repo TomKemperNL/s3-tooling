@@ -3,11 +3,11 @@ import { FileSystem } from "./main/filesystem_client";
 import { CanvasClient } from "./main/canvas_client";
 import { s2 } from "./temp";
 import { Repo, RepositoryStatistics } from "./core";
-
+import { config } from "@dotenvx/dotenvx";
 import { Database } from "sqlite3";
-
 const { app, BrowserWindow } = require('electron')
 
+config();
 
 const githubClient = new GithubClient();
 const fileSystem = new FileSystem();
@@ -51,7 +51,7 @@ async function klooienMetRepos() {
 
     // await checkoutClass('S2-V2A', 'TICT-SD-V1A');   
 
-    let repos = await fileSystem.getRepoPaths('S2-V2A');
+    let repos = await fileSystem.getRepoPaths('HU-SD-S2-studenten-2425');
     for (let repoPaths of repos) {
         console.log(repoPaths);
         let stats = await fileSystem.getRepoStats(...repoPaths);
@@ -69,7 +69,7 @@ async function main() {
             height: 600
         })
 
-        win.loadFile('./src/renderer/index.html')
+        win.loadFile('./dist/src/renderer/index.html')
     }
 
     app.whenReady().then(() => {

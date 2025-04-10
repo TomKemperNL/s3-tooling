@@ -1,9 +1,19 @@
 {
     "compilerOptions": {
+        "experimentalDecorators": true,
+        "useDefineForClassFields": false,
         "outDir": "dist",
         "target": "ESNext",
         "module": "NodeNext",
-        "moduleResolution": "nodenext"
+        "moduleResolution": "nodenext",
+        "skipLibCheck": true,
     },
-    "include": ["src/**/*", "test/**/*"]
+    "include": [
+        "src/**/*",
+        "test/**/*"
+    ],
+    "exclude": [
+        "src/renderer/**/*",
+        "test/renderer/*"
+    ]
 }
