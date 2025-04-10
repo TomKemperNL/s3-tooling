@@ -1,4 +1,5 @@
 import { getUsernameFromUrl } from "./canvas_client";
+import { LoggedCommit } from "./filesystem_client";
 import { RepoResponse } from "./github_client";
 
 type User = {
@@ -54,3 +55,30 @@ export type CourseConfig = {
     projectAssignmentName: string;
 }
 
+export class RepositoryStatistics {
+    constructor(public rawData: LoggedCommit[]){
+
+    }
+
+    getChangesByAuthor(author: string){
+        return this.rawData.filter(c => c.author === author).reduce((acc, commit) => {
+            return acc.concat(commit.changes);
+        }, []);
+    }
+
+    getDistinctAuthors(){
+        return [...new Set(this.rawData.map(c => c.author))];
+    }
+
+    getLinesPerAuthor(){
+        let result = {};
+        for(let author of this.getDistinctAuthors()){
+            result[author] = this.getChangesByAuthor(author).reduce((acc, change) => {
+                let addInc = change.added === '-' ? 0 : change.added;
+                let remInc = change.removed === '-' ? 0 : change.removed;
+                return { added: acc.added + addInc, removed: acc.removed + remInc};
+            }, { added: 0, removed: 0 });
+        }
+        return result;
+    }
+}

@@ -2,7 +2,7 @@ import { GithubClient } from "./github_client";
 import { FileSystem } from "./filesystem_client";
 import { CanvasClient } from "./canvas_client";
 import { s2 } from "./temp";
-import { Repo } from "./core";
+import { Repo, RepositoryStatistics } from "./core";
 
 const githubClient = new GithubClient();
 const fileSystem = new FileSystem();
@@ -22,7 +22,6 @@ async function checkoutClass(className: string){
     let projectRepos = repos.filter(r => r.isProjectRepo);
     let verantwoordingRepos = repos.filter(r => r.isVerantwoordingRepo);
 
-    //En stel ik ben geinteresseerd in klas B...
     let klasB = sections.find(s => s.name === className);    
     let usersKlasB = klasB.students.map(s => usermapping[s.login_id])
     let myVrRepos = verantwoordingRepos.filter(vRep => usersKlasB.indexOf(vRep.owner) >= 0)
@@ -42,15 +41,22 @@ async function checkoutClass(className: string){
 }
 
 async function main() {
-    // let ghSelf = await githubClient.getSelf();
-    // let canvasSelf = await canvasClient.getSelf();
+    let ghSelf = await githubClient.getSelf();
+    let canvasSelf = await canvasClient.getSelf();
 
-    // checkoutClass('TICT-SD-V1B');   
+    // await checkoutClass('TICT-SD-V1D');   
 
     let repos = await fileSystem.getRepoPaths(s2.githubStudentOrg);
     for(let repoPaths of repos){
+        console.log(repoPaths);
         let stats = await fileSystem.getRepoStats(...repoPaths);
-        console.log(stats);
+        let coreStats = new RepositoryStatistics(stats);
+        // console.log(coreStats.getChangesByAuthor('Kay'));
+        console.log(coreStats.getLinesPerAuthor());
+
+        
+       
+        break;
     }
 }
 

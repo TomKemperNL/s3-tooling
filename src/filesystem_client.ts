@@ -6,20 +6,20 @@ import { readdir } from 'fs/promises'
 import { promisify } from 'util';
 
 const exec = promisify(proc.exec);
-const newCommitPattern = /(\w+),([\d-]+T[\d:]+.+),(.+),(.+)/
-const changePattern = /([\d-])+\t([\d-]+)\t(.+)/
+const newCommitPattern = /(\w+),([\d-]+T[\d:]+[^,]+),([^,]+),(.+)/
+const changePattern = /([\d-])+\s+([\d-]+)\s+(.+)/
 
 export function parseDate(date){
     return new Date(Date.parse(date));
 }
 
-type LoggedChange = {
+export type LoggedChange = {
     path: string
     added: number | '-',
     removed: number | '-'
 }
 
-type LoggedCommit = {
+export type LoggedCommit = {
     hash: string,
     author: string,
     date: Date,
@@ -27,13 +27,14 @@ type LoggedCommit = {
     changes: LoggedChange[]
 }
 
-export function parseLog(logLines: string[]){
+export function parseLog(logLines: string[]) : LoggedCommit[] {
+    console.log(logLines);
     let commits = [];
     let currentCommit : LoggedCommit = null;
 
     for(let line of logLines){
-        console.log('parsing ', line);
         let newCommitMatch = line.match(newCommitPattern);
+        
         if(newCommitMatch){
             if(currentCommit != null){
                 commits.push(currentCommit);
@@ -45,7 +46,6 @@ export function parseLog(logLines: string[]){
                 subject: newCommitMatch[4],
                 changes: []
             }
-            console.log('currentCommit is now', currentCommit)
         }else{
             let changeMatch = line.match(changePattern)
             if(changeMatch){
@@ -55,10 +55,9 @@ export function parseLog(logLines: string[]){
                     path: changeMatch[3]
                 })
             }
-        }
-
-        
+        }        
     }
+    commits.push(currentCommit);
 
     return commits;
 }
