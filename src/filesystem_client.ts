@@ -7,7 +7,7 @@ import { promisify } from 'util';
 
 const exec = promisify(proc.exec);
 const newCommitPattern = /(\w+),([\d-]+T[\d:]+[^,]+),([^,]+),(.+)/
-const changePattern = /([\d-])+\s+([\d-]+)\s+(.+)/
+const changePattern = /([\d-]+)\s+([\d-]+)\s+(.+)/
 
 export function parseDate(date){
     return new Date(Date.parse(date));
@@ -70,7 +70,7 @@ export class FileSystem {
             fs.mkdirSync(target, {recursive: true});
         }
 
-        proc.execSync(`git clone ${repo.ssh_url}`, { cwd: target });
+        proc.execSync(`git clone ${repo.http_url}`, { cwd: target });
     }
 
     async getRepoPaths(...prefPath: string[]){

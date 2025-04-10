@@ -17,22 +17,22 @@ export class Repo {
     ssh_url: string;
     http_url: string;
 
-    constructor(public response: RepoResponse, private config: CourseConfig){
+    constructor(public response: RepoResponse, private config: CourseConfig) {
         this.name = response.name;
         this.api_url = response.url;
         this.ssh_url = response.ssh_url;
         this.http_url = response.html_url;
     }
 
-    get isVerantwoordingRepo(){
+    get isVerantwoordingRepo() {
         return this.name.startsWith(this.config.verantwoordingAssignmentName);
     }
 
-    get owner(){
+    get owner() {
         return getUsernameFromUrl(this.http_url, this.config.verantwoordingAssignmentName);
     }
 
-    get isProjectRepo(){
+    get isProjectRepo() {
         return this.name.startsWith(this.config.projectAssignmentName);
     }
 }
@@ -55,29 +55,43 @@ export type CourseConfig = {
     projectAssignmentName: string;
 }
 
+function accumulateLines(acc, change) {
+    let addInc = change.added === '-' ? 0 : change.added;
+    let remInc = change.removed === '-' ? 0 : change.removed;
+    return { added: acc.added + addInc, removed: acc.removed + remInc };
+}
+
 export class RepositoryStatistics {
-    constructor(public rawData: LoggedCommit[]){
+    constructor(public rawData: LoggedCommit[]) {
 
     }
 
-    getChangesByAuthor(author: string){
+    
+
+    getChangesByAuthor(author: string) {
         return this.rawData.filter(c => c.author === author).reduce((acc, commit) => {
             return acc.concat(commit.changes);
         }, []);
     }
 
-    getDistinctAuthors(){
+    getDistinctAuthors() {
         return [...new Set(this.rawData.map(c => c.author))];
     }
 
-    getLinesPerAuthor(){
+    getLinesTotal() {
+        let changes = this.rawData.reduce((acc, commit) => {
+            return acc.concat(commit.changes);
+        }, [])
+        
+        return changes.reduce(accumulateLines, { added: 0, removed: 0 });
+    }
+
+
+
+    getLinesPerAuthor() {
         let result = {};
-        for(let author of this.getDistinctAuthors()){
-            result[author] = this.getChangesByAuthor(author).reduce((acc, change) => {
-                let addInc = change.added === '-' ? 0 : change.added;
-                let remInc = change.removed === '-' ? 0 : change.removed;
-                return { added: acc.added + addInc, removed: acc.removed + remInc};
-            }, { added: 0, removed: 0 });
+        for (let author of this.getDistinctAuthors()) {
+            result[author] = this.getChangesByAuthor(author).reduce(accumulateLines, { added: 0, removed: 0 });
         }
         return result;
     }

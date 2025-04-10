@@ -9,7 +9,7 @@ const fileSystem = new FileSystem();
 const canvasClient = new CanvasClient();
 
 
-async function checkoutClass(className: string){
+async function checkoutClass(prefix: string, className: string){
     let sections = await canvasClient.getSections({ course_id: s2.canvasCourseId });
     let usermapping = await canvasClient.getGithubMapping(
         { course_id: s2.canvasCourseId },
@@ -36,7 +36,7 @@ async function checkoutClass(className: string){
     }
 
     for(let repo of myPrjRepos.concat(myVrRepos)){
-        fileSystem.cloneRepo(s2.githubStudentOrg, repo);
+        fileSystem.cloneRepo(prefix, repo);
     }
 }
 
@@ -44,19 +44,16 @@ async function main() {
     let ghSelf = await githubClient.getSelf();
     let canvasSelf = await canvasClient.getSelf();
 
-    // await checkoutClass('TICT-SD-V1D');   
+    // await checkoutClass('S2-V2A', 'TICT-SD-V1A');   
 
-    let repos = await fileSystem.getRepoPaths(s2.githubStudentOrg);
+    let repos = await fileSystem.getRepoPaths('S2-V2A');
     for(let repoPaths of repos){
         console.log(repoPaths);
         let stats = await fileSystem.getRepoStats(...repoPaths);
         let coreStats = new RepositoryStatistics(stats);
         // console.log(coreStats.getChangesByAuthor('Kay'));
+        console.log(coreStats.getLinesTotal());
         console.log(coreStats.getLinesPerAuthor());
-
-        
-       
-        break;
     }
 }
 
