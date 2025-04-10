@@ -15,7 +15,7 @@ export type RepoResponse = {
 export class GithubClient {
     #kit = new Octokit({
         auth: process.env.ACCESS_TOKEN,
-        userAgent: 'ict.hu.nl S3-Tools Dev',
+        userAgent: 'ict.hu.nl:S3-Tools:Dev',
         log: console
     });
 
