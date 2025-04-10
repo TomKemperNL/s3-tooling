@@ -28,7 +28,6 @@ export type LoggedCommit = {
 }
 
 export function parseLog(logLines: string[]) : LoggedCommit[] {
-    console.log(logLines);
     let commits = [];
     let currentCommit : LoggedCommit = null;
 

@@ -180,18 +180,3 @@ export class CanvasClient {
         return mapping;
     }
 }
-
-if (require.main === module) {
-    const client = new CanvasClient();
-    // client.getCourses().then(r => console.log(r.length));
-    // client.getSections({
-    //     course_id: 44633
-    // }).then(r => console.log(r));
-
-
-    client.getGithubMapping({
-        course_id: s2.canvasCourseId
-    }, {
-        assignment_id: s2.canvasVerantwoordingAssignmentId
-    }, s2.verantwoordingAssignmentName).then(r => console.log(r));
-}

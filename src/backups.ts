@@ -7,8 +7,6 @@ const fileSystem = new FileSystem();
 export async function backup(org, options?) {
     let repos = await client.listRepos(org);
 
-    console.log(repos.map(repo => repo.name));
-
     repos.forEach(r => {
         try {
             fileSystem.cloneRepo(org, r);
@@ -16,11 +14,4 @@ export async function backup(org, options?) {
             console.error(e);
         }
     });
-}
-
-if (require.main === module) {
-    console.log(process.env.ACCESS_TOKEN);
-    console.log(process.argv.slice(2));
-
-    backup('huict')
 }
