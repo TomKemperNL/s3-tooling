@@ -1,6 +1,7 @@
 import { config } from "@dotenvx/dotenvx";
 import { Database } from "sqlite3";
 import { main as nodeMain } from "./main/index"
+import * as path from "path";
 const { app, BrowserWindow } = require('electron')
 
 config();
@@ -9,7 +10,10 @@ async function main() {
     const createWindow = () => {
         const win = new BrowserWindow({
             width: 800,
-            height: 600
+            height: 600,
+            webPreferences: {
+                preload: path.join(__dirname, 'preload.js')
+              }
         })
 
         win.loadFile('./dist/src/renderer/index.html')
@@ -39,4 +43,3 @@ async function main() {
     await nodeMain();
 }
 main();
-console.log("hmmm")
