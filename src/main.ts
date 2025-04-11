@@ -1,5 +1,4 @@
 import { config } from "@dotenvx/dotenvx";
-import { Database } from "sqlite3";
 import { main as nodeMain } from "./main/index"
 import * as path from "path";
 const { app, BrowserWindow } = require('electron')
@@ -33,12 +32,6 @@ async function main() {
         if (process.platform !== 'darwin') app.quit()
     });
 
-    let db = new Database('test.sqlite3');
-    db.serialize(()=>{
-        db.get('select 1,2,3', (err, res) => {
-            console.log(res);
-        })
-    });
 
     await nodeMain();
 }

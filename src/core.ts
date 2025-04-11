@@ -2,15 +2,6 @@ import { getUsernameFromUrl } from "./main/canvas_client";
 import { LoggedCommit } from "./main/filesystem_client";
 import { RepoResponse } from "./main/github_client";
 
-type User = {
-    name: string;
-};
-
-type Team = {
-    members: User[];
-    name: string;
-}
-
 export class Repo {
     name: string;
     api_url: string;
@@ -37,14 +28,6 @@ export class Repo {
     }
 }
 
-type Project = {
-    name: string;
-}
-
-type Course = {
-    name: string;
-}
-
 export type CourseConfig = {
     canvasCourseId: number;
     canvasVerantwoordingAssignmentId: number;
@@ -66,8 +49,6 @@ export class RepositoryStatistics {
 
     }
 
-    
-
     getChangesByAuthor(author: string) {
         return this.rawData.filter(c => c.author === author).reduce((acc, commit) => {
             return acc.concat(commit.changes);
@@ -85,8 +66,6 @@ export class RepositoryStatistics {
         
         return changes.reduce(accumulateLines, { added: 0, removed: 0 });
     }
-
-
 
     getLinesPerAuthor() {
         let result = {};
