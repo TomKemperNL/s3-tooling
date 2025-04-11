@@ -39,3 +39,4 @@ async function main() {
     await nodeMain();
 }
 main();
+console.log("hmmm")
