@@ -29,6 +29,7 @@ export class Repo {
 }
 
 export type CourseConfig = {
+    name: string;
     canvasCourseId: number;
     canvasVerantwoordingAssignmentId: number;
     canvasGroupsName: string;
@@ -37,6 +38,20 @@ export type CourseConfig = {
     verantwoordingAssignmentName: string;
     projectAssignmentName: string;
 }
+
+export type StudentDTO = {
+    studentId: number;
+    name: string;
+    email: string;
+}
+
+export type CourseDTO = {
+    canvasId: number,
+    name: string    
+    sections: { [key: string] : StudentDTO[] },
+    assignments: string[]    
+}
+
 
 function accumulateLines(acc, change) {
     let addInc = change.added === '-' ? 0 : change.added;

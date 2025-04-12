@@ -36,11 +36,11 @@ create table githubAccounts(
     studentId integer not null references students (id)
 );
 
-create table githubCommitNames{
+create table githubCommitNames(
     id integer primary key autoincrement,
     name text not null,
     email text
-}
+);
 
 create table
     students_githubCommitNames (

@@ -1,3 +1,5 @@
+import { CourseConfig, CourseDTO } from "../core";
+
 declare global {
     interface Window {
         electron: ElectronIPC;
@@ -6,7 +8,8 @@ declare global {
 
 export interface ElectronIPC {
     test: string,
-    getCourses: () => Promise<any>
+    getCourses: () => Promise<CourseConfig[]>
+    loadCourse: (id: number) => Promise<CourseDTO>
 }
 
 

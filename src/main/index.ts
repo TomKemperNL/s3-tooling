@@ -60,11 +60,32 @@ async function klooienMetRepos() {
     }
 }
 
-import {db} from "./db"
+import { db } from "./db"
 
-export async function main(){
-    
+export async function main() {
     ipcMain.handle("courses:get", () => {
-        return db.getCourses();
+        return db.getCourseConfigs();
+    });
+
+    ipcMain.handle("course:load", async (e, id) => {
+        let savedCourse = await db.getCourse(id);
+        if (Object.keys(savedCourse.sections).length === 0) {
+            let sections = await canvasClient.getSections({ course_id: s2.canvasCourseId });
+            for(let section of sections){
+                if(section.name === savedCourse.name){
+                    continue; //Elke cursus heeft zo'n sectie waar 'iedereen' in zit. Die lijkt me niet handig?
+                }
+                savedCourse.sections[section.name] = section.students.map(s => ({
+                    name: s.name,
+                    studentId: parseInt(s.sis_user_id),
+                    email: s.login_id
+                }));
+            }
+
+            await db.updateSections(savedCourse);
+        }
+        
+        return savedCourse;
+
     });
 }

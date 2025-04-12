@@ -1,6 +1,7 @@
 import { CourseConfig } from './core';
 
 export let s2 : CourseConfig = {
+    name: 'Software Development Fundamentals',
     canvasCourseId: 44633,
     canvasVerantwoordingAssignmentId: 331688,
     canvasGroupsName: 'Projectteams SD S2',
