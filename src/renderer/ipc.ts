@@ -1,7 +1,12 @@
 declare global {
     interface Window {
-        electron: any;
+        electron: ElectronIPC;
     }
 }
 
-export {};
+export interface ElectronIPC {
+    test: string,
+    getCourses: () => Promise<any>
+}
+
+

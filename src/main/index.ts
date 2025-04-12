@@ -4,6 +4,7 @@ import { CanvasClient } from "./canvas_client";
 
 import { s2 } from "./../temp";
 import { Repo, RepositoryStatistics } from "./../core";
+import { ipcMain } from 'electron';
 
 const githubClient = new GithubClient();
 const fileSystem = new FileSystem();
@@ -24,6 +25,7 @@ async function checkoutClass(prefix: string, className: string) {
     let verantwoordingRepos = repos.filter(r => r.isVerantwoordingRepo);
 
     let klasB = sections.find(s => s.name === className);
+    console.log(klasB.students);
     let usersKlasB = klasB.students.map(s => usermapping[s.login_id])
     let myVrRepos = verantwoordingRepos.filter(vRep => usersKlasB.indexOf(vRep.owner) >= 0)
     let myPrjRepos = [];
@@ -36,9 +38,9 @@ async function checkoutClass(prefix: string, className: string) {
         }
     }
 
-    for (let repo of myPrjRepos.concat(myVrRepos)) {
-        fileSystem.cloneRepo(prefix, repo);
-    }
+    // for (let repo of myPrjRepos.concat(myVrRepos)) {
+    //     fileSystem.cloneRepo(prefix, repo);
+    // }
 }
 
 async function klooienMetRepos() {
@@ -58,6 +60,11 @@ async function klooienMetRepos() {
     }
 }
 
+import {db} from "./db"
+
 export async function main(){
-    klooienMetRepos();
+    
+    ipcMain.handle("courses:get", () => {
+        return db.getCourses();
+    });
 }
