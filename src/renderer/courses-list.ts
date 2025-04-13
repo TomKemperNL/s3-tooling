@@ -26,6 +26,9 @@ export class CoursesList extends LitElement {
     @property({state: true})
     courses: any[];
 
+    @property({state: true})
+    loading: boolean = false;
+
     protected firstUpdated(_changedProperties: PropertyValues): void {
         this.ipc.getCourses().then(r => {
             this.courses = r;
@@ -34,7 +37,9 @@ export class CoursesList extends LitElement {
 
     loadCourse(c){
         return async (e) => {
+            this.loading = true;
             let result = await this.ipc.loadCourse(c.canvasCourseId);
+            this.loading = false;
             console.log('result', result)
             if(result){
                 this.dispatchEvent(new CourseLoadedEvent(result));
@@ -47,7 +52,7 @@ export class CoursesList extends LitElement {
             <ul>
             ${map(this.courses, c => html`
                 <li>${c.name}
-                    <button @click=${this.loadCourse(c)}>Load</button>                    
+                    <button ?disabled=${this.loading} @click=${this.loadCourse(c)}>Load</button>                    
                 </li>`)}                
             </ul>`
     } 

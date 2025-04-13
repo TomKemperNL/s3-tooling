@@ -14,13 +14,15 @@ type CourseDb = {
     githubProjectAssignment: string
 }
 
-class Db {
+export class Db {
     #initializer: () => Database;
     #db: Database
-    constructor(initializer = null) {
+    constructor(initializer: () => Database = null) {
         if (!initializer) {
-            this.#initializer = () => new Database('s3-tooling.sqlite3');
+            initializer = () => new Database('s3-tooling.sqlite3');
         }
+
+        this.#initializer = initializer;
         this.#db = this.#initializer();
     }
 
@@ -32,29 +34,22 @@ class Db {
     }
 
     async getCourseConfigs(): Promise<CourseConfig[]> {
-        return new Promise<CourseConfig[]>((resolve, reject) => {
-            this.#db.all("select * from courses;", (err, rows: CourseDb[]) => {
-                if (err) { reject(err); }
-                else {
-                    let results: CourseConfig[] = rows.map(r => ({
-                        name: r.name,
-                        canvasCourseId: r.canvasId,
-                        canvasVerantwoordingAssignmentId: r.canvasVerantAssignmentId,
-                        canvasGroupsName: r.canvasGroups,
+        let rows = await this.#allProm<CourseDb>("select * from courses;");
+        let results: CourseConfig[] = rows.map(r => ({
+            name: r.name,
+            canvasCourseId: r.canvasId,
+            canvasVerantwoordingAssignmentId: r.canvasVerantAssignmentId,
+            canvasGroupsName: r.canvasGroups,
 
-                        githubStudentOrg: r.githubStudentOrg,
-                        verantwoordingAssignmentName: r.githubVerantAssignment,
-                        projectAssignmentName: r.githubProjectAssignment
-                    }));
-                    resolve(results);
-                }
-            })
-        })
+            githubStudentOrg: r.githubStudentOrg,
+            verantwoordingAssignmentName: r.githubVerantAssignment,
+            projectAssignmentName: r.githubProjectAssignment
+        }));
+        return results;
     }
 
     async addCourse(courseConfig: CourseConfig) {
-        return new Promise<void>((resolve, reject) => {
-            this.#db.run(`insert into courses(
+        return this.#runProm(`insert into courses(
                 name, 
                 canvasId, canvasVerantAssignmentId, canvasGroups,
                 githubStudentOrg, githubVerantAssignment, githubProjectAssignment)
@@ -62,73 +57,119 @@ class Db {
                 ?,
                 ?,?,?,
                 ?,?,?)`, [
-                courseConfig.name,
-                courseConfig.canvasCourseId, courseConfig.canvasVerantwoordingAssignmentId, courseConfig.canvasGroupsName,
-                courseConfig.githubStudentOrg, courseConfig.verantwoordingAssignmentName, courseConfig.projectAssignmentName
-            ], err => {
-                if (err) { reject(err) } else {
+            courseConfig.name,
+            courseConfig.canvasCourseId, courseConfig.canvasVerantwoordingAssignmentId, courseConfig.canvasGroupsName,
+            courseConfig.githubStudentOrg, courseConfig.verantwoordingAssignmentName, courseConfig.projectAssignmentName
+        ]);
+    }
+
+    //TODO: uitzoeken hoe je dit netter promisified...
+
+    #runProm(query: string, ...args: any[]): Promise<undefined | { lastID: number }> {
+        return new Promise((resolve, reject) => {
+            this.#db.run(query, ...args, function (err) {
+                if (err) { reject(err); } else {
+                    if (this.lastID) {
+                        resolve(this);
+                    } else {
+                        resolve(undefined);
+                    }
+                }
+            });
+        });
+    }
+
+    #execProm(query: string, ...args: any[]): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.#db.exec(query, ...args, function (err) {
+                if (err) { reject(err); } else {
                     resolve();
                 }
-            })
+            });
+        });
+    }
+
+    #getProm<T>(query: string, ...args: any[]): Promise<T> {
+        return new Promise((resolve, reject) => {
+            this.#db.get(query, ...args, function (err, result) {
+                if (err) { reject(err); } else {
+                    resolve(result);
+                }
+            });
+        });
+    }
+
+    #allProm<T>(query: string, ...args: any[]): Promise<T[]> {
+        return new Promise((resolve, reject) => {
+            this.#db.all(query, ...args, function (err, result) {
+                if (err) { reject(err); } else {
+                    resolve(result);
+                }
+            });
         });
     }
 
     async updateSections(courseDTO: CourseDTO) {
-        this.#db.serialize(() => {
+        let savedCourse = await this.getCourse(courseDTO.canvasId);
 
-        });
+        await this.#runProm('BEGIN TRANSACTION;');
+        await this.#runProm('delete from sections where courseId=?', [savedCourse.canvasId]);
+
+        let sections = Object.keys(courseDTO.sections);
+
+        async function insertSection(k){
+            let runResult = await this.#runProm('insert into sections(name, courseid) values (?,?)', [k, savedCourse.canvasId]);
+            let sectionId = runResult.lastID
+            async function upsertStudent(s){
+                let existingStudent = await this.#getProm('select * from students where id = ?', [s.studentId]);
+                if(!existingStudent){
+                    await this.#runProm('insert into students(id, email, name) values(?,?,?);', [s.studentId, s.email, s.name]);
+                }
+                await this.#runProm('insert into students_sections(studentId, sectionId) values(?,?);', [s.studentId, sectionId]);
+                
+            }
+            await Promise.all(courseDTO.sections[k].map(upsertStudent.bind(this)));
+        };
+        await Promise.all(sections.map(insertSection.bind(this)));        
+        await this.#runProm('COMMIT TRANSACTION;');
     }
 
     async getCourse(canvasId) {
-        return new Promise<CourseDTO>((resolve, reject) => {
-            this.#db.all(`
+        let rows = await this.#allProm<any>(`
                 select c.name as courseName, sec.name as sectionName, stu.name as studentName, stu.id as studentId, * from courses c 
-                    left join sections sec on sec.courseId = c.id
+                    left join sections sec on sec.courseId = c.canvasid
                     left join students_sections ss on ss.sectionId = sec.id
                     left join students stu on ss.studentId = stu.id
                     where c.canvasId = ?
                     order by sec.name
-                `, [canvasId], (err, rows: any[]) => {
-                if (err) { reject(err); } else {
-                    if (rows.length === 0) {
-                        resolve(null);
-                    }
-                    let courseDTO: CourseDTO = {
-                        name: rows[0].courseName,
-                        canvasId: rows[0].canvasId,
-                        assignments: [rows[0].githubVerantAssignment, rows[0].githubProjectAssignment],
-                        sections: {}
-                    };
+                `, [canvasId]);
 
-                    for (let r of rows) {
-                        if (r.studentName) {
-                            if (!courseDTO.sections[r.sectionName]) {
-                                courseDTO.sections[r.sectionName] = [];
-                            }
-                            courseDTO.sections[r.sectionName].push({
-                                studentId: r.studentId,
-                                name: r.studentName,
-                                email: r.email
-                            });
-                        }
-                    }
-                    resolve(courseDTO);
+        let courseDTO: CourseDTO = {
+            name: rows[0].courseName,
+            canvasId: rows[0].canvasId,
+            assignments: [rows[0].githubVerantAssignment, rows[0].githubProjectAssignment],
+            sections: {}
+        };
+
+        for (let r of rows) {
+            if (r.studentName) {
+                if (!courseDTO.sections[r.sectionName]) {
+                    courseDTO.sections[r.sectionName] = [];
                 }
-            });
-        });
+                courseDTO.sections[r.sectionName].push({
+                    studentId: r.studentId,
+                    name: r.studentName,
+                    email: r.email
+                });
+            }
+        }
+
+        return courseDTO;
     }
 
     async initSchema() {
         const schema = await fs.readFile('./create_schema.sql', { encoding: 'utf-8' });
-        return new Promise<void>((resolve, reject) => {
-            this.#db.exec(schema, (err) => {
-                if (err) { reject(err); } else {
-                    resolve();
-                }
-            });
-        });
-
-
+        await this.#execProm(schema);
     }
 
     async initData() {
@@ -149,8 +190,8 @@ class Db {
         });
     }
 
-    test() {
-        this.#db.all('select * from courses', console.log);
+    async test() {
+        console.log(await this.#allProm('select * from courses'))    
     }
 }
 

@@ -69,7 +69,9 @@ export async function main() {
 
     ipcMain.handle("course:load", async (e, id) => {
         let savedCourse = await db.getCourse(id);
+        console.log('saved Course', savedCourse)
         if (Object.keys(savedCourse.sections).length === 0) {
+
             let sections = await canvasClient.getSections({ course_id: s2.canvasCourseId });
             for(let section of sections){
                 if(section.name === savedCourse.name){
