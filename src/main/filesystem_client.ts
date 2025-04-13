@@ -93,4 +93,12 @@ export class FileSystem {
         let parsedLog = parseLog(logLines);
         return parsedLog;
     }
+
+    async getOwnStats(){
+        let result = await exec(`git log --all --format=%H,%aI,%an,%s --numstat`, { encoding: 'utf8' });
+        let logLines = result.stdout.split('\n');
+        
+        let parsedLog = parseLog(logLines);
+        return parsedLog;
+    }
 }
