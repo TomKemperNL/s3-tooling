@@ -3,45 +3,12 @@ import { FileSystem } from "./filesystem_client";
 import { CanvasClient } from "./canvas_client";
 
 import { s2 } from "./../temp";
-import { Repo, RepositoryStatistics } from "./../core";
+import { Repo, RepoDTO, RepoFilter, RepositoryStatistics, RepoStatisticsDTO, StatsFilter } from "./../core";
 import { ipcMain } from 'electron';
 
 const githubClient = new GithubClient();
 const fileSystem = new FileSystem();
 const canvasClient = new CanvasClient();
-
-
-async function checkoutClass(prefix: string, className: string) {
-    let sections = await canvasClient.getSections({ course_id: s2.canvasCourseId });
-    let usermapping = await canvasClient.getGithubMapping(
-        { course_id: s2.canvasCourseId },
-        { assignment_id: s2.canvasVerantwoordingAssignmentId }
-        , s2.verantwoordingAssignmentName);
-    // let groups = await canvasClient.getGroups({ course_id: s2.canvasCourseId }, s2.canvasGroupsName);
-
-    let repoResponses = await githubClient.listRepos(s2.githubStudentOrg);
-    let repos = repoResponses.map(r => new Repo(r, s2));
-    let projectRepos = repos.filter(r => r.isProjectRepo);
-    let verantwoordingRepos = repos.filter(r => r.isVerantwoordingRepo);
-
-    let klasB = sections.find(s => s.name === className);
-    console.log(klasB.students);
-    let usersKlasB = klasB.students.map(s => usermapping[s.login_id])
-    let myVrRepos = verantwoordingRepos.filter(vRep => usersKlasB.indexOf(vRep.owner) >= 0)
-    let myPrjRepos = [];
-
-    for (let prjRepo of projectRepos) {
-        let collaborators = await githubClient.getMembers(s2.githubStudentOrg, prjRepo.name);
-        let logins = collaborators.map(c => c.login);
-        if (logins.some(l => usersKlasB.indexOf(l) >= 0)) {
-            myPrjRepos.push(prjRepo);
-        }
-    }
-
-    // for (let repo of myPrjRepos.concat(myVrRepos)) {
-    //     fileSystem.cloneRepo(prefix, repo);
-    // }
-}
 
 async function klooienMetRepos() {
     let ghSelf = await githubClient.getSelf();
@@ -73,8 +40,8 @@ export async function main() {
         if (Object.keys(savedCourse.sections).length === 0) {
 
             let sections = await canvasClient.getSections({ course_id: s2.canvasCourseId });
-            for(let section of sections){
-                if(section.name === savedCourse.name){
+            for (let section of sections) {
+                if (section.name === savedCourse.name) {
                     continue; //Elke cursus heeft zo'n sectie waar 'iedereen' in zit. Die lijkt me niet handig?
                 }
                 savedCourse.sections[section.name] = section.students.map(s => ({
@@ -86,8 +53,79 @@ export async function main() {
 
             await db.updateSections(savedCourse);
         }
-        
-        return savedCourse;
 
+        return savedCourse;
+    });
+
+    ipcMain.handle("repos:load", async (e, courseId: number, assignment: string, filter: RepoFilter) => {
+        let savedCourse = await db.getCourse(courseId);
+        let savedCourseConfig = await db.getCourseConfig(courseId);
+
+        let usermapping = await canvasClient.getGithubMapping(
+            { course_id: courseId },
+            { assignment_id: savedCourseConfig.canvasVerantwoordingAssignmentId }
+            , savedCourseConfig.verantwoordingAssignmentName);
+
+        await db.updateUserMapping(savedCourseConfig.canvasCourseId, usermapping);
+
+        let repoResponses = await githubClient.listRepos(savedCourseConfig.githubStudentOrg);
+        let repos = repoResponses.map(r => new Repo(r, savedCourseConfig));
+        let matchingRepos = repos.filter(r => r.matchesAssignment(assignment));
+
+        
+        for (let section of filter.sections) {
+            let matchingLogins = [];
+
+            if (savedCourse.sections[section]) {
+                for (let student of savedCourse.sections[section]) {
+                    if (usermapping[student.email]) {
+                        matchingLogins.push(usermapping[student.email]);
+                    }
+                }
+            }
+
+            let targetRepos = []
+            for (let repo of matchingRepos) {
+                if(assignment === savedCourseConfig.verantwoordingAssignmentName){ //TODO: Solo assignments anders behandelen
+                    if(matchingLogins.indexOf(repo.owner) >= 0){
+                        targetRepos.push(repo);
+                    }
+                }else{
+                    let collaborators = await githubClient.getMembers(savedCourseConfig.githubStudentOrg, repo.name);
+                    let logins = collaborators.map(c => c.login);
+                    if (logins.some(l => matchingLogins.indexOf(l) >= 0)) {
+                        targetRepos.push(repo);
+                    }
+                }                
+            }
+    
+            for (let repo of targetRepos) {
+                fileSystem.cloneRepo([savedCourseConfig.githubStudentOrg, assignment], repo);
+            }
+
+            let results: RepoDTO[] = targetRepos.map(r => ({
+                courseId: savedCourse.canvasId,
+                assignment: assignment,
+                groupRepo: assignment !== savedCourseConfig.verantwoordingAssignmentName,
+                name: r.name
+            }));
+
+            return results;
+        }       
+    });
+
+    ipcMain.handle("repostats:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<RepoStatisticsDTO> => {
+        let savedCourseConfig = await db.getCourseConfig(courseId);
+
+        let stats = await fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name);
+        let coreStats = new RepositoryStatistics(stats);
+        let authors = coreStats.getLinesPerAuthor();
+        let totals = coreStats.getLinesTotal()
+
+        return {
+            totalAdded: totals.added,
+            totalRemoved: totals.removed,
+            authors
+        };
     });
 }

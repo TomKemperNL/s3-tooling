@@ -10,5 +10,11 @@ contextBridge.exposeInMainWorld('electron', {
     },
     'loadCourse': async (id) => {
         return ipcRenderer.invoke('course:load', id);
+    },
+    'loadRepos': async (id, assignment, filter) => {
+        return ipcRenderer.invoke('repos:load', id, assignment, filter);
+    },
+    'getRepoStats': async(courseId, assignment, name, filter) => {
+        return ipcRenderer.invoke('repostats:get', courseId, assignment, name, filter);
     }
 });

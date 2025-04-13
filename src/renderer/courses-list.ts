@@ -7,15 +7,15 @@ import { CourseDTO } from "../core.ts";
 import("./ipc.ts")
 
 export class CourseLoadedEvent extends Event {
-    constructor(public course: CourseDTO){
+    constructor(public course: CourseDTO) {
         super('course-loaded');
     }
 }
 
 @customElement('courses-list')
 export class CoursesList extends LitElement {
-    
-    constructor(){
+
+    constructor() {
         super();
         this.courses = []
         this.ipc = window.electron;
@@ -23,10 +23,10 @@ export class CoursesList extends LitElement {
 
     ipc: ElectronIPC
 
-    @property({state: true})
+    @property({ state: true })
     courses: any[];
 
-    @property({state: true})
+    @property({ state: true })
     loading: boolean = false;
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
@@ -35,19 +35,21 @@ export class CoursesList extends LitElement {
         });
     }
 
-    loadCourse(c){
+    loadCourse(c) {
         return async (e) => {
             this.loading = true;
-            let result = await this.ipc.loadCourse(c.canvasCourseId);
-            this.loading = false;
-            console.log('result', result)
-            if(result){
-                this.dispatchEvent(new CourseLoadedEvent(result));
+            try {
+                let result = await this.ipc.loadCourse(c.canvasCourseId);
+                if (result) {
+                    this.dispatchEvent(new CourseLoadedEvent(result));
+                }
             }
-        };
-    }
+            finally { this.loading = false; }
+        }
+    };
 
-    render(){
+
+    render() {
         return html`            
             <ul>
             ${map(this.courses, c => html`
@@ -55,6 +57,6 @@ export class CoursesList extends LitElement {
                     <button ?disabled=${this.loading} @click=${this.loadCourse(c)}>Load</button>                    
                 </li>`)}                
             </ul>`
-    } 
-    
+    }
+
 }

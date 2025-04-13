@@ -1,3 +1,5 @@
 import './courses-list'
 import './app-element'
 import './course-details'
+import './repositories-list'
+import './repository-details'

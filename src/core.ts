@@ -26,6 +26,10 @@ export class Repo {
     get isProjectRepo() {
         return this.name.startsWith(this.config.projectAssignmentName);
     }
+
+    matchesAssignment(assignment: string) {
+        return this.name.startsWith(assignment);
+    }
 }
 
 export type CourseConfig = {
@@ -52,6 +56,26 @@ export type CourseDTO = {
     assignments: string[]    
 }
 
+export type RepoFilter = {
+    sections: string[]
+}
+
+export type RepoDTO = {
+    courseId: number,
+    assignment: string,
+    name: string,
+    groupRepo: boolean
+}
+
+export type StatsFilter = {
+    filterString: string
+}
+
+export type RepoStatisticsDTO = {
+    totalAdded: number,
+    totalRemoved: number,
+    authors: { [name: string] : {added: number, removed: number}}
+}
 
 function accumulateLines(acc, change) {
     let addInc = change.added === '-' ? 0 : change.added;
@@ -74,7 +98,7 @@ export class RepositoryStatistics {
         return [...new Set(this.rawData.map(c => c.author))];
     }
 
-    getLinesTotal() {
+    getLinesTotal() : { added: number, removed: number } {
         let changes = this.rawData.reduce((acc, commit) => {
             return acc.concat(commit.changes);
         }, [])
@@ -82,7 +106,7 @@ export class RepositoryStatistics {
         return changes.reduce(accumulateLines, { added: 0, removed: 0 });
     }
 
-    getLinesPerAuthor() {
+    getLinesPerAuthor() : {[author: string]: {added: number, removed: number}} {
         let result = {};
         for (let author of this.getDistinctAuthors()) {
             result[author] = this.getChangesByAuthor(author).reduce(accumulateLines, { added: 0, removed: 0 });

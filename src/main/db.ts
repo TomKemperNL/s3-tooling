@@ -15,6 +15,7 @@ type CourseDb = {
 }
 
 export class Db {
+
     #initializer: () => Database;
     #db: Database
     constructor(initializer: () => Database = null) {
@@ -31,6 +32,22 @@ export class Db {
         this.#db = this.#initializer();
         await this.initSchema();
         await this.initData();
+    }
+
+    async getCourseConfig(id: number): Promise<CourseConfig> {
+        let r = await this.#getProm<CourseDb>("select * from courses where canvasId = ?;", [id]);
+        if(r){
+            return {
+                name: r.name,
+                canvasCourseId: r.canvasId,
+                canvasVerantwoordingAssignmentId: r.canvasVerantAssignmentId,
+                canvasGroupsName: r.canvasGroups,
+    
+                githubStudentOrg: r.githubStudentOrg,
+                verantwoordingAssignmentName: r.githubVerantAssignment,
+                projectAssignmentName: r.githubProjectAssignment
+            }
+        }
     }
 
     async getCourseConfigs(): Promise<CourseConfig[]> {
@@ -61,6 +78,10 @@ export class Db {
             courseConfig.canvasCourseId, courseConfig.canvasVerantwoordingAssignmentId, courseConfig.canvasGroupsName,
             courseConfig.githubStudentOrg, courseConfig.verantwoordingAssignmentName, courseConfig.projectAssignmentName
         ]);
+    }
+
+    updateUserMapping(courseId: number, usermapping: { [key: string]: string | number; }) {
+        
     }
 
     //TODO: uitzoeken hoe je dit netter promisified...
