@@ -66,6 +66,11 @@ export class FileSystem {
 
     cloneRepo(prefix: string[], repo){
         let target = path.join(this.#basePath, ...prefix);
+        let fullTarget = path.join(this.#basePath, ...prefix, repo.name);
+        if(fs.existsSync(fullTarget)){
+            return;
+        }
+
         if(!fs.existsSync(target)){
             fs.mkdirSync(target, {recursive: true});
         }

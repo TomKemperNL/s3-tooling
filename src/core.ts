@@ -35,6 +35,10 @@ export type CourseConfig = {
     githubStudentOrg: string;
     verantwoordingAssignmentName: string;
     projectAssignmentName: string;
+
+    lastRepoCheck: Date,
+    lastSectionCheck: Date,
+    lastMappingCheck: Date
 }
 
 export type StudentDTO = {

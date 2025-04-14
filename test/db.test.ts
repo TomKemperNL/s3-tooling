@@ -1,7 +1,7 @@
 import { test, expect, beforeEach, afterAll } from 'vitest';
 import { Db } from '../src/main/db'
 import { Database } from "sqlite3";
-import { StudentDTO } from '../src/core';
+import { CourseConfig, StudentDTO } from '../src/core';
 
 let db: Db = null;
 beforeEach(async () => {
@@ -18,14 +18,17 @@ afterAll(async () => {
     await db.close();
 });
 
-const someCourse = {
+const someCourse : CourseConfig = {
     canvasCourseId: 123,
     canvasGroupsName: 'bla',
     canvasVerantwoordingAssignmentId: 456,
     githubStudentOrg: 'bla-org',
     name: 'bla-course',
     projectAssignmentName: 'bla-ass-v',
-    verantwoordingAssignmentName: 'bla-ass-p'
+    verantwoordingAssignmentName: 'bla-ass-p',
+    lastRepoCheck: null,
+    lastSectionCheck: null,
+    lastMappingCheck: null
 };
 
 const someStudents: StudentDTO[] = [

@@ -10,6 +10,12 @@ export type RepoResponse = {
     url: string,
     created_at: string,
     updated_at: string,
+
+    lastMemberCheck: Date
+}
+
+export type MemberResponse = {
+    login: string
 }
 
 export class GithubClient {
@@ -23,7 +29,7 @@ export class GithubClient {
         return this.#kit.request('GET /user').then(response => response.data);
     }
 
-    async getMembers(org, repo) {
+    async getMembers(org, repo) : Promise<MemberResponse[]>{
         let response = await this.#kit.repos.listCollaborators({
             repo: repo,
             owner: org

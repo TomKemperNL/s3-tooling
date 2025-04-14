@@ -1,8 +1,9 @@
 import { Database } from "sqlite3";
 import fs from 'fs/promises';
 import { s2 } from '../temp'
-import { CourseConfig, CourseDTO } from "../core";
-import { RepoResponse } from "./github_client";
+import { CourseConfig, CourseDTO, RepoDTO } from "../core";
+import { MemberResponse, RepoResponse } from "./github_client";
+import { SimpleDict } from "./canvas_client";
 
 type CourseDb = {
     id: number,
@@ -13,10 +14,43 @@ type CourseDb = {
     githubStudentOrg: string,
     githubVerantAssignment: string,
     githubProjectAssignment: string
+    lastRepoCheck: string,
+    lastSectionCheck: string,
+    lastMappingCheck: string
+}
+
+export type RepoDb = {
+    githubId: number,
+    name: string,
+    full_name: string,
+    priv: boolean,
+    html_url: string,
+    ssh_url: string,
+    api_url: string,
+    created_at: string,
+    updated_at: string,
+
+    lastMemberCheck: string
+}
+
+function courseDbToConfig(r: CourseDb): CourseConfig {
+    return {
+        name: r.name,
+        canvasCourseId: r.canvasId,
+        canvasVerantwoordingAssignmentId: r.canvasVerantAssignmentId,
+        canvasGroupsName: r.canvasGroups,
+
+        githubStudentOrg: r.githubStudentOrg,
+        verantwoordingAssignmentName: r.githubVerantAssignment,
+        projectAssignmentName: r.githubProjectAssignment,
+
+        lastRepoCheck: r.lastRepoCheck ? new Date(Date.parse(r.lastRepoCheck)) : null,
+        lastSectionCheck: r.lastSectionCheck ? new Date(Date.parse(r.lastSectionCheck)) : null,
+        lastMappingCheck: r.lastMappingCheck ? new Date(Date.parse(r.lastMappingCheck)) : null
+    }
 }
 
 export class Db {
-
     #initializer: () => Database;
     #db: Database
     constructor(initializer: () => Database = null) {
@@ -26,6 +60,21 @@ export class Db {
 
         this.#initializer = initializer;
         this.#db = this.#initializer();
+    }
+
+    async #inTransaction<T>(func: () => Promise<T | void>) {
+        try {
+            await this.#runProm("begin transaction;")
+
+            let result = await func();
+
+            await this.#runProm("commit transaction;")
+
+            return result;
+        } catch (e) {
+            await this.#runProm("rollback transaction;")
+            throw e;
+        }
     }
 
     async reset() {
@@ -38,31 +87,13 @@ export class Db {
     async getCourseConfig(id: number): Promise<CourseConfig> {
         let r = await this.#getProm<CourseDb>("select * from courses where canvasId = ?;", [id]);
         if (r) {
-            return {
-                name: r.name,
-                canvasCourseId: r.canvasId,
-                canvasVerantwoordingAssignmentId: r.canvasVerantAssignmentId,
-                canvasGroupsName: r.canvasGroups,
-
-                githubStudentOrg: r.githubStudentOrg,
-                verantwoordingAssignmentName: r.githubVerantAssignment,
-                projectAssignmentName: r.githubProjectAssignment
-            }
+            return courseDbToConfig(r);
         }
     }
 
     async getCourseConfigs(): Promise<CourseConfig[]> {
         let rows = await this.#allProm<CourseDb>("select * from courses;");
-        let results: CourseConfig[] = rows.map(r => ({
-            name: r.name,
-            canvasCourseId: r.canvasId,
-            canvasVerantwoordingAssignmentId: r.canvasVerantAssignmentId,
-            canvasGroupsName: r.canvasGroups,
-
-            githubStudentOrg: r.githubStudentOrg,
-            verantwoordingAssignmentName: r.githubVerantAssignment,
-            projectAssignmentName: r.githubProjectAssignment
-        }));
+        let results: CourseConfig[] = rows.map(courseDbToConfig);
         return results;
     }
 
@@ -90,17 +121,91 @@ export class Db {
     }
 
     async updateUserMapping(courseId: number, usermapping: { [key: string]: string | number; }) {
-        for (let k of Object.keys(usermapping)) {
-            let v = usermapping[k];
-            let student = await this.getStudentByEmail(k);
-            if(student){ //Canvas heeft soms ook een 'testcursist' die elke opdracht een inlevering doet, en dus in deze lijst komt...
-                await this.#runProm('insert into githubAccounts(username, studentId) values(?, ?) on conflict do nothing;', [v, student.id]);
-            }
-        }
+        await this.#inTransaction(async () => {
+            for (let k of Object.keys(usermapping)) {
+                let v = usermapping[k];
+                let student = await this.getStudentByEmail(k);
+                if (student) { //Canvas heeft soms ook een 'testcursist' die elke opdracht een inlevering doet, en dus in deze lijst komt...
+                    await this.#runProm('insert into githubAccounts(username, studentId) values(?, ?) on conflict do nothing;', [v, student.id]);
+                }
+            };
+
+            await this.#runProm("update courses set lastMappingCheck = ? where canvasid = ?", [new Date().toISOString(), courseId]);
+        });
     }
 
-    async updateRepoMapping(courseId: number, assignment: string, repos: RepoResponse[]){
+    async getUserMapping(courseId: number) : Promise<SimpleDict> {
+        let rows = await this.#allProm<{email: string, username: string}>(`
+            select s.email, gha.username from courses c 
+                join sections sec on c.canvasid = sec.courseId
+                join students_sections ss on ss.sectionId = sec.id
+                join students s on ss.studentid = s.id
+                join githubAccounts gha on s.id = gha.studentId
+                where c.canvasId = ?`, [courseId]);
+        let result = {};                 
+        for (let r of rows){
+            result[r.email] = r.username;
+        }
+        return result;
+    }
 
+    async selectReposByCourse(courseId: number): Promise<RepoResponse[]> {
+        return (await this.#allProm<RepoDb>("select * from repositories where courseId = ?", [courseId])).map(r => ({
+            id: r.githubId,
+            name: r.name,
+            full_name: r.full_name,
+            private: r.priv,
+            html_url: r.html_url,
+            ssh_url: r.ssh_url,
+            url: r.api_url,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+            lastMemberCheck: r.lastMemberCheck ? new Date(Date.parse(r.lastMemberCheck)) : null
+        }));
+    }
+
+    async updateRepoMapping(courseId: number, repos: RepoResponse[]) {
+
+        await this.#inTransaction(async ()=> {
+            for (let repo of repos) {
+                await this.#runProm(`
+                    insert into repositories(
+                        githubId, courseId, 
+                        name, full_name, priv,
+                        html_url, ssh_url, api_url,
+                        created_at, updated_at) values (
+                        ?,?,
+                        ?,?,?,
+                        ?,?,?,
+                        ?,?) on conflict do nothing;`, [
+                            repo.id, courseId, 
+                            repo.name, repo.full_name, repo.private,
+                            repo.html_url, repo.ssh_url, repo.url,
+                            repo.created_at, repo.updated_at
+                        ])
+            }
+
+            await this.#runProm('update courses set lastRepoCheck = ? where canvasid = ?', new Date().toISOString(), courseId);
+        })
+    }
+
+    async updateCollaborators(githubId: number, collaborators: MemberResponse[]) {
+        
+        await this.#inTransaction(async () => {
+            await Promise.all(collaborators.map(async c => {
+                await this.#runProm('insert into repository_members(githubId, username) values(?,?) on conflict do nothing', [githubId, c.login]);
+            }));
+
+            await this.#runProm('update repositories set lastMemberCheck = ? where githubId = ?', new Date().toISOString(), githubId)
+        });  
+    }
+
+    async getCollaborators(githubId: number): Promise<MemberResponse[]> {
+        let result = await this.#allProm<{githubId: number, username: string}>(
+            'select githubId, username from repository_members where githubId = ?', githubId);
+        return result.map(r => ({
+            login: r.username
+        }))
     }
 
     //TODO: uitzoeken hoe je dit netter promisified...
@@ -152,8 +257,7 @@ export class Db {
     async updateSections(courseDTO: CourseDTO) {
         let savedCourse = await this.getCourse(courseDTO.canvasId);
 
-        try {
-            await this.#runProm('BEGIN TRANSACTION;');
+        await this.#inTransaction(async () => {
             await this.#runProm('delete from sections where courseId=?', [savedCourse.canvasId]);
 
             let sections = Object.keys(courseDTO.sections);
@@ -172,11 +276,9 @@ export class Db {
                 await Promise.all(courseDTO.sections[k].map(upsertStudent.bind(this)));
             };
             await Promise.all(sections.map(insertSection.bind(this)));
-            await this.#runProm('COMMIT TRANSACTION;');
-        } catch (e) {
-            await this.#runProm('ROLLBACK TRANSACTION;');
-            throw e;
-        }
+
+            await this.#runProm('update courses set lastSectionCheck = ? where canvasId = ?', new Date().toISOString(), courseDTO.canvasId)
+        });
     }
 
     async getCourse(canvasId) {

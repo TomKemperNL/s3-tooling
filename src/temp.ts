@@ -8,5 +8,8 @@ export let s2 : CourseConfig = {
 
     githubStudentOrg: 'HU-SD-S2-studenten-2425',
     verantwoordingAssignmentName: 'sd-s2-verantwoording',
-    projectAssignmentName: 'sd-s2-project'
+    projectAssignmentName: 'sd-s2-project',
+    lastMappingCheck: null,
+    lastRepoCheck: null,
+    lastSectionCheck: null
 }

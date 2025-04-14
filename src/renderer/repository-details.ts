@@ -1,4 +1,4 @@
-import { html, LitElement } from "lit";
+import { html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { RepoDTO, RepoStatisticsDTO } from "../core";
 import { when } from "lit/directives/when.js";
@@ -6,28 +6,33 @@ import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
 
 @customElement('repository-details')
-export class RepositoryDetails extends LitElement{
+export class RepositoryDetails extends LitElement {
     ipc: ElectronIPC;
-    constructor(){
+    constructor() {
         super();
         this.ipc = window.electron;
     }
 
 
-    @property({type: Object})
+    @property({ type: Object })
     repo: RepoDTO;
 
-    @property({type: Object, state:true})
+    @property({ type: Object, state: true })
     repoStats: RepoStatisticsDTO;
 
-    async refresh(){        
-        this.repoStats = await this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '.*'});
+    protected updated(_changedProperties: PropertyValues): void {
+        if (_changedProperties.has('repo')) {
+            this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' }).then(
+                stats => {
+                    this.repoStats = stats;
+                }
+            );
+        }
     }
 
-    render(){
+    render() {
         return html`
             <p>${this.repo.name}</p>
-            <button @click=${this.refresh}>Refresh</button>
             <ul>
                 <li>Filter (regex): <input type="text" value=".*" disabled></li>
                 ${when(this.repoStats, () => html`

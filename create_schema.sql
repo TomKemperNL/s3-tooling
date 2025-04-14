@@ -7,7 +7,10 @@ create table
         canvasGroups text,
         githubStudentOrg text,
         githubVerantAssignment text,
-        githubProjectAssignment text
+        githubProjectAssignment text,
+        lastRepoCheck text,
+        lastSectionCheck text,
+        lastMappingCheck text
     );
 
 create table
@@ -51,10 +54,21 @@ create table
 
 create table 
     repositories (
+        githubId integer not null primary key,
         courseId integer not null references courses (id),
-        name text not null,
-        assignment text,
-        
+        name text,
+        full_name text,
+        priv boolean,
+        html_url text,
+        ssh_url text,
+        api_url text,
+        created_at text,
+        updated_at text,       
 
-        primary key (courseId, name)
-    )
+        lastMemberCheck text        
+    );
+
+create table repository_members(
+    githubId integer not null references repositories(githubId),
+    username text not null references githubAccounts(username)
+);
