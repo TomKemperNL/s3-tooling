@@ -8,23 +8,17 @@ export class Repo {
     ssh_url: string;
     http_url: string;
 
-    constructor(public response: RepoResponse, private config: CourseConfig) {
+    constructor(public response: RepoResponse) {
         this.name = response.name;
         this.api_url = response.url;
         this.ssh_url = response.ssh_url;
         this.http_url = response.html_url;
     }
 
-    get isVerantwoordingRepo() {
-        return this.name.startsWith(this.config.verantwoordingAssignmentName);
-    }
-
-    get owner() {
-        return getUsernameFromUrl(this.http_url, this.config.verantwoordingAssignmentName);
-    }
-
-    get isProjectRepo() {
-        return this.name.startsWith(this.config.projectAssignmentName);
+    owner(assignment){
+        if(this.matchesAssignment(assignment)) {
+            return this.name.slice(assignment.length + 1);
+        }
     }
 
     matchesAssignment(assignment: string) {

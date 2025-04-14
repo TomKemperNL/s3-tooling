@@ -4,11 +4,13 @@ import { Database } from 'sqlite3';
 import { AppFacade } from '../src/main/appFacade';
 import { FakeCanvasClient } from './fakes/FakeCanvasClient';
 import { FakeGithubClient } from './fakes/FakeGithubClient';
+import { FakeFileSystem } from './fakes/FakeFileSystem';
 
 let db: Db = null;
 let facade: AppFacade = null;
 let canvasFake: FakeCanvasClient = null;
 let githubFake: FakeGithubClient = null;
+let fsFake : FakeFileSystem = null;
 
 beforeEach(async () => {
     db = new Db(() => {
@@ -20,7 +22,8 @@ beforeEach(async () => {
     await db.initSchema();
     canvasFake = new FakeCanvasClient();
     githubFake = new FakeGithubClient();
-    facade = new AppFacade(<any>githubFake, <any> canvasFake, null, db);
+    fsFake = new FakeFileSystem();
+    facade = new AppFacade(<any>githubFake, <any> canvasFake, <any>fsFake, db);
 });
 
 afterAll(async () => {
@@ -91,11 +94,19 @@ test("canLoadSoloRepos", async () => {
     await facade.loadCourse(someCourse.canvasCourseId);
 
     let result = await facade.loadRepos(someCourse.canvasCourseId, someCourse.verantwoordingAssignmentName, { sections: ['bla-section']})
-    // expect(result.length).toBe(1);
+    expect(result.length).toBe(1);
     
 });
 
 test("canLoadGroupRepos", async () => {
-   
+    await db.addCourse(someCourse);
+    canvasFake.sections = someSections;
+    canvasFake.mapping = { 'test@example.com': 'githubtest' }
+    githubFake.repos = [{ name: someCourse.projectAssignmentName + '-some-group'}];
+    githubFake.members[someCourse.projectAssignmentName + '-some-group'] = [{login: 'githubtest'}];
+    await facade.loadCourse(someCourse.canvasCourseId);
+
+    let result = await facade.loadRepos(someCourse.canvasCourseId, someCourse.projectAssignmentName, { sections: ['bla-section']})
+    expect(result.length).toBe(1);
     
 });

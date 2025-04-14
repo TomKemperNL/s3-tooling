@@ -48,7 +48,7 @@ export class AppFacade {
         await this.db.updateUserMapping(savedCourseConfig.canvasCourseId, usermapping);
 
         let repoResponses = await this.githubClient.listRepos(savedCourseConfig.githubStudentOrg);
-        let repos = repoResponses.map(r => new Repo(r, savedCourseConfig));
+        let repos = repoResponses.map(r => new Repo(r));
         let matchingRepos = repos.filter(r => r.matchesAssignment(assignment));
 
         let allResults = [];
@@ -66,10 +66,8 @@ export class AppFacade {
 
             let targetRepos = []
             for (let repo of matchingRepos) {
-                console.log(assignment);
-                console.log(repo)
                 if(assignment === savedCourseConfig.verantwoordingAssignmentName){ //TODO: Solo assignments anders behandelen
-                    if(matchingLogins.indexOf(repo.owner) >= 0){
+                    if(matchingLogins.indexOf(repo.owner(assignment)) >= 0){
                         targetRepos.push(repo);
                     }
                 }else{
