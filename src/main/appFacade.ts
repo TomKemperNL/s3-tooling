@@ -48,6 +48,9 @@ export class AppFacade {
         await this.db.updateUserMapping(savedCourseConfig.canvasCourseId, usermapping);
 
         let repoResponses = await this.githubClient.listRepos(savedCourseConfig.githubStudentOrg);
+
+        await this.db.updateRepoMapping(savedCourseConfig.canvasCourseId, assignment, repoResponses);
+
         let repos = repoResponses.map(r => new Repo(r));
         let matchingRepos = repos.filter(r => r.matchesAssignment(assignment));
 

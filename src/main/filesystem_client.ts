@@ -86,7 +86,6 @@ export class FileSystem {
 
     async getRepoStats(...repoPath: string[]){
         let target = path.join(this.#basePath, ...repoPath);
-        console.log(target);
         let result = await exec(`git log --all --format=%H,%aI,%an,%s --numstat`, { cwd: target, encoding: 'utf8' });
         let logLines = result.stdout.split('\n');
         

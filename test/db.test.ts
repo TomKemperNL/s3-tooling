@@ -46,10 +46,7 @@ test("can add sections to course", async () => {
     let foundCourse = await db.getCourse(123);
     foundCourse.sections['abc'] = someStudents;
     await db.updateSections(foundCourse);
-    console.log('querying')
     let foundCourse2 = await db.getCourse(123);
-
-    console.log('found', foundCourse2)
 
     expect(foundCourse2.sections['abc']).not.toBeUndefined();
     expect(foundCourse2.sections['abc']).toEqual(someStudents);

@@ -2,6 +2,7 @@ import { Database } from "sqlite3";
 import fs from 'fs/promises';
 import { s2 } from '../temp'
 import { CourseConfig, CourseDTO } from "../core";
+import { RepoResponse } from "./github_client";
 
 type CourseDb = {
     id: number,
@@ -36,13 +37,13 @@ export class Db {
 
     async getCourseConfig(id: number): Promise<CourseConfig> {
         let r = await this.#getProm<CourseDb>("select * from courses where canvasId = ?;", [id]);
-        if(r){
+        if (r) {
             return {
                 name: r.name,
                 canvasCourseId: r.canvasId,
                 canvasVerantwoordingAssignmentId: r.canvasVerantAssignmentId,
                 canvasGroupsName: r.canvasGroups,
-    
+
                 githubStudentOrg: r.githubStudentOrg,
                 verantwoordingAssignmentName: r.githubVerantAssignment,
                 projectAssignmentName: r.githubProjectAssignment
@@ -80,8 +81,26 @@ export class Db {
         ]);
     }
 
-    updateUserMapping(courseId: number, usermapping: { [key: string]: string | number; }) {
-        
+    async getStudentById(studentId: number) {
+        return this.#getProm<any>('select * from students where id = ?', [studentId]);
+    }
+
+    async getStudentByEmail(email: string) {
+        return this.#getProm<any>('select * from students where email = ?', [email]);
+    }
+
+    async updateUserMapping(courseId: number, usermapping: { [key: string]: string | number; }) {
+        for (let k of Object.keys(usermapping)) {
+            let v = usermapping[k];
+            let student = await this.getStudentByEmail(k);
+            if(student){ //Canvas heeft soms ook een 'testcursist' die elke opdracht een inlevering doet, en dus in deze lijst komt...
+                await this.#runProm('insert into githubAccounts(username, studentId) values(?, ?) on conflict do nothing;', [v, student.id]);
+            }
+        }
+    }
+
+    async updateRepoMapping(courseId: number, assignment: string, repos: RepoResponse[]){
+
     }
 
     //TODO: uitzoeken hoe je dit netter promisified...
@@ -133,26 +152,31 @@ export class Db {
     async updateSections(courseDTO: CourseDTO) {
         let savedCourse = await this.getCourse(courseDTO.canvasId);
 
-        await this.#runProm('BEGIN TRANSACTION;');
-        await this.#runProm('delete from sections where courseId=?', [savedCourse.canvasId]);
+        try {
+            await this.#runProm('BEGIN TRANSACTION;');
+            await this.#runProm('delete from sections where courseId=?', [savedCourse.canvasId]);
 
-        let sections = Object.keys(courseDTO.sections);
+            let sections = Object.keys(courseDTO.sections);
 
-        async function insertSection(k){
-            let runResult = await this.#runProm('insert into sections(name, courseid) values (?,?)', [k, savedCourse.canvasId]);
-            let sectionId = runResult.lastID
-            async function upsertStudent(s){
-                let existingStudent = await this.#getProm('select * from students where id = ?', [s.studentId]);
-                if(!existingStudent){
-                    await this.#runProm('insert into students(id, email, name) values(?,?,?);', [s.studentId, s.email, s.name]);
+            async function insertSection(k) {
+                let runResult = await this.#runProm('insert into sections(name, courseid) values (?,?)', [k, savedCourse.canvasId]);
+                let sectionId = runResult.lastID
+                async function upsertStudent(s) {
+                    let existingStudent = await this.#getProm('select * from students where id = ?', [s.studentId]);
+                    if (!existingStudent) {
+                        await this.#runProm('insert into students(id, email, name) values(?,?,?);', [s.studentId, s.email, s.name]);
+                    }
+                    await this.#runProm('insert into students_sections(studentId, sectionId) values(?,?);', [s.studentId, sectionId]);
+
                 }
-                await this.#runProm('insert into students_sections(studentId, sectionId) values(?,?);', [s.studentId, sectionId]);
-                
-            }
-            await Promise.all(courseDTO.sections[k].map(upsertStudent.bind(this)));
-        };
-        await Promise.all(sections.map(insertSection.bind(this)));        
-        await this.#runProm('COMMIT TRANSACTION;');
+                await Promise.all(courseDTO.sections[k].map(upsertStudent.bind(this)));
+            };
+            await Promise.all(sections.map(insertSection.bind(this)));
+            await this.#runProm('COMMIT TRANSACTION;');
+        } catch (e) {
+            await this.#runProm('ROLLBACK TRANSACTION;');
+            throw e;
+        }
     }
 
     async getCourse(canvasId) {
@@ -212,10 +236,10 @@ export class Db {
     }
 
     async test() {
-        console.log(await this.#allProm('select * from courses'))    
+        console.log(await this.#allProm('select * from courses'))
     }
 
-    async close(){
+    async close() {
         return new Promise<void>((resolve, reject) => {
             this.#db.close((err) => {
                 if (err) {

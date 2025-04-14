@@ -24,7 +24,7 @@ export async function main() {
         return facade.loadCourse(id);
     });
 
-    ipcMain.handle("repos:load", async (e, courseId: number, assignment: string, name: string, filter: RepoFilter) => {
+    ipcMain.handle("repos:load", async (e, courseId: number, assignment: string, filter: RepoFilter) => {
        return facade.loadRepos(courseId, assignment, filter);
     });
 

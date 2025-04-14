@@ -47,4 +47,14 @@ create table
         studentId integer not null references students (id),
         githubCommitNameId integer not null references githubCommitNames (id),
         primary key (studentId, githubCommitNameId)
-    );
+);
+
+create table 
+    repositories (
+        courseId integer not null references courses (id),
+        name text not null,
+        assignment text,
+        
+
+        primary key (courseId, name)
+    )
