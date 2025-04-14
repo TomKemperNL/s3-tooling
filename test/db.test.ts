@@ -1,4 +1,4 @@
-import { test, expect, beforeEach } from 'vitest';
+import { test, expect, beforeEach, afterAll } from 'vitest';
 import { Db } from '../src/main/db'
 import { Database } from "sqlite3";
 import { StudentDTO } from '../src/core';
@@ -12,6 +12,10 @@ beforeEach(async () => {
     })
 
     await db.initSchema();
+});
+
+afterAll(async () => {
+    await db.close();
 });
 
 const someCourse = {

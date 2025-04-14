@@ -9,7 +9,8 @@ const githubClient = new GithubClient();
 const fileSystem = new FileSystem();
 const canvasClient = new CanvasClient();
 
-import { db } from "./db"
+import { db } from "./db";
+db.reset().then(() => db.test());
 import { AppFacade } from "./appFacade";
 
 const facade = new AppFacade(githubClient, canvasClient, fileSystem, db);

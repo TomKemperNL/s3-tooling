@@ -214,9 +214,18 @@ export class Db {
     async test() {
         console.log(await this.#allProm('select * from courses'))    
     }
+
+    async close(){
+        return new Promise<void>((resolve, reject) => {
+            this.#db.close((err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
 }
 
 export const db = new Db();
-
-
-db.reset().then(() => db.test());
