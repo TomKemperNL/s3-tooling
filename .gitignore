@@ -3,3 +3,4 @@ dist
 .dev.env
 data
 *.sqlite3
+*.sqlite3-journal
