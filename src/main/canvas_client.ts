@@ -34,7 +34,7 @@ type PageResponse<T> = {
     hasNext: boolean;
 }
 
-type SimpleDict = { [key: string]: string | number };
+export type SimpleDict = { [key: string]: string | number };
 
 function parseLinkHeader(header: string): SimpleDict {
     const links = {};
