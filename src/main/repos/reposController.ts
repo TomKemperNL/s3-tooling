@@ -1,41 +1,15 @@
-import { Db } from "./db";
-import { CanvasClient, SimpleDict } from "./canvas_client";
-import { GithubClient, MemberResponse, RepoResponse } from "./github_client";
-import { CourseConfig, CourseDTO, Repo, RepoDTO, RepoFilter, RepositoryStatistics, StatsFilter } from "../core";
-import { FileSystem as FileSystemClient } from "./filesystem_client";
+import { Repo, RepoDTO, RepoFilter, RepositoryStatistics, StatsFilter } from "../../core";
+import { CanvasClient, SimpleDict } from "../canvas_client";
+import { Db } from "../db";
+import { FileSystem } from "../filesystem_client";
+import { GithubClient, MemberResponse, RepoResponse } from "../github_client";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
 
-//Naming things is hard :(
-export class AppFacade {
-    constructor(private githubClient: GithubClient, private canvasClient: CanvasClient, private fileSystem: FileSystemClient, private db: Db) {
-
-    }
-
-    async getConfigs(): Promise<CourseConfig[]> {
-        return this.db.getCourseConfigs();
-    }
-
-    async loadCourse(id): Promise<CourseDTO> {
-        let savedCourse = await this.db.getCourse(id);
-        if (Object.keys(savedCourse.sections).length === 0) {
-
-            let sections = await this.canvasClient.getSections({ course_id: id });
-            for (let section of sections) {
-                if (section.name === savedCourse.name) {
-                    continue; //Elke cursus heeft zo'n sectie waar 'iedereen' in zit. Die lijkt me niet handig?
-                }
-                savedCourse.sections[section.name] = section.students.map(s => ({
-                    name: s.name,
-                    studentId: parseInt(s.sis_user_id),
-                    email: s.login_id
-                }));
-            }
-
-            await this.db.updateSections(savedCourse);
-        }
-
-        return savedCourse;
+export class ReposController{
+    
+    constructor(private db: Db, private canvasClient: CanvasClient, private githubClient: GithubClient, private fileSystem: FileSystem){
+        
     }
 
     async loadRepos(courseId, assignment, filter: RepoFilter): Promise<RepoDTO[]> {

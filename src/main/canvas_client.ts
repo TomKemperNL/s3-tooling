@@ -1,5 +1,3 @@
-import { s2 } from '../temp';
-
 export interface CourseResponse {
     id: number;
     name: string;

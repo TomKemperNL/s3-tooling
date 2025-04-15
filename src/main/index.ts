@@ -10,25 +10,27 @@ const fileSystem = new FileSystem();
 const canvasClient = new CanvasClient();
 
 import { db } from "./db";
+import { ReposController } from "./repos/reposController";
+import { CoursesController } from "./courses/coursesController";
 // db.reset().then(() => db.test());
-import { AppFacade } from "./appFacade";
 
-const facade = new AppFacade(githubClient, canvasClient, fileSystem, db);
+const repoController = new ReposController(db, canvasClient, githubClient, fileSystem);
+const coursesController = new CoursesController(db, canvasClient);
 
 export async function main() {
     ipcMain.handle("courses:get", () => {
-        return facade.getConfigs();
+        return coursesController.getConfigs();
     });
 
     ipcMain.handle("course:load", async (e, id) => {
-        return facade.loadCourse(id);
+        return coursesController.loadCourse(id);
     });
 
     ipcMain.handle("repos:load", async (e, courseId: number, assignment: string, filter: RepoFilter) => {
-       return facade.loadRepos(courseId, assignment, filter);
+       return repoController.loadRepos(courseId, assignment, filter);
     });
 
     ipcMain.handle("repostats:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<RepoStatisticsDTO> => {
-        return facade.getRepoStats(courseId, assignment, name, filter);
+        return repoController.getRepoStats(courseId, assignment, name, filter);
     });
 }
