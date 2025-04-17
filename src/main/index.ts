@@ -12,7 +12,7 @@ const canvasClient = new CanvasClient();
 import { db } from "./db";
 import { ReposController } from "./repos/reposController";
 import { CoursesController } from "./courses/coursesController";
-// db.reset().then(() => db.test());
+db.reset().then(() => db.test());
 
 const repoController = new ReposController(db, canvasClient, githubClient, fileSystem);
 const coursesController = new CoursesController(db, canvasClient);

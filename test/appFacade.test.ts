@@ -110,7 +110,7 @@ test("canLoadSoloRepos", async () => {
     await db.addCourse(someCourse);
     canvasFake.sections = someSections;
     canvasFake.mapping = { 'test@example.com': 'githubtest' }
-    githubFake.repos = [{ id: 42, name: someCourse.verantwoordingAssignmentName + '-githubtest'}];
+    githubFake.repos = [{ id: 42, name: someCourse.verantwoordingAssignmentName + '-githubtest', organization: { login: 'bla-org' }}];
     await coursesController.loadCourse(someCourse.canvasCourseId);
 
     let result = await reposController.loadRepos(someCourse.canvasCourseId, someCourse.verantwoordingAssignmentName, { sections: ['bla-section']})
@@ -122,7 +122,7 @@ test("canLoadGroupRepos", async () => {
     await db.addCourse(someCourse);
     canvasFake.sections = someSections;
     canvasFake.mapping = { 'test@example.com': 'githubtest' }
-    githubFake.repos = [{ id: 42, name: someCourse.projectAssignmentName + '-some-group'}];
+    githubFake.repos = [{ id: 42, name: someCourse.projectAssignmentName + '-some-group', organization: { login: 'bla-org' }}];
     githubFake.members[someCourse.projectAssignmentName + '-some-group'] = [{login: 'githubtest'}];
     await coursesController.loadCourse(someCourse.canvasCourseId);
 
@@ -135,7 +135,7 @@ test("Second Time Loading Repos uses Cache", async () => {
     await db.addCourse(someCourse);
     canvasFake.sections = someSections;
     canvasFake.mapping = { 'test@example.com': 'githubtest' }
-    githubFake.repos = [{ id: 42, name: someCourse.projectAssignmentName + '-some-group'}];
+    githubFake.repos = [{ id: 42, name: someCourse.projectAssignmentName + '-some-group', organization: { login: 'bla-org' }}];
     githubFake.members[someCourse.projectAssignmentName + '-some-group'] = [{login: 'githubtest'}];
     await coursesController.loadCourse(someCourse.canvasCourseId);
 

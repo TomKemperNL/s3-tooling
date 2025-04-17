@@ -58,6 +58,7 @@ create table
         courseId integer not null references courses (id),
         name text,
         full_name text,
+        organization text,
         priv boolean,
         html_url text,
         ssh_url text,

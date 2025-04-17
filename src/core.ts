@@ -4,12 +4,14 @@ import { RepoResponse } from "./main/github_client";
 
 export class Repo {
     name: string;
+    organization: string;
     api_url: string;
     ssh_url: string;
     http_url: string;
 
     constructor(public response: RepoResponse) {
         this.name = response.name;
+        this.organization = response.organization.login;
         this.api_url = response.url;
         this.ssh_url = response.ssh_url;
         this.http_url = response.html_url;

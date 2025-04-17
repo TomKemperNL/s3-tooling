@@ -10,7 +10,7 @@ export type RepoResponse = {
     url: string,
     created_at: string,
     updated_at: string,
-
+    organization: { login: string},
     lastMemberCheck: Date
 }
 

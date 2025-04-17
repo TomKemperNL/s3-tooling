@@ -29,7 +29,7 @@ export type RepoDb = {
     api_url: string,
     created_at: string,
     updated_at: string,
-
+    organization: string,
     lastMemberCheck: string
 }
 
@@ -160,6 +160,7 @@ export class Db {
             url: r.api_url,
             created_at: r.created_at,
             updated_at: r.updated_at,
+            organization: { login: r.organization },
             lastMemberCheck: r.lastMemberCheck ? new Date(Date.parse(r.lastMemberCheck)) : null
         }));
     }
@@ -171,15 +172,15 @@ export class Db {
                 await this.#runProm(`
                     insert into repositories(
                         githubId, courseId, 
-                        name, full_name, priv,
+                        name, full_name, organization, priv,
                         html_url, ssh_url, api_url,
                         created_at, updated_at) values (
                         ?,?,
-                        ?,?,?,
+                        ?,?,?,?,
                         ?,?,?,
                         ?,?) on conflict do nothing;`, [
                             repo.id, courseId, 
-                            repo.name, repo.full_name, repo.private,
+                            repo.name, repo.full_name, repo.organization?.login, repo.private,
                             repo.html_url, repo.ssh_url, repo.url,
                             repo.created_at, repo.updated_at
                         ])
