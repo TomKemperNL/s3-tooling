@@ -46,8 +46,10 @@ export class ReposController {
             console.log('group assignment, loading members from github')
             let collaborators: MemberResponse[];
             if (repo.lastMemberCheck && (repo.lastMemberCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
+                console.log('loading members from cache')
                 collaborators = await this.db.getCollaborators(repo.organization, repo.name)
             } else {
+                console.log('loading members from github')
                 collaborators = await this.githubClient.getMembers(repo.organization, repo.name);
                 await this.db.updateCollaborators(repo.organization, repo.name, collaborators);
             }
@@ -81,6 +83,7 @@ export class ReposController {
         for(let r of repos){ //TODO: Dit mag niet met promise.all, daar moet een test voor komen
             await this.#updateMembers(r, assignment);
         }
+        // await Promise.all(repos.map(r => this.#updateMembers(r, assignment)));
         console.log(`Found ${repos.length} repos for assignment ${assignment.name}`);
         repos = repos.filter(r => r.members.some(m => logins.some(l => m.login === l)));
         console.log(`Found ${repos.length} repos for assignment ${assignment.name} and sections ${filter.sections}`);
