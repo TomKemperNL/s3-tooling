@@ -53,23 +53,23 @@ create table
 );
 
 create table 
-    repositories (
-        githubId integer not null primary key,
-        courseId integer not null references courses (id),
+    repositories (        
+        courseId integer not null references courses (id),        
+        organization text,
         name text,
         full_name text,
-        organization text,
         priv boolean,
         html_url text,
         ssh_url text,
         api_url text,
         created_at text,
         updated_at text,       
-
-        lastMemberCheck text        
+        lastMemberCheck text,
+        primary key (organization, name)
     );
 
 create table repository_members(
-    githubId integer not null references repositories(githubId),
+    organization text not null references repositories(organization),
+    name text not null references repositories(name),
     username text not null references githubAccounts(username)
 );

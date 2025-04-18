@@ -20,7 +20,7 @@ type CourseDb = {
 }
 
 export type RepoDb = {
-    githubId: number,
+    organization: string,
     name: string,
     full_name: string,
     priv: boolean,
@@ -29,7 +29,7 @@ export type RepoDb = {
     api_url: string,
     created_at: string,
     updated_at: string,
-    organization: string,
+    
     lastMemberCheck: string
 }
 
@@ -134,16 +134,16 @@ export class Db {
         });
     }
 
-    async getUserMapping(courseId: number) : Promise<SimpleDict> {
-        let rows = await this.#allProm<{email: string, username: string}>(`
+    async getUserMapping(courseId: number): Promise<SimpleDict> {
+        let rows = await this.#allProm<{ email: string, username: string }>(`
             select s.email, gha.username from courses c 
                 join sections sec on c.canvasid = sec.courseId
                 join students_sections ss on ss.sectionId = sec.id
                 join students s on ss.studentid = s.id
                 join githubAccounts gha on s.id = gha.studentId
                 where c.canvasId = ?`, [courseId]);
-        let result = {};                 
-        for (let r of rows){
+        let result = {};
+        for (let r of rows) {
             result[r.email] = r.username;
         }
         return result;
@@ -151,7 +151,6 @@ export class Db {
 
     async selectReposByCourse(courseId: number): Promise<RepoResponse[]> {
         return (await this.#allProm<RepoDb>("select * from repositories where courseId = ?", [courseId])).map(r => ({
-            id: r.githubId,
             name: r.name,
             full_name: r.full_name,
             private: r.priv,
@@ -166,44 +165,47 @@ export class Db {
     }
 
     async updateRepoMapping(courseId: number, repos: RepoResponse[]) {
-
-        await this.#inTransaction(async ()=> {
+        
+        await this.#inTransaction(async () => {
             for (let repo of repos) {
+                console.log('repo', repo.name, repo.organization, repo.full_name.split('/')[0])
                 await this.#runProm(`
                     insert into repositories(
-                        githubId, courseId, 
+                        courseId, 
                         name, full_name, organization, priv,
                         html_url, ssh_url, api_url,
                         created_at, updated_at) values (
-                        ?,?,
+                        ?,
                         ?,?,?,?,
                         ?,?,?,
-                        ?,?) on conflict do nothing;`, [
-                            repo.id, courseId, 
-                            repo.name, repo.full_name, repo.organization?.login, repo.private,
-                            repo.html_url, repo.ssh_url, repo.url,
-                            repo.created_at, repo.updated_at
-                        ])
+                        ?,?) on conflict do nothing;`, 
+                    courseId,
+                    repo.name, repo.full_name, repo.full_name.split('/')[0], repo.private, //??? wellicht omdat de token anders aangevraagd is?
+                    repo.html_url, repo.ssh_url, repo.url,
+                    repo.created_at, repo.updated_at
+                )
             }
 
             await this.#runProm('update courses set lastRepoCheck = ? where canvasid = ?', new Date().toISOString(), courseId);
         })
     }
 
-    async updateCollaborators(githubId: number, collaborators: MemberResponse[]) {
-        
+    async updateCollaborators(organization: string, name: string, collaborators: MemberResponse[]) {
+
         await this.#inTransaction(async () => {
             await Promise.all(collaborators.map(async c => {
-                await this.#runProm('insert into repository_members(githubId, username) values(?,?) on conflict do nothing', [githubId, c.login]);
+                await this.#runProm('insert into repository_members(organization, name, username) values(?,?,?) on conflict do nothing', 
+                    organization, name, c.login);
             }));
 
-            await this.#runProm('update repositories set lastMemberCheck = ? where githubId = ?', new Date().toISOString(), githubId)
-        });  
+            await this.#runProm('update repositories set lastMemberCheck = ? where organization = ? and name = ?', 
+                new Date().toISOString(), organization, name)
+        });
     }
 
-    async getCollaborators(githubId: number): Promise<MemberResponse[]> {
-        let result = await this.#allProm<{githubId: number, username: string}>(
-            'select githubId, username from repository_members where githubId = ?', githubId);
+    async getCollaborators(organization: string, name: string): Promise<MemberResponse[]> {
+        let result = await this.#allProm<{ organization: string, name: string, username: string }>(
+            'select organization, name, username from repository_members where organization = ? and name = ?', organization, name);
         return result.map(r => ({
             login: r.username
         }))
@@ -295,7 +297,14 @@ export class Db {
         let courseDTO: CourseDTO = {
             name: rows[0].courseName,
             canvasId: rows[0].canvasId,
-            assignments: [rows[0].githubVerantAssignment, rows[0].githubProjectAssignment],
+            assignments: [
+                {
+                    name: rows[0].githubVerantAssignment,
+                    groupAssignment: false
+                }, {
+                    name: rows[0].githubProjectAssignment,
+                    groupAssignment: true
+                }],
             sections: {}
         };
 

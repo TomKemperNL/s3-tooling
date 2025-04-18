@@ -1,7 +1,6 @@
 import { Octokit } from "@octokit/rest";
 
 export type RepoResponse = {
-    id: number,
     name: string,
     full_name: string,
     private: boolean,

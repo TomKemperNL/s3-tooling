@@ -1,15 +1,16 @@
-import { CourseConfig, Repo, RepoDTO, RepoFilter, RepositoryStatistics, StatsFilter } from "../../core";
-import { CanvasClient, SimpleDict } from "../canvas_client";
+import { Assignment, CourseConfig, Repo, RepoDTO, RepoFilter, RepositoryStatistics, StatsFilter } from "../../core";
+import { CanvasClient, getUsernameFromName, SimpleDict } from "../canvas_client";
 import { Db } from "../db";
 import { FileSystem } from "../filesystem_client";
 import { GithubClient, MemberResponse, RepoResponse } from "../github_client";
+import { getUsernameFromUrl } from "./../canvas_client";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
 
-export class ReposController{
-    
-    constructor(private db: Db, private canvasClient: CanvasClient, private githubClient: GithubClient, private fileSystem: FileSystem){
-        
+export class ReposController {
+
+    constructor(private db: Db, private canvasClient: CanvasClient, private githubClient: GithubClient, private fileSystem: FileSystem) {
+
     }
 
     async #getUserMapping(savedCourseConfig: CourseConfig): Promise<SimpleDict> {
@@ -27,7 +28,7 @@ export class ReposController{
         return usermapping;
     }
 
-    async #getRepos(savedCourseConfig: CourseConfig) : Promise<Repo[]> {        
+    async #getRepos(savedCourseConfig: CourseConfig): Promise<Repo[]> {
         let repoResponses: RepoResponse[]
         if (savedCourseConfig.lastRepoCheck && (savedCourseConfig.lastRepoCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
             repoResponses = await this.db.selectReposByCourse(savedCourseConfig.canvasCourseId)
@@ -39,69 +40,58 @@ export class ReposController{
         return repos;
     }
 
-    async #getMembers(repo: Repo){
-        let collaborators: MemberResponse[];
-        if (repo.response.lastMemberCheck && (repo.response.lastMemberCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
-            collaborators = await this.db.getCollaborators(repo.response.id)
-        } else {
-            collaborators = await this.githubClient.getMembers(repo.organization, repo.name);
-            await this.db.updateCollaborators(repo.response.id, collaborators);
+    async #updateMembers(repo: Repo, assignment: Assignment): Promise<void> {
+        if(assignment.groupAssignment){
+            let collaborators: MemberResponse[];
+            if (repo.lastMemberCheck && (repo.lastMemberCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
+                collaborators = await this.db.getCollaborators(repo.organization, repo.name)
+            } else {
+                collaborators = await this.githubClient.getMembers(repo.organization, repo.name);
+                await this.db.updateCollaborators(repo.organization, repo.name, collaborators);
+            }
+            repo.members = collaborators;
+        }else{
+            
+            repo.members = [{
+                login: getUsernameFromName(repo.name, assignment.name)
+            }]
         }
-        return collaborators;
     }
 
-    async loadRepos(courseId, assignment, filter: RepoFilter): Promise<RepoDTO[]> {
+
+    async loadRepos(courseId, assignmentName, filter: RepoFilter): Promise<RepoDTO[]> {
         let savedCourse = await this.db.getCourse(courseId);
+        let assignment = savedCourse.assignments.find(a => a.name === assignmentName);
+        if (!assignment) {
+            throw new Error(`Assignment ${assignmentName} not found in course ${courseId}`);
+        }
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         let usermapping: SimpleDict = await this.#getUserMapping(savedCourseConfig);
 
+        let logins = filter.sections
+            .flatMap(s => savedCourse.sections[s])
+            .map(s => s.email)
+            .map(e => usermapping[e])
+            .filter(l => l !== undefined);
+
         let repos = await this.#getRepos(savedCourseConfig);
+        await Promise.all(repos.map(r => this.#updateMembers(r, assignment)));
         repos = repos.filter(r => r.matchesAssignment(assignment));
-        let allResults: RepoDTO[] = []
-        for (let section of filter.sections) {
-            let matchingLogins = [];
+        repos = repos.filter(r => logins.some(l => r.members.some(m => m.login === l)));
 
-            if (savedCourse.sections[section]) {
-                for (let student of savedCourse.sections[section]) {
-                    if (usermapping[student.email]) {
-                        matchingLogins.push(usermapping[student.email]);
-                    }
-                }
+        for (let repo of repos) {
+            try {
+                this.fileSystem.cloneRepo([savedCourseConfig.githubStudentOrg, assignment.name], repo);
+            } catch (e) {
+                console.error(e); //Soowwwwyyyy
             }
-            let targetRepos = []
-            for (let repo of repos) {
-                if (assignment === savedCourseConfig.verantwoordingAssignmentName) { //TODO: Solo assignments anders behandelen
-                    if (matchingLogins.indexOf(repo.owner(assignment)) >= 0) {
-                        targetRepos.push(repo);
-                    }
-                } else {
-                    let collaborators = await this.#getMembers(repo);
-                    let logins = collaborators.map(c => c.login);
-
-                    if (logins.some(l => matchingLogins.indexOf(l) >= 0)) {
-                        targetRepos.push(repo);
-                    }
-                }
-            }
-
-            for (let repo of targetRepos) {
-                try {
-                    this.fileSystem.cloneRepo([savedCourseConfig.githubStudentOrg, assignment], repo);
-                } catch (e) {
-                    console.error(e); //Soowwwwyyyy
-                }
-            }
-
-            let results: RepoDTO[] = targetRepos.map(r => ({
-                courseId: savedCourse.canvasId,
-                assignment: assignment,
-                groupRepo: assignment !== savedCourseConfig.verantwoordingAssignmentName,
-                name: r.name
-            }));
-
-            allResults = allResults.concat(results);
         }
-        return allResults;
+        return repos.map(r => ({
+            courseId: savedCourse.canvasId,
+            assignment: assignment.name,
+            groupRepo: assignment.groupAssignment,
+            name: r.name
+        }));
     }
 
     async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter) {

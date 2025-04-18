@@ -53,6 +53,10 @@ function formatQueryString(params: SimpleDict) {
         .join('&');
 }
 
+export function getUsernameFromName(repoName: string, assignmentName: string){
+    return repoName.slice(assignmentName.length +1);
+}
+
 export function getUsernameFromUrl(url: string, assignmentName: string){
     if(!url){
         return null;

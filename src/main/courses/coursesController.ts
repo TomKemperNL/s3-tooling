@@ -14,7 +14,6 @@ export class CoursesController{
     async loadCourse(id): Promise<CourseDTO> {
         let savedCourse = await this.db.getCourse(id);
         if (Object.keys(savedCourse.sections).length === 0) {
-
             let sections = await this.canvasClient.getSections({ course_id: id });
             for (let section of sections) {
                 if (section.name === savedCourse.name) {

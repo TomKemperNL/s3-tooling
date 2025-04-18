@@ -1,30 +1,37 @@
-import { getUsernameFromUrl } from "./main/canvas_client";
+
 import { LoggedCommit } from "./main/filesystem_client";
 import { RepoResponse } from "./main/github_client";
 
+export type Member ={
+    login: string;
+}
+
+export type Assignment = {
+    name: string,
+    groupAssignment: boolean
+}
+
 export class Repo {
+    lastMemberCheck: Date;
     name: string;
     organization: string;
     api_url: string;
     ssh_url: string;
     http_url: string;
+    members: Member[] = [];
 
-    constructor(public response: RepoResponse) {
+    constructor(private response: RepoResponse) {
         this.name = response.name;
-        this.organization = response.organization.login;
+        // this.organization = response.organization.login;
+        this.organization = response.full_name.split('/')[0]; //Org is ineens leeg? Vreemd
         this.api_url = response.url;
         this.ssh_url = response.ssh_url;
         this.http_url = response.html_url;
+        this.lastMemberCheck = response.lastMemberCheck;
     }
-
-    owner(assignment){
-        if(this.matchesAssignment(assignment)) {
-            return this.name.slice(assignment.length + 1);
-        }
-    }
-
-    matchesAssignment(assignment: string) {
-        return this.name.startsWith(assignment);
+    
+    matchesAssignment(assignment: Assignment) {
+        return this.name.startsWith(assignment.name);
     }
 }
 
@@ -53,7 +60,7 @@ export type CourseDTO = {
     canvasId: number,
     name: string    
     sections: { [key: string] : StudentDTO[] },
-    assignments: string[]    
+    assignments: Assignment[]    
 }
 
 export type RepoFilter = {

@@ -1,5 +1,5 @@
 import { html, LitElement } from "lit";
-import { CourseDTO, RepoDTO } from "../core";
+import { Assignment, CourseDTO, RepoDTO } from "../core";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
@@ -37,11 +37,11 @@ export class CourseDetails extends LitElement {
         };
     }
 
-    loadRepos(a) {
+    loadRepos(a: Assignment) {
         return async () => {
             try {
                 this.loading = true;
-                let result = await this.ipc.loadRepos(this.course.canvasId, a, { sections: this.selectedSections })
+                let result = await this.ipc.loadRepos(this.course.canvasId, a.name, { sections: this.selectedSections })
                 this.dispatchEvent(new ReposLoadedEvent(result));
             } finally {
                 this.loading = false;
@@ -66,7 +66,7 @@ export class CourseDetails extends LitElement {
             </ul>
             <h3>Assignments</h3>
             <ul>
-                ${map(this.course.assignments, a => html`<li>${a} <button @click=${this.loadRepos(a)} ?disabled=${this.loading} type="button">Load Repositories</button></li>`)}
+                ${map(this.course.assignments, a => html`<li>${a.name} <button @click=${this.loadRepos(a)} ?disabled=${this.loading} type="button">Load Repositories</button></li>`)}
             </ul>
         `
     }
