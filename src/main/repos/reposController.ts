@@ -41,7 +41,9 @@ export class ReposController {
     }
 
     async #updateMembers(repo: Repo, assignment: Assignment): Promise<void> {
+        
         if(assignment.groupAssignment){
+            console.log('group assignment, loading members from github')
             let collaborators: MemberResponse[];
             if (repo.lastMemberCheck && (repo.lastMemberCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
                 collaborators = await this.db.getCollaborators(repo.organization, repo.name)
@@ -51,7 +53,7 @@ export class ReposController {
             }
             repo.members = collaborators;
         }else{
-            
+            console.log('single assignment, inferring members from name')
             repo.members = [{
                 login: getUsernameFromName(repo.name, assignment.name)
             }]
@@ -74,10 +76,14 @@ export class ReposController {
             .map(e => usermapping[e])
             .filter(l => l !== undefined);
 
-        let repos = await this.#getRepos(savedCourseConfig);
-        await Promise.all(repos.map(r => this.#updateMembers(r, assignment)));
+        let repos = await this.#getRepos(savedCourseConfig)        
         repos = repos.filter(r => r.matchesAssignment(assignment));
-        repos = repos.filter(r => logins.some(l => r.members.some(m => m.login === l)));
+        for(let r of repos){ //TODO: Dit mag niet met promise.all, daar moet een test voor komen
+            await this.#updateMembers(r, assignment);
+        }
+        console.log(`Found ${repos.length} repos for assignment ${assignment.name}`);
+        repos = repos.filter(r => r.members.some(m => logins.some(l => m.login === l)));
+        console.log(`Found ${repos.length} repos for assignment ${assignment.name} and sections ${filter.sections}`);
 
         for (let repo of repos) {
             try {
