@@ -6,6 +6,8 @@ import { readdir } from 'fs/promises'
 import { promisify } from 'util';
 
 const exec = promisify(proc.exec);
+const exists = promisify(fs.exists);
+const mkdir = promisify(fs.mkdir);
 const newCommitPattern = /(\w+),([\d-]+T[\d:]+[^,]+),([^,]+),(.+)/
 const changePattern = /([\d-]+)\s+([\d-]+)\s+(.+)/
 
@@ -64,18 +66,21 @@ export function parseLog(logLines: string[]) : LoggedCommit[] {
 export class FileSystem {
     #basePath = './../s3-tooling-data';
 
-    cloneRepo(prefix: string[], repo){
+    async cloneRepo(prefix: string[], repo){
         let target = path.join(this.#basePath, ...prefix);
         let fullTarget = path.join(this.#basePath, ...prefix, repo.name);
-        if(fs.existsSync(fullTarget)){
+        
+        if(await exists(fullTarget)){
             return;
         }
 
-        if(!fs.existsSync(target)){
-            fs.mkdirSync(target, {recursive: true});
+        if(!await exists(target)){
+            let options = { recursive: true};
+            await mkdir(target, options);
         }
 
-        proc.execSync(`git clone ${repo.http_url}`, { cwd: target });
+        await exec(`git clone ${repo.http_url}`, { cwd: target });
+        return fullTarget;
     }
 
     async getRepoPaths(...prefPath: string[]){

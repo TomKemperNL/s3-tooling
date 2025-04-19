@@ -42,8 +42,8 @@ const someCourse: CourseConfig = {
     canvasVerantwoordingAssignmentId: 456,
     githubStudentOrg: 'bla-org',
     name: 'bla-course',
-    projectAssignmentName: 'bla-ass-v',
-    verantwoordingAssignmentName: 'bla-ass-p',
+    projectAssignmentName: 'bla-ass-p',
+    verantwoordingAssignmentName: 'bla-ass-v',
     lastRepoCheck: null,
     lastSectionCheck: null,
     lastMappingCheck: null
@@ -139,6 +139,7 @@ test("canLoadGroupRepos", async () => {
     await coursesController.loadCourse(someCourse.canvasCourseId);
 
     let result = await reposController.loadRepos(someCourse.canvasCourseId, someCourse.projectAssignmentName, { sections: ['bla-section'] })
+    
     expect(result.length).toBe(1);
 
 });

@@ -168,7 +168,6 @@ export class Db {
         
         await this.#inTransaction(async () => {
             for (let repo of repos) {
-                console.log('repo', repo.name, repo.organization, repo.full_name.split('/')[0])
                 await this.#runProm(`
                     insert into repositories(
                         courseId, 

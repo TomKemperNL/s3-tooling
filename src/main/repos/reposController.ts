@@ -40,25 +40,27 @@ export class ReposController {
         return repos;
     }
 
-    async #updateMembers(repo: Repo, assignment: Assignment): Promise<void> {
-        
-        if(assignment.groupAssignment){
-            console.log('group assignment, loading members from github')
-            let collaborators: MemberResponse[];
-            if (repo.lastMemberCheck && (repo.lastMemberCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
-                console.log('loading members from cache')
-                collaborators = await this.db.getCollaborators(repo.organization, repo.name)
+    async #updateMembers(repos: Repo[], assignment: Assignment): Promise<void> {        
+        async function updateSingleRepoMembers(repo: Repo) : Promise<[Repo, MemberResponse[]]> {
+            if (assignment.groupAssignment) {                
+                let collaborators: MemberResponse[];
+                if (repo.lastMemberCheck && (repo.lastMemberCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
+                    collaborators = await this.db.getCollaborators(repo.organization, repo.name)
+                } else {
+                    collaborators = await this.githubClient.getMembers(repo.organization, repo.name);
+                }
+                return [repo, collaborators]
             } else {
-                console.log('loading members from github')
-                collaborators = await this.githubClient.getMembers(repo.organization, repo.name);
-                await this.db.updateCollaborators(repo.organization, repo.name, collaborators);
+                return Promise.resolve([repo, [{
+                    login: getUsernameFromName(repo.name, assignment.name)
+                }]])
             }
+        }
+
+        let results :any = await Promise.all(repos.map(updateSingleRepoMembers.bind(this)));
+        for (let [repo, collaborators] of results) {
             repo.members = collaborators;
-        }else{
-            console.log('single assignment, inferring members from name')
-            repo.members = [{
-                login: getUsernameFromName(repo.name, assignment.name)
-            }]
+            await this.db.updateCollaborators(repo.organization, repo.name, collaborators);
         }
     }
 
@@ -78,23 +80,17 @@ export class ReposController {
             .map(e => usermapping[e])
             .filter(l => l !== undefined);
 
-        let repos = await this.#getRepos(savedCourseConfig)        
+        let repos = await this.#getRepos(savedCourseConfig)
         repos = repos.filter(r => r.matchesAssignment(assignment));
-        for(let r of repos){ //TODO: Dit mag niet met promise.all, daar moet een test voor komen
-            await this.#updateMembers(r, assignment);
-        }
-        // await Promise.all(repos.map(r => this.#updateMembers(r, assignment)));
-        console.log(`Found ${repos.length} repos for assignment ${assignment.name}`);
-        repos = repos.filter(r => r.members.some(m => logins.some(l => m.login === l)));
-        console.log(`Found ${repos.length} repos for assignment ${assignment.name} and sections ${filter.sections}`);
 
-        for (let repo of repos) {
-            try {
-                this.fileSystem.cloneRepo([savedCourseConfig.githubStudentOrg, assignment.name], repo);
-            } catch (e) {
-                console.error(e); //Soowwwwyyyy
-            }
-        }
+        await this.#updateMembers(repos, assignment);
+        repos = repos.filter(r => r.members.some(m => logins.some(l => m.login === l)));
+
+        await Promise.all(
+            repos.map(r =>
+                this.fileSystem.cloneRepo(
+                    [savedCourseConfig.githubStudentOrg, assignment.name], r).catch(console.error)));
+
         return repos.map(r => ({
             courseId: savedCourse.canvasId,
             assignment: assignment.name,
