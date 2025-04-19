@@ -12,7 +12,11 @@ const canvasClient = new CanvasClient();
 import { db } from "./db";
 import { ReposController } from "./repos/reposController";
 import { CoursesController } from "./courses/coursesController";
-db.reset().then(() => db.test());
+if(!process.env.KEEP_DB) {
+    db.reset().then(() => db.test());
+}else{
+    console.log('keeping db');
+}
 
 const repoController = new ReposController(db, canvasClient, githubClient, fileSystem);
 const coursesController = new CoursesController(db, canvasClient);
@@ -33,4 +37,5 @@ export async function main() {
     ipcMain.handle("repostats:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<RepoStatisticsDTO> => {
         return repoController.getRepoStats(courseId, assignment, name, filter);
     });
+    
 }

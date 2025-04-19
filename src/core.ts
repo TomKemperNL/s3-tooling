@@ -1,5 +1,5 @@
 
-import { LoggedCommit } from "./main/filesystem_client";
+import { LoggedChange, LoggedCommit } from "./main/filesystem_client";
 import { RepoResponse } from "./main/github_client";
 
 export type Member ={
@@ -84,39 +84,64 @@ export type RepoStatisticsDTO = {
     authors: { [name: string] : {added: number, removed: number}}
 }
 
-function accumulateLines(acc, change) {
-    let addInc = change.added === '-' ? 0 : change.added;
-    let remInc = change.removed === '-' ? 0 : change.removed;
-    return { added: acc.added + addInc, removed: acc.removed + remInc };
+let ignoredAuthors = [
+    'github-classroom[bot]'
+]
+
+let ignoredAuthorsEnv = process.env.IGNORE_AUTHORS;
+if(ignoredAuthorsEnv) {
+    ignoredAuthors = ignoredAuthors.concat(ignoredAuthorsEnv.split(',').map(a => a.trim()));
 }
 
+console.log('Ignored authors:', ignoredAuthors);
 export class RepositoryStatistics {
-    constructor(public rawData: LoggedCommit[]) {
+    ignoredFiles = ['package-lock.json'];
 
+    data: LoggedCommit[];
+    constructor(rawData: LoggedCommit[], public options: { ignoredExtensions: string[]} = {
+        ignoredExtensions: ['.json'] //TODO: dit is dubbelop met de package-json. Even nadenken wat we willen
+    }) {
+        this.data = rawData.filter(c => !ignoredAuthors.includes(c.author));
     }
 
+    #accumulateLines(acc, change: LoggedChange) {
+        if (this.ignoredFiles.some(f => change.path.match(f))) {
+            change.added = '-';
+            change.removed = '-';
+        }
+        if (this.options.ignoredExtensions.some(f => change.path.endsWith(f))) {
+            change.added = '-';
+            change.removed = '-';
+        }
+
+        let addInc = change.added === '-' ? 0 : change.added;
+        let remInc = change.removed === '-' ? 0 : change.removed;
+        return { added: acc.added + addInc, removed: acc.removed + remInc };
+    }
+    
+
     getChangesByAuthor(author: string) {
-        return this.rawData.filter(c => c.author === author).reduce((acc, commit) => {
+        return this.data.filter(c => c.author === author).reduce((acc, commit) => {
             return acc.concat(commit.changes);
         }, []);
     }
 
     getDistinctAuthors() {
-        return [...new Set(this.rawData.map(c => c.author))];
+        return [...new Set(this.data.map(c => c.author))];
     }
 
     getLinesTotal() : { added: number, removed: number } {
-        let changes = this.rawData.reduce((acc, commit) => {
+        let changes : LoggedChange[] = this.data.reduce((acc, commit) => {
             return acc.concat(commit.changes);
         }, [])
         
-        return changes.reduce(accumulateLines, { added: 0, removed: 0 });
+        return changes.reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
     }
 
     getLinesPerAuthor() : {[author: string]: {added: number, removed: number}} {
         let result = {};
         for (let author of this.getDistinctAuthors()) {
-            result[author] = this.getChangesByAuthor(author).reduce(accumulateLines, { added: 0, removed: 0 });
+            result[author] = this.getChangesByAuthor(author).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
         }
         return result;
     }
