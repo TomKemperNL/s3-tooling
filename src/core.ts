@@ -85,9 +85,14 @@ export type LinesStatistics = {
 }
 
 export type RepoStatisticsDTO = {
-    totalAdded: number,
-    totalRemoved: number,
+    total: LinesStatistics,
     authors: { [name: string] : LinesStatistics}
+    weekly: RepoStatisticsPerWeekDTO
+}
+
+export type RepoStatisticsPerWeekDTO = {
+    total: LinesStatistics[],
+    authors: { [name: string] : LinesStatistics[]}
 }
 
 let ignoredAuthors = [
@@ -148,17 +153,14 @@ export class RepositoryStatistics {
     }
 
     getLinesPerAuthorPerWeek(startDate: Date = null) : {[author: string]: LinesStatistics[]} {
-        console.log('raw data:', this.data);
         if(this.data.length === 0) {
             return {};
         }
-        let start = startDate || this.data[0].date;
-        let commits = this.data.toSorted(c => c.date.valueOf());
+        let commits = this.data.toSorted((a,b) => a.date.valueOf() - b.date.valueOf());        
+        let start = startDate || commits[0].date;
         
         let result = {};
         for (let author of this.getDistinctAuthors()) {
-            console.log('Author:', author);
-            console.log('Commits:', commits.filter(c => c.author === author).length);
             result[author] = this.#privGetLinesPerWeek(commits.filter(c => c.author === author), start);
         }
         return result;
@@ -178,16 +180,18 @@ export class RepositoryStatistics {
     }
 
     #privGetLinesPerWeek(someData: LoggedCommit[], startDate: Date = null): LinesStatistics[] {
-        console.log('incoming data:', someData);
         if(someData.length === 0) {
             return [];
         }
-        let start = startDate || someData[0].date;
-        let commits = someData.toSorted(c => c.date.valueOf());
-        
+        console.log('Data:', someData);
+        let commits = someData.toSorted((a,b) => a.date.valueOf() - b.date.valueOf());        
+        console.log('Sorted:', commits);
+        let start = startDate || commits[0].date;
+
         let result = []
         let currentCommits = [];
         let nextDate = RepositoryStatistics.#addWeek(start);
+        console.log('Start:', start, 'Next:', nextDate);
         let index = 0;
         while(index < commits.length){
             let c = commits[index];
@@ -205,9 +209,6 @@ export class RepositoryStatistics {
             let weekStats = RepositoryStatistics.#getChanges(currentCommits).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
             result.push(weekStats);                
         }
-
-        console.log('result:', result);
-        
         return result;
     }
 

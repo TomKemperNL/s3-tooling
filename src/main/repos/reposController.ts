@@ -1,4 +1,4 @@
-import { Assignment, CourseConfig, Repo, RepoDTO, RepoFilter, RepositoryStatistics, StatsFilter } from "../../core";
+import { Assignment, CourseConfig, Repo, RepoDTO, RepoFilter, RepositoryStatistics, RepoStatisticsDTO, StatsFilter } from "../../core";
 import { CanvasClient, getUsernameFromName, SimpleDict } from "../canvas_client";
 import { Db } from "../db";
 import { FileSystem } from "../filesystem_client";
@@ -99,7 +99,7 @@ export class ReposController {
         }));
     }
 
-    async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter) {
+    async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
 
         let stats = await this.fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name);
@@ -108,9 +108,15 @@ export class ReposController {
         let totals = coreStats.getLinesTotal()
 
         return {
-            totalAdded: totals.added,
-            totalRemoved: totals.removed,
-            authors
+            total: {
+                added: totals.added,
+                removed: totals.removed
+            },
+            authors,
+            weekly: {
+                total: coreStats.getLinesPerWeek(),
+                authors: coreStats.getLinesPerAuthorPerWeek()
+            }
         };
     }
 }

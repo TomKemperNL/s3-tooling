@@ -25,7 +25,7 @@ export class RepositoriesList extends LitElement {
         return html`
         <ul>
             ${map(this.repos, r => html`
-                <li>${r.name} <button @click=${this.selectRepo(r)}>Select</button></li>
+                <li><button @click=${this.selectRepo(r)}>Select</button> ${r.name}</li>
                 `)}
         </ul>`;
     }

@@ -10,6 +10,8 @@ async function main(){
 
     console.log(stats.getLinesTotal());
     console.log(stats.getLinesPerAuthor());
+    console.log(stats.getLinesPerWeek());
+    
 }
 
 main();

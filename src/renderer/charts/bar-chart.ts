@@ -7,8 +7,8 @@ import { ref, createRef } from 'lit/directives/ref.js';
 export class BarChart extends LitElement {
     @property({ type: Object })
     data: any = { 
-        values: [12, 19, 3, 5, 2, 3], 
-        labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'] };
+        values: [], 
+        labels: [] };
 
     canvasRef = createRef();
 
@@ -18,13 +18,7 @@ export class BarChart extends LitElement {
 
     constructor() {
         super();
-        setTimeout(() => {
-            this.data = {
-                values: [1, 2, 3, 4, 5, 6],
-                labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange']
-            };
-
-        }, 2500);
+      
     }
 
     chart: Chart;

@@ -93,7 +93,7 @@ test('Can Group Commits Per Week', {}, () => {
         { date: new Date('2023-10-02'), ...someCommit },
         { date: new Date('2023-10-08'), ...someCommit },
         { date: new Date('2023-10-25'), ...someCommit },
-    ]);
+    ].reverse());
 
     let result = stats.getLinesPerWeek();
     expect(result[0].added, 'Can read multiple commits in 1 week').toBe(2);
@@ -118,7 +118,7 @@ test('Can Group Commits Per Week Per Author', {}, () => {
         { author: 'Bob', date: new Date('2023-10-02'), ...someCommit },
         { author: 'Job', date: new Date('2023-10-08'), ...someCommit },
         { author: 'Bob', date: new Date('2023-10-25'), ...someCommit },
-    ]);
+    ].reverse());
 
     let perAuthorResult = stats.getLinesPerAuthorPerWeek();
 

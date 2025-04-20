@@ -31,16 +31,25 @@ export class RepositoryDetails extends LitElement {
     }
 
     render() {
+        let labels: string[] = [];
+        let values: number[] = [];
+        if (this.repoStats) {
+            for (let i = 0; i < this.repoStats.weekly.total.length; i++) {
+                labels.push('Week ' + (i + 1));
+            }
+            values = this.repoStats.weekly?.total.map(w => w.added - w.removed);
+        }
+        console.log('stats', labels, values);
         return html`
             <p>${this.repo.name}</p>
             <ul>
                 <li>Filter (regex): <input type="text" value=".*" disabled></li>
                 ${when(this.repoStats, () => html`
-                    <li>Added: ${this.repoStats.totalAdded} / Removed: ${this.repoStats.totalRemoved}</li>
+                    <li>Added: ${this.repoStats.total.added} / Removed: ${this.repoStats.total.removed}</li>
                     <li>Authors:
                         <ul>
                             ${map(Object.keys(this.repoStats.authors), a => html`
-                                <li>${a}, Added: ${this.repoStats.authors[a].added} / Removed: ${this.repoStats.authors[a].removed}</li>
+                                <li><button type="button">Select</button>${a}, Added: ${this.repoStats.authors[a].added} / Removed: ${this.repoStats.authors[a].removed}</li>
                             `)}
                         </ul>
 
@@ -48,7 +57,9 @@ export class RepositoryDetails extends LitElement {
                     `)}
                 
             </ul>
-
-            `
+            ${when(this.repoStats, () => html`
+                <bar-chart .data=${{ labels: labels, values: values }}></bar-chart>
+            `)}
+        `;
     }
 }

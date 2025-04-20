@@ -3,6 +3,8 @@ import { customElement, property } from "lit/decorators.js";
 import { CourseDTO, RepoDTO } from "../core";
 import { when } from "lit/directives/when.js";
 import { CourseLoadedEvent } from "./courses-list";
+import { RepoSelectedEvent } from "./repositories-list";
+import { ReposLoadedEvent } from "./course-details";
 
 @customElement("app-element")
 export class AppElement extends LitElement {

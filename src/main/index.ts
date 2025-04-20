@@ -35,7 +35,9 @@ export async function main() {
     });
 
     ipcMain.handle("repostats:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<RepoStatisticsDTO> => {
-        return repoController.getRepoStats(courseId, assignment, name, filter);
+        let mainResult = repoController.getRepoStats(courseId, assignment, name, filter);
+        console.log('mainResult', mainResult);
+        return mainResult;
     });
     
 }
