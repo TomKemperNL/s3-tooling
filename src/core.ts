@@ -78,10 +78,16 @@ export type StatsFilter = {
     filterString: string
 }
 
+
+export type LinesStatistics = {
+    added: number,
+    removed: number
+}
+
 export type RepoStatisticsDTO = {
     totalAdded: number,
     totalRemoved: number,
-    authors: { [name: string] : {added: number, removed: number}}
+    authors: { [name: string] : LinesStatistics}
 }
 
 let ignoredAuthors = [
@@ -92,6 +98,7 @@ let ignoredAuthorsEnv = process.env.IGNORE_AUTHORS;
 if(ignoredAuthorsEnv) {
     ignoredAuthors = ignoredAuthors.concat(ignoredAuthorsEnv.split(',').map(a => a.trim()));
 }
+
 
 console.log('Ignored authors:', ignoredAuthors);
 export class RepositoryStatistics {
@@ -121,9 +128,7 @@ export class RepositoryStatistics {
     
 
     getChangesByAuthor(author: string) {
-        return this.data.filter(c => c.author === author).reduce((acc, commit) => {
-            return acc.concat(commit.changes);
-        }, []);
+        return RepositoryStatistics.#getChanges(this.data.filter(c => c.author === author));
     }
 
     getDistinctAuthors() {
@@ -131,11 +136,7 @@ export class RepositoryStatistics {
     }
 
     getLinesTotal() : { added: number, removed: number } {
-        let changes : LoggedChange[] = this.data.reduce((acc, commit) => {
-            return acc.concat(commit.changes);
-        }, [])
-        
-        return changes.reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
+        return RepositoryStatistics.#getChanges(this.data).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
     }
 
     getLinesPerAuthor() : {[author: string]: {added: number, removed: number}} {
@@ -144,5 +145,73 @@ export class RepositoryStatistics {
             result[author] = this.getChangesByAuthor(author).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
         }
         return result;
+    }
+
+    getLinesPerAuthorPerWeek(startDate: Date = null) : {[author: string]: LinesStatistics[]} {
+        console.log('raw data:', this.data);
+        if(this.data.length === 0) {
+            return {};
+        }
+        let start = startDate || this.data[0].date;
+        let commits = this.data.toSorted(c => c.date.valueOf());
+        
+        let result = {};
+        for (let author of this.getDistinctAuthors()) {
+            console.log('Author:', author);
+            console.log('Commits:', commits.filter(c => c.author === author).length);
+            result[author] = this.#privGetLinesPerWeek(commits.filter(c => c.author === author), start);
+        }
+        return result;
+        
+    }
+
+    static #addWeek(date: Date) {
+        let newDate = new Date(date);
+        const weekMs = 7 * 24 * 60 * 60 * 1000;        
+        return new Date(newDate.valueOf() + weekMs);
+    }
+
+    static #getChanges(data: LoggedCommit[]) {
+        return data.reduce((acc, commit) => {
+            return acc.concat(commit.changes);
+        }, [])
+    }
+
+    #privGetLinesPerWeek(someData: LoggedCommit[], startDate: Date = null): LinesStatistics[] {
+        console.log('incoming data:', someData);
+        if(someData.length === 0) {
+            return [];
+        }
+        let start = startDate || someData[0].date;
+        let commits = someData.toSorted(c => c.date.valueOf());
+        
+        let result = []
+        let currentCommits = [];
+        let nextDate = RepositoryStatistics.#addWeek(start);
+        let index = 0;
+        while(index < commits.length){
+            let c = commits[index];
+            if(c.date < nextDate) {
+                currentCommits.push(c);
+                index++;
+            } else {
+                let weekStats = RepositoryStatistics.#getChanges(currentCommits).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
+                result.push(weekStats);                
+                currentCommits = [];
+                nextDate = RepositoryStatistics.#addWeek(nextDate);
+            }    
+        }
+        if(currentCommits.length > 0) {
+            let weekStats = RepositoryStatistics.#getChanges(currentCommits).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
+            result.push(weekStats);                
+        }
+
+        console.log('result:', result);
+        
+        return result;
+    }
+
+    getLinesPerWeek(startDate: Date = null) : LinesStatistics[] {
+        return this.#privGetLinesPerWeek(this.data, startDate);
     }
 }

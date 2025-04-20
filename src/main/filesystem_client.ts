@@ -92,7 +92,10 @@ export class FileSystem {
         return dirs.map(d => prefPath.concat([d]));        
     }
 
-
+    async refreshRepo(...repoPath: string[]){
+        let target = path.join(this.#basePath, ...repoPath);
+        await exec(`git fetch --all`, { cwd: target }); //Dit is te sloom om altijd te doen       
+    }
 
     async getRepoStats(...repoPath: string[]){
         let target = path.join(this.#basePath, ...repoPath);

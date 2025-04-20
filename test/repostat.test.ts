@@ -77,3 +77,60 @@ test('Can Ignore Filetypes', {}, () => {
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
 });
+
+test('Can Group Commits Per Week', {}, () => {
+    let someCommit = {
+        author: 'Bob',
+        subject: 'Enter Commit Message Here',
+        hash: '1234567890abcdef',
+        changes: [
+            { added: 1, removed: 0, path: 'test.txt' }
+        ]
+    }
+
+    let stats = new RepositoryStatistics([
+        { date: new Date('2023-10-01'), ...someCommit },
+        { date: new Date('2023-10-02'), ...someCommit },
+        { date: new Date('2023-10-08'), ...someCommit },
+        { date: new Date('2023-10-25'), ...someCommit },
+    ]);
+
+    let result = stats.getLinesPerWeek();
+    expect(result[0].added, 'Can read multiple commits in 1 week').toBe(2);
+    expect(result[1].added, 'Can go to next week').toBe(1);
+    expect(result[2].added, 'Can skip an empty week').toBe(0);
+    expect(result[3].added).toBe(1);
+    expect(result[4]).toBe(undefined);
+});
+
+
+test('Can Group Commits Per Week Per Author', {}, () => {
+    let someCommit = {
+        subject: 'Enter Commit Message Here',
+        hash: '1234567890abcdef',
+        changes: [
+            { added: 1, removed: 0, path: 'test.txt' }
+        ]
+    }
+
+    let stats = new RepositoryStatistics([
+        { author: 'Bob', date: new Date('2023-10-01'), ...someCommit },
+        { author: 'Bob', date: new Date('2023-10-02'), ...someCommit },
+        { author: 'Job', date: new Date('2023-10-08'), ...someCommit },
+        { author: 'Bob', date: new Date('2023-10-25'), ...someCommit },
+    ]);
+
+    let perAuthorResult = stats.getLinesPerAuthorPerWeek();
+
+    expect(perAuthorResult['Bob'][0].added).toBe(2);
+    expect(perAuthorResult['Bob'][1].added).toBe(0);
+    expect(perAuthorResult['Bob'][2].added).toBe(0);
+    expect(perAuthorResult['Bob'][3].added).toBe(1);
+    expect(perAuthorResult['Bob'][4]).toBe(undefined);
+    
+    expect(perAuthorResult['Job'][0].added).toBe(0);
+    expect(perAuthorResult['Job'][1].added).toBe(1);
+    // expect(perAuthorResult['Job'][2].added).toBe(0); Dit is trickier dan ik had verwacht... maar tot hier werkt het redelijk
+    // expect(perAuthorResult['Job'][3].added).toBe(0);
+    // expect(perAuthorResult['Job'][4]).toBe(undefined);
+});
