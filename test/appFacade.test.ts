@@ -41,6 +41,7 @@ const someCourse: CourseConfig = {
     canvasGroupsName: 'bla',
     canvasVerantwoordingAssignmentId: 456,
     githubStudentOrg: 'bla-org',
+    startDate: null,
     name: 'bla-course',
     projectAssignmentName: 'bla-ass-p',
     verantwoordingAssignmentName: 'bla-ass-v',

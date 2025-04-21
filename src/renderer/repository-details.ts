@@ -49,7 +49,7 @@ export class RepositoryDetails extends LitElement {
                     <li>Authors:
                         <ul>
                             ${map(Object.keys(this.repoStats.authors), a => html`
-                                <li><button type="button">Select</button>${a}, Added: ${this.repoStats.authors[a].added} / Removed: ${this.repoStats.authors[a].removed}</li>
+                                <li><button disabled type="button">Select</button>${a}, Added: ${this.repoStats.authors[a].added} / Removed: ${this.repoStats.authors[a].removed}</li>
                             `)}
                         </ul>
 

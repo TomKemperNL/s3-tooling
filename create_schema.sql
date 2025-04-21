@@ -5,6 +5,7 @@ create table
         canvasId integer not null,
         canvasVerantAssignmentId integer,
         canvasGroups text,
+        startDate text,
         githubStudentOrg text,
         githubVerantAssignment text,
         githubProjectAssignment text,
@@ -71,5 +72,6 @@ create table
 create table repository_members(
     organization text not null references repositories(organization),
     name text not null references repositories(name),
-    username text not null references githubAccounts(username)
+    username text not null references githubAccounts(username),
+    primary key(organization, name, username)
 );

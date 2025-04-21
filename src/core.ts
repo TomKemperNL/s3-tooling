@@ -40,7 +40,7 @@ export type CourseConfig = {
     canvasCourseId: number;
     canvasVerantwoordingAssignmentId: number;
     canvasGroupsName: string;
-
+    startDate: Date,
     githubStudentOrg: string;
     verantwoordingAssignmentName: string;
     projectAssignmentName: string;

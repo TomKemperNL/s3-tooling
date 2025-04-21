@@ -11,6 +11,7 @@ type CourseDb = {
     canvasId: number,
     canvasVerantAssignmentId: number,
     canvasGroups: string,
+    startDate: string,
     githubStudentOrg: string,
     githubVerantAssignment: string,
     githubProjectAssignment: string
@@ -39,7 +40,7 @@ function courseDbToConfig(r: CourseDb): CourseConfig {
         canvasCourseId: r.canvasId,
         canvasVerantwoordingAssignmentId: r.canvasVerantAssignmentId,
         canvasGroupsName: r.canvasGroups,
-
+        startDate: r.startDate ? new Date(Date.parse(r.startDate)) : null,
         githubStudentOrg: r.githubStudentOrg,
         verantwoordingAssignmentName: r.githubVerantAssignment,
         projectAssignmentName: r.githubProjectAssignment,
@@ -99,14 +100,14 @@ export class Db {
 
     async addCourse(courseConfig: CourseConfig) {
         return this.#runProm(`insert into courses(
-                name, 
-                canvasId, canvasVerantAssignmentId, canvasGroups,
+                name, startDate,
+                canvasId, canvasVerantAssignmentId, canvasGroups, 
                 githubStudentOrg, githubVerantAssignment, githubProjectAssignment)
                 values(
-                ?,
+                ?,?,
                 ?,?,?,
                 ?,?,?)`, [
-            courseConfig.name,
+            courseConfig.name, courseConfig.startDate?.toISOString(),
             courseConfig.canvasCourseId, courseConfig.canvasVerantwoordingAssignmentId, courseConfig.canvasGroupsName,
             courseConfig.githubStudentOrg, courseConfig.verantwoordingAssignmentName, courseConfig.projectAssignmentName
         ]);

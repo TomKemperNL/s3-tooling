@@ -6,6 +6,9 @@ const { app, BrowserWindow } = require('electron')
 config();
 
 async function main() {
+    
+    await nodeMain();
+
     const createWindow = () => {
         const win = new BrowserWindow({
             width: 800,
@@ -33,6 +36,5 @@ async function main() {
     });
 
 
-    await nodeMain();
 }
 main();

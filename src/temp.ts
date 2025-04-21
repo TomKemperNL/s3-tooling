@@ -5,7 +5,7 @@ export let s2 : CourseConfig = {
     canvasCourseId: 44633,
     canvasVerantwoordingAssignmentId: 331688,
     canvasGroupsName: 'Projectteams SD S2',
-
+    startDate: new Date(Date.parse('2025-02-10')),
     githubStudentOrg: 'HU-SD-S2-studenten-2425',
     verantwoordingAssignmentName: 'sd-s2-verantwoording',
     projectAssignmentName: 'sd-s2-project',

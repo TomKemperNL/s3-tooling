@@ -114,8 +114,8 @@ export class ReposController {
             },
             authors,
             weekly: {
-                total: coreStats.getLinesPerWeek(),
-                authors: coreStats.getLinesPerAuthorPerWeek()
+                total: coreStats.getLinesPerWeek(savedCourseConfig.startDate),
+                authors: coreStats.getLinesPerAuthorPerWeek(savedCourseConfig.startDate)
             }
         };
     }

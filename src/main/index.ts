@@ -12,16 +12,16 @@ const canvasClient = new CanvasClient();
 import { db } from "./db";
 import { ReposController } from "./repos/reposController";
 import { CoursesController } from "./courses/coursesController";
-if(!process.env.KEEP_DB) {
-    db.reset().then(() => db.test());
-}else{
-    console.log('keeping db');
-}
-
 const repoController = new ReposController(db, canvasClient, githubClient, fileSystem);
 const coursesController = new CoursesController(db, canvasClient);
 
 export async function main() {
+    if(!process.env.KEEP_DB) {
+        await db.reset().then(() => db.test());
+    }else{
+        console.log('keeping db');
+    }
+
     ipcMain.handle("courses:get", () => {
         return coursesController.getConfigs();
     });
