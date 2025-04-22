@@ -16,8 +16,6 @@ contextBridge.exposeInMainWorld('electron', {
     },
     'getRepoStats': async(courseId, assignment, name, filter) => {
         let result = ipcRenderer.invoke('repostats:get', courseId, assignment, name, filter);
-
-        console.log('received ', result);
         return result;
     }
 });

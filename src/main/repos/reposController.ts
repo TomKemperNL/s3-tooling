@@ -106,6 +106,7 @@ export class ReposController {
         let coreStats = new RepositoryStatistics(stats);
         let authors = coreStats.getLinesPerAuthor();
         let totals = coreStats.getLinesTotal()
+        let blamePie = await this.fileSystem.getBlame(savedCourseConfig.githubStudentOrg, assignment, name);
 
         return {
             total: {
@@ -116,7 +117,8 @@ export class ReposController {
             weekly: {
                 total: coreStats.getLinesPerWeek(savedCourseConfig.startDate),
                 authors: coreStats.getLinesPerAuthorPerWeek(savedCourseConfig.startDate)
-            }
+            },
+            blamePie
         };
     }
 }

@@ -124,11 +124,11 @@ export class FileSystem {
         let report = {};
 
         async function blameFile(file: string){
-            let soloLog = await exec(`git log -1 --oneline --numstat ${file}`, { cwd: target, encoding: 'utf8' });
+            let soloLog = await exec(`git log -1 --oneline --numstat \"${file}\"`, { cwd: target, encoding: 'utf8' });
             let logLines = soloLog.stdout.split('\n');
             let match = logLines[1].match(changePattern);
             if(match && match[1] !== '-'){
-                let blame = await exec(`git blame ${file}`, { cwd: target, encoding: 'utf8' });
+                let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8' });
                 let blameLines = blame.stdout.split('\n');
                 for(let line of blameLines){
                     let blameMatch = line.match(blamePattern);

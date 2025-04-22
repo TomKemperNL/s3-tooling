@@ -33,12 +33,22 @@ export class RepositoryDetails extends LitElement {
     render() {
         let labels: string[] = [];
         let values: number[] = [];
+      
+        let blameLabels: string[] = [];
+        let blameValues: number[] = [];
+        
         if (this.repoStats) {
             for (let i = 0; i < this.repoStats.weekly.total.length; i++) {
                 labels.push('Week ' + (i + 1));
             }
             values = this.repoStats.weekly?.total.map(w => w.added - w.removed);
+
+            for(let a of Object.keys(this.repoStats?.blamePie)){
+                blameLabels.push(a);
+                blameValues.push(this.repoStats.blamePie[a]);
+            }
         }
+
         console.log('stats', labels, values);
         return html`
             <p>${this.repo.name}</p>
@@ -59,6 +69,7 @@ export class RepositoryDetails extends LitElement {
             </ul>
             ${when(this.repoStats, () => html`
                 <bar-chart .data=${{ labels: labels, values: values }}></bar-chart>
+                <pie-chart .data=${{ labels: blameLabels, values: blameValues }}></pie-chart>
             `)}
         `;
     }

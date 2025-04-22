@@ -6,5 +6,6 @@ import './repository-details'
 import './author-details'
 
 import './charts/bar-chart'
+import './charts/pie-chart'
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);

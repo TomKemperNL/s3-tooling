@@ -87,7 +87,8 @@ export type LinesStatistics = {
 export type RepoStatisticsDTO = {
     total: LinesStatistics,
     authors: { [name: string] : LinesStatistics}
-    weekly: RepoStatisticsPerWeekDTO
+    weekly: RepoStatisticsPerWeekDTO,
+    blamePie: { [name: string] : number}
 }
 
 export type RepoStatisticsPerWeekDTO = {
