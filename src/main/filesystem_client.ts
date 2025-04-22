@@ -10,6 +10,7 @@ const exists = promisify(fs.exists);
 const mkdir = promisify(fs.mkdir);
 const newCommitPattern = /(\w+),([\d-]+T[\d:]+[^,]+),([^,]+),(.+)/
 const changePattern = /([\d-]+)\s+([\d-]+)\s+(.+)/
+const blamePattern = /(\w+)\s+\((.+?)\s/
 
 export function parseDate(date){
     return new Date(Date.parse(date));
@@ -112,5 +113,38 @@ export class FileSystem {
         
         let parsedLog = parseLog(logLines);
         return parsedLog;
+    }
+
+    async getBlame(...repoPath: string[]){
+        let target = path.join(this.#basePath, ...repoPath);
+        let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
+        
+        
+        let files = filesRaw.stdout.split('\n').filter(f => f.length > 0).map(f => f.trim());
+        let report = {};
+
+        async function blameFile(file: string){
+            let soloLog = await exec(`git log -1 --oneline --numstat ${file}`, { cwd: target, encoding: 'utf8' });
+            let logLines = soloLog.stdout.split('\n');
+            let match = logLines[1].match(changePattern);
+            if(match && match[1] !== '-'){
+                let blame = await exec(`git blame ${file}`, { cwd: target, encoding: 'utf8' });
+                let blameLines = blame.stdout.split('\n');
+                for(let line of blameLines){
+                    let blameMatch = line.match(blamePattern);
+                    if(blameMatch && blameMatch[2]){
+                        let author = blameMatch[2].trim();
+                        
+                        if(!report[author]){
+                            report[author] = 0;
+                        }
+                        report[author]++;
+                    }
+                }
+            }            
+        }
+
+        await Promise.all(files.map(f => blameFile(f)));
+        return report;
     }
 }
