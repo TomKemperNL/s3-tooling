@@ -124,6 +124,10 @@ export class FileSystem {
         let report = {};
 
         async function blameFile(file: string){
+            if(file.endsWith('.json')){ //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
+                return;
+            }
+
             let soloLog = await exec(`git log -1 --oneline --numstat \"${file}\"`, { cwd: target, encoding: 'utf8' });
             let logLines = soloLog.stdout.split('\n');
             let match = logLines[1].match(changePattern);

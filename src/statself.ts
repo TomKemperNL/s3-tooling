@@ -12,7 +12,7 @@ async function main(){
     // console.log(stats.getLinesPerAuthor());
     // console.log(stats.getLinesPerWeek());
     
-    let result = await fs.getBlame('HU-SD-S2-studenten-2425', 'sd-s2-project','sd-s2-project-git-gud');
+    let result = await fs.getBlame('HU-SD-S2-studenten-2425', 'sd-s2-project','sd-s2-project-alt-f4');
     // let result = await fs.getBlame('../gittools');
     console.log(result);
 }

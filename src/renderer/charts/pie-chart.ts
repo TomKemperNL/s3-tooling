@@ -53,7 +53,6 @@ export class PieChart extends LitElement {
 
     render() {
         return html`
-            <h1>PIE></h1>
             <canvas ${ref(this.canvasRef)}></canvas>
         `;
     }

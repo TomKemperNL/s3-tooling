@@ -1,4 +1,4 @@
-import { html, LitElement, PropertyValues } from "lit";
+import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { RepoDTO, RepoStatisticsDTO } from "../core";
 import { when } from "lit/directives/when.js";
@@ -30,6 +30,14 @@ export class RepositoryDetails extends LitElement {
         }
     }
 
+    static styles = css`
+    :host {
+        display: grid;
+        grid-template-areas:
+            "numbers numbers"
+            "bar     pie";
+    `
+
     render() {
         let labels: string[] = [];
         let values: number[] = [];
@@ -52,7 +60,7 @@ export class RepositoryDetails extends LitElement {
         console.log('stats', labels, values);
         return html`
             <p>${this.repo.name}</p>
-            <ul>
+            <ul style="grid-area: numbers;">
                 <li>Filter (regex): <input type="text" value=".*" disabled></li>
                 ${when(this.repoStats, () => html`
                     <li>Added: ${this.repoStats.total.added} / Removed: ${this.repoStats.total.removed}</li>
@@ -68,8 +76,8 @@ export class RepositoryDetails extends LitElement {
                 
             </ul>
             ${when(this.repoStats, () => html`
-                <bar-chart .data=${{ labels: labels, values: values }}></bar-chart>
-                <pie-chart .data=${{ labels: blameLabels, values: blameValues }}></pie-chart>
+                <bar-chart style="grid-area: bar" .data=${{ labels: labels, values: values }}></bar-chart>
+                <pie-chart style="grid-area: pie" .data=${{ labels: blameLabels, values: blameValues }}></pie-chart>
             `)}
         `;
     }
