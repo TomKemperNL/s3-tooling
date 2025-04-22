@@ -25,6 +25,7 @@ export class CoursesController{
                     email: s.login_id
                 }));
             }
+            console.log('sections', Object.keys(savedCourse.sections));
 
             await this.db.updateSections(savedCourse);
         }

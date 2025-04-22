@@ -19,11 +19,15 @@ export class ReposController {
         if (savedCourseConfig.lastMappingCheck && (savedCourseConfig.lastMappingCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
             usermapping = await this.db.getUserMapping(savedCourseConfig.canvasCourseId);
         } else {
-            usermapping = await this.canvasClient.getGithubMapping(
-                { course_id: savedCourseConfig.canvasCourseId },
-                { assignment_id: savedCourseConfig.canvasVerantwoordingAssignmentId }
-                , savedCourseConfig.verantwoordingAssignmentName);
-            await this.db.updateUserMapping(savedCourseConfig.canvasCourseId, usermapping);
+            for(let a of savedCourseConfig.assignments){
+                if(!a.groupAssignment){
+                    usermapping = await this.canvasClient.getGithubMapping(
+                        { course_id: savedCourseConfig.canvasCourseId },
+                        { assignment_id: a.canvasId }
+                        , a.githubAssignment);
+                    await this.db.updateUserMapping(savedCourseConfig.canvasCourseId, usermapping);
+                }                
+            }            
         }
         return usermapping;
     }
@@ -52,7 +56,7 @@ export class ReposController {
                 return [repo, collaborators]
             } else {
                 return Promise.resolve([repo, [{
-                    login: getUsernameFromName(repo.name, assignment.name)
+                    login: getUsernameFromName(repo.name, assignment.githubAssignment)
                 }]])
             }
         }
@@ -67,7 +71,7 @@ export class ReposController {
 
     async loadRepos(courseId, assignmentName, filter: RepoFilter): Promise<RepoDTO[]> {
         let savedCourse = await this.db.getCourse(courseId);
-        let assignment = savedCourse.assignments.find(a => a.name === assignmentName);
+        let assignment = savedCourse.assignments.find(a => a.githubAssignment === assignmentName);
         if (!assignment) {
             throw new Error(`Assignment ${assignmentName} not found in course ${courseId}`);
         }
@@ -89,11 +93,11 @@ export class ReposController {
         await Promise.all(
             repos.map(r =>
                 this.fileSystem.cloneRepo(
-                    [savedCourseConfig.githubStudentOrg, assignment.name], r).catch(console.error)));
+                    [savedCourseConfig.githubStudentOrg, assignment.githubAssignment], r).catch(console.error)));
 
         return repos.map(r => ({
             courseId: savedCourse.canvasId,
-            assignment: assignment.name,
+            assignment: assignment.githubAssignment,
             groupRepo: assignment.groupAssignment,
             name: r.name
         }));

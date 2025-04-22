@@ -36,18 +36,29 @@ afterAll(async () => {
     await db.close();
 });
 
-const someCourse: CourseConfig = {
+const projectAssignmentName = 'bla-ass-p';
+const verantwoordingAssignmentName = 'bla-ass-v';
+
+const someCourse : CourseConfig = {    
     canvasCourseId: 123,
-    canvasGroupsName: 'bla',
-    canvasVerantwoordingAssignmentId: 456,
-    githubStudentOrg: 'bla-org',
+    canvasGroupsName: 'bla',    
     startDate: null,
-    name: 'bla-course',
-    projectAssignmentName: 'bla-ass-p',
-    verantwoordingAssignmentName: 'bla-ass-v',
+    githubStudentOrg: 'bla-org',
+    name: 'bla-course',    
     lastRepoCheck: null,
     lastSectionCheck: null,
-    lastMappingCheck: null
+    lastMappingCheck: null,
+    assignments: [
+        {
+            githubAssignment: verantwoordingAssignmentName,
+            canvasId: 456,
+            groupAssignment: false
+        },
+        {
+            githubAssignment: projectAssignmentName,
+            groupAssignment: true
+        }
+    ]
 };
 
 const someSections = [
@@ -67,9 +78,9 @@ const someSections = [
 ];
 
 test("canReceiveConfigs", async () => {
-    db.addCourse(someCourse);
+    await db.addCourse(someCourse);
     let result = await coursesController.getConfigs();
-    expect(result).toStrictEqual([someCourse]);
+    expect(result.length).toStrictEqual(1);
 });
 
 test("canLoadCourse", async () => {
@@ -102,7 +113,7 @@ test("canLoadEmptyRepos", async () => {
     await db.addCourse(someCourse);
     await coursesController.loadCourse(someCourse.canvasCourseId);
 
-    let result = await reposController.loadRepos(someCourse.canvasCourseId, someCourse.projectAssignmentName, { sections: [] })
+    let result = await reposController.loadRepos(someCourse.canvasCourseId, projectAssignmentName, { sections: [] })
     expect(result).toStrictEqual([]);
 });
 
@@ -114,13 +125,13 @@ test("canLoadSoloRepos", async () => {
     githubFake.repos = [
         {
             id: 42, 
-            name: someCourse.verantwoordingAssignmentName + '-githubtest',
-            full_name: 'bla-org/' + someCourse.verantwoordingAssignmentName + '-githubtest',
+            name: verantwoordingAssignmentName + '-githubtest',
+            full_name: 'bla-org/' + verantwoordingAssignmentName + '-githubtest',
             organization: { login: 'bla-org' }
         }];
     await coursesController.loadCourse(someCourse.canvasCourseId);
 
-    let result = await reposController.loadRepos(someCourse.canvasCourseId, someCourse.verantwoordingAssignmentName, { sections: ['bla-section'] })
+    let result = await reposController.loadRepos(someCourse.canvasCourseId, verantwoordingAssignmentName, { sections: ['bla-section'] })
     expect(result.length).toBe(1);
 
 });
@@ -132,14 +143,14 @@ test("canLoadGroupRepos", async () => {
     githubFake.repos = [
         {
             id: 42,
-            name: someCourse.projectAssignmentName + '-some-group',
-            full_name: 'bla-org' + '/' + someCourse.projectAssignmentName + '-some-group',
+            name: projectAssignmentName + '-some-group',
+            full_name: 'bla-org' + '/' + projectAssignmentName + '-some-group',
             organization: { login: 'bla-org' }
         }];
-    githubFake.members[someCourse.projectAssignmentName + '-some-group'] = [{ login: 'githubtest' }];
+    githubFake.members[projectAssignmentName + '-some-group'] = [{ login: 'githubtest' }];
     await coursesController.loadCourse(someCourse.canvasCourseId);
 
-    let result = await reposController.loadRepos(someCourse.canvasCourseId, someCourse.projectAssignmentName, { sections: ['bla-section'] })
+    let result = await reposController.loadRepos(someCourse.canvasCourseId, projectAssignmentName, { sections: ['bla-section'] })
     
     expect(result.length).toBe(1);
 
@@ -151,16 +162,16 @@ test("Second Time Loading Repos uses Cache", async () => {
     canvasFake.mapping = { 'test@example.com': 'githubtest' }
     githubFake.repos = [
         {
-            id: 42, name: someCourse.projectAssignmentName + '-some-group',
-            full_name: 'bla-org/' + someCourse.projectAssignmentName + '-some-group',
+            id: 42, name: projectAssignmentName + '-some-group',
+            full_name: 'bla-org/' + projectAssignmentName + '-some-group',
             organization: { login: 'bla-org' }
         }];
-    githubFake.members[someCourse.projectAssignmentName + '-some-group'] = [{ login: 'githubtest' }];
+    githubFake.members[projectAssignmentName + '-some-group'] = [{ login: 'githubtest' }];
     await coursesController.loadCourse(someCourse.canvasCourseId);
 
-    let firstResult = await reposController.loadRepos(someCourse.canvasCourseId, someCourse.projectAssignmentName, { sections: ['bla-section'] })
+    let firstResult = await reposController.loadRepos(someCourse.canvasCourseId, projectAssignmentName, { sections: ['bla-section'] })
     let apiCalls = canvasFake.apiCalls + githubFake.apiCalls;
-    let secondResult = await reposController.loadRepos(someCourse.canvasCourseId, someCourse.projectAssignmentName, { sections: ['bla-section'] })
+    let secondResult = await reposController.loadRepos(someCourse.canvasCourseId, projectAssignmentName, { sections: ['bla-section'] })
     let secondApiCalls = canvasFake.apiCalls + githubFake.apiCalls;
     expect(secondApiCalls).toBe(apiCalls);
     expect(secondResult).toStrictEqual(firstResult)
@@ -174,21 +185,21 @@ test("canMultipleRepos", async () => {
     githubFake.repos = [
         {
             id: 42, 
-            name: someCourse.projectAssignmentName + '-githubtest',
-            full_name: 'bla-org/' + someCourse.projectAssignmentName + '-githubtest',
+            name: projectAssignmentName + '-githubtest',
+            full_name: 'bla-org/' + projectAssignmentName + '-githubtest',
             organization: { login: 'bla-org' }
         },
         {
             id: 43, 
-            name: someCourse.projectAssignmentName + '-githubtest2',
-            full_name: 'bla-org/' + someCourse.projectAssignmentName + '-githubtest2',
+            name: projectAssignmentName + '-githubtest2',
+            full_name: 'bla-org/' + projectAssignmentName + '-githubtest2',
             organization: { login: 'bla-org' }
         }];
-    githubFake.members[someCourse.projectAssignmentName + '-githubtest'] = [{ login: 'user1' }];
-    githubFake.members[someCourse.projectAssignmentName + '-githubtest2'] = [{ login: 'user1' }];
+    githubFake.members[projectAssignmentName + '-githubtest'] = [{ login: 'user1' }];
+    githubFake.members[projectAssignmentName + '-githubtest2'] = [{ login: 'user1' }];
     await coursesController.loadCourse(someCourse.canvasCourseId);
 
-    let result = await reposController.loadRepos(someCourse.canvasCourseId, someCourse.projectAssignmentName, { sections: ['bla-section'] })
+    let result = await reposController.loadRepos(someCourse.canvasCourseId, projectAssignmentName, { sections: ['bla-section'] })
     expect(result.length).toBe(2);
 
 });

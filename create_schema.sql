@@ -1,24 +1,28 @@
 create table
-    courses (
-        id integer primary key autoincrement,
-        name text not null,
-        canvasId integer not null,
-        canvasVerantAssignmentId integer,
+    courses (        
+        canvasId integer primary key,
+        name text not null,        
         canvasGroups text,
         startDate text,
         githubStudentOrg text,
-        githubVerantAssignment text,
-        githubProjectAssignment text,
         lastRepoCheck text,
         lastSectionCheck text,
         lastMappingCheck text
+    );
+
+create table 
+    course_assignments (
+        courseId integer references courses(canvasId),
+        githubAssignment text not null,
+        canvasId integer,
+        groupAssignment boolean not null default(false)
     );
 
 create table
     sections (
         id integer primary key autoincrement,
         name text not null,
-        courseId integer not null references courses (id)
+        courseId integer not null references courses (canvasId)
     );
 
 create table
@@ -55,7 +59,7 @@ create table
 
 create table 
     repositories (        
-        courseId integer not null references courses (id),        
+        courseId integer not null references courses (canvasId),        
         organization text,
         name text,
         full_name text,

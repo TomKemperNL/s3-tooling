@@ -1,23 +1,26 @@
 import { Database } from "sqlite3";
 import fs from 'fs/promises';
-import { s2 } from '../temp'
-import { CourseConfig, CourseDTO, RepoDTO } from "../core";
+import { cisq1, s2 } from '../temp'
+import { CourseConfig, CourseDTO } from "../core";
 import { MemberResponse, RepoResponse } from "./github_client";
 import { SimpleDict } from "./canvas_client";
 
 type CourseDb = {
-    id: number,
-    name: string,
     canvasId: number,
-    canvasVerantAssignmentId: number,
+    name: string,
     canvasGroups: string,
     startDate: string,
-    githubStudentOrg: string,
-    githubVerantAssignment: string,
-    githubProjectAssignment: string
+    githubStudentOrg: string,    
     lastRepoCheck: string,
     lastSectionCheck: string,
     lastMappingCheck: string
+}
+
+type AssignmentDb = {
+    courseId: number,
+    githubAssignment: string,
+    canvasId?: number,
+    groupAssignment: 0 | 1
 }
 
 export type RepoDb = {
@@ -34,16 +37,18 @@ export type RepoDb = {
     lastMemberCheck: string
 }
 
-function courseDbToConfig(r: CourseDb): CourseConfig {
+function courseDbToConfig(r: CourseDb, as: AssignmentDb[]): CourseConfig {
     return {
         name: r.name,
-        canvasCourseId: r.canvasId,
-        canvasVerantwoordingAssignmentId: r.canvasVerantAssignmentId,
+        canvasCourseId: r.canvasId,        
         canvasGroupsName: r.canvasGroups,
         startDate: r.startDate ? new Date(Date.parse(r.startDate)) : null,
         githubStudentOrg: r.githubStudentOrg,
-        verantwoordingAssignmentName: r.githubVerantAssignment,
-        projectAssignmentName: r.githubProjectAssignment,
+        assignments: as.map(a => ({
+            canvasId: a.canvasId,
+            githubAssignment: a.githubAssignment,
+            groupAssignment: a.groupAssignment === 1
+        })),
 
         lastRepoCheck: r.lastRepoCheck ? new Date(Date.parse(r.lastRepoCheck)) : null,
         lastSectionCheck: r.lastSectionCheck ? new Date(Date.parse(r.lastSectionCheck)) : null,
@@ -86,31 +91,43 @@ export class Db {
     }
 
     async getCourseConfig(id: number): Promise<CourseConfig> {
-        let r = await this.#getProm<CourseDb>("select * from courses where canvasId = ?;", [id]);
+        let r = await this.#getProm<CourseDb>("select * from courses where canvasId = ?;", id);
+        let as = await this.#allProm<AssignmentDb>("select * from course_assignments where courseId = ?", id)
         if (r) {
-            return courseDbToConfig(r);
+            return courseDbToConfig(r, as);
         }
     }
 
     async getCourseConfigs(): Promise<CourseConfig[]> {
         let rows = await this.#allProm<CourseDb>("select * from courses;");
-        let results: CourseConfig[] = rows.map(courseDbToConfig);
+        let results: CourseConfig[] = rows.map(c => courseDbToConfig(c,[])); //hacky hackmans
         return results;
     }
 
     async addCourse(courseConfig: CourseConfig) {
-        return this.#runProm(`insert into courses(
+        await this.#inTransaction(async () => {
+            await this.#runProm(`insert into courses(
                 name, startDate,
-                canvasId, canvasVerantAssignmentId, canvasGroups, 
-                githubStudentOrg, githubVerantAssignment, githubProjectAssignment)
+                canvasId, canvasGroups, 
+                githubStudentOrg)
                 values(
                 ?,?,
-                ?,?,?,
-                ?,?,?)`, [
+                ?,?,
+                ?)`, [
             courseConfig.name, courseConfig.startDate?.toISOString(),
-            courseConfig.canvasCourseId, courseConfig.canvasVerantwoordingAssignmentId, courseConfig.canvasGroupsName,
-            courseConfig.githubStudentOrg, courseConfig.verantwoordingAssignmentName, courseConfig.projectAssignmentName
-        ]);
+            courseConfig.canvasCourseId, courseConfig.canvasGroupsName,
+            courseConfig.githubStudentOrg
+            ]);
+
+            for(let as of courseConfig.assignments){
+                await this.#runProm(`insert into course_assignments(
+                    courseId, githubAssignment, canvasId, groupAssignment) values(
+                    ?,?,?,?
+                    )`, courseConfig.canvasCourseId, as.githubAssignment, as.canvasId, as.groupAssignment)
+            }
+        });
+
+        
     }
 
     async getStudentById(studentId: number) {
@@ -266,15 +283,19 @@ export class Db {
             let sections = Object.keys(courseDTO.sections);
 
             async function insertSection(k) {
+                console.log('inserting section ', k)
                 let runResult = await this.#runProm('insert into sections(name, courseid) values (?,?)', [k, savedCourse.canvasId]);
                 let sectionId = runResult.lastID
                 async function upsertStudent(s) {
+                    // console.log('\tupserting', s);
                     let existingStudent = await this.#getProm('select * from students where id = ?', [s.studentId]);
-                    if (!existingStudent) {
-                        await this.#runProm('insert into students(id, email, name) values(?,?,?);', [s.studentId, s.email, s.name]);
+                    console.log('\tfound', existingStudent === undefined, s.studentId, existingStudent?.studentId)
+                    if (existingStudent === undefined) {
+                        console.log('\tinserting', !existingStudent, s.studentId)
+                        await this.#runProm('insert into students(id, email, name) values(?,?,?) on conflict do nothing;', [s.studentId, s.email, s.name]);
                     }
                     await this.#runProm('insert into students_sections(studentId, sectionId) values(?,?);', [s.studentId, sectionId]);
-
+                    
                 }
                 await Promise.all(courseDTO.sections[k].map(upsertStudent.bind(this)));
             };
@@ -294,17 +315,16 @@ export class Db {
                     order by sec.name
                 `, [canvasId]);
 
+        let as = await this.#allProm<AssignmentDb>("select * from course_assignments where courseId = ?", canvasId)      
+
         let courseDTO: CourseDTO = {
             name: rows[0].courseName,
             canvasId: rows[0].canvasId,
-            assignments: [
-                {
-                    name: rows[0].githubVerantAssignment,
-                    groupAssignment: false
-                }, {
-                    name: rows[0].githubProjectAssignment,
-                    groupAssignment: true
-                }],
+            assignments: as.map(a => ({
+                canvasId: a.canvasId,
+                githubAssignment: a.githubAssignment,
+                groupAssignment: a.groupAssignment === 1
+            })),
             sections: {}
         };
 
@@ -330,7 +350,8 @@ export class Db {
     }
 
     async initData() {
-        this.addCourse(s2);
+        await this.addCourse(s2);
+        await this.addCourse(cisq1);
     }
 
     async delete() {

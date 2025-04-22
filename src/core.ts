@@ -7,7 +7,8 @@ export type Member ={
 }
 
 export type Assignment = {
-    name: string,
+    githubAssignment: string,
+    canvasId?: number,
     groupAssignment: boolean
 }
 
@@ -31,20 +32,17 @@ export class Repo {
     }
     
     matchesAssignment(assignment: Assignment) {
-        return this.name.startsWith(assignment.name);
+        return this.name.startsWith(assignment.githubAssignment);
     }
 }
 
 export type CourseConfig = {
     name: string;
-    canvasCourseId: number;
-    canvasVerantwoordingAssignmentId: number;
+    canvasCourseId: number;    
     canvasGroupsName: string;
     startDate: Date,
-    githubStudentOrg: string;
-    verantwoordingAssignmentName: string;
-    projectAssignmentName: string;
-
+    githubStudentOrg: string;    
+    assignments: Assignment[],
     lastRepoCheck: Date,
     lastSectionCheck: Date,
     lastMappingCheck: Date
@@ -96,7 +94,7 @@ export type RepoStatisticsPerWeekDTO = {
     authors: { [name: string] : LinesStatistics[]}
 }
 
-let ignoredAuthors = [
+export let ignoredAuthors = [
     'github-classroom[bot]'
 ]
 
@@ -107,6 +105,7 @@ if(ignoredAuthorsEnv) {
 
 
 console.log('Ignored authors:', ignoredAuthors);
+
 export class RepositoryStatistics {
     ignoredFiles = ['package-lock.json'];
 

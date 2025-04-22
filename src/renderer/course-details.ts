@@ -41,7 +41,7 @@ export class CourseDetails extends LitElement {
         return async () => {
             try {
                 this.loading = true;
-                let result = await this.ipc.loadRepos(this.course.canvasId, a.name, { sections: this.selectedSections })
+                let result = await this.ipc.loadRepos(this.course.canvasId, a.githubAssignment, { sections: this.selectedSections })
                 this.dispatchEvent(new ReposLoadedEvent(result));
             } finally {
                 this.loading = false;
@@ -66,7 +66,7 @@ export class CourseDetails extends LitElement {
             </ul>
             <h3>Assignments</h3>
             <ul>
-                ${map(this.course.assignments, a => html`<li>${a.name} <button @click=${this.loadRepos(a)} ?disabled=${this.loading} type="button">Load Repositories</button></li>`)}
+                ${map(this.course.assignments, a => html`<li>${a.githubAssignment} <button @click=${this.loadRepos(a)} ?disabled=${this.loading} type="button">Load Repositories</button></li>`)}
             </ul>
         `
     }

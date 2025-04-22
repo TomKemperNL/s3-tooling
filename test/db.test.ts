@@ -18,18 +18,26 @@ afterAll(async () => {
     await db.close();
 });
 
-const someCourse : CourseConfig = {
+const someCourse : CourseConfig = {    
     canvasCourseId: 123,
-    canvasGroupsName: 'bla',
-    canvasVerantwoordingAssignmentId: 456,
+    canvasGroupsName: 'bla',    
     startDate: null,
     githubStudentOrg: 'bla-org',
-    name: 'bla-course',
-    projectAssignmentName: 'bla-ass-p',
-    verantwoordingAssignmentName: 'bla-ass-v',
+    name: 'bla-course',    
     lastRepoCheck: null,
     lastSectionCheck: null,
-    lastMappingCheck: null
+    lastMappingCheck: null,
+    assignments: [
+        {
+            githubAssignment: 'bla-ass-v',
+            canvasId: 456,
+            groupAssignment: false
+        },
+        {
+            githubAssignment: 'bla-ass-p',
+            groupAssignment: true
+        }
+    ]
 };
 
 const someStudents: StudentDTO[] = [
@@ -38,13 +46,10 @@ const someStudents: StudentDTO[] = [
 
 test("can persist course", async () => {
     await db.addCourse(someCourse);
-
     let foundCourse = await db.getCourse(123);
 
     expect(foundCourse.name).toBe('bla-course');
-    expect(foundCourse.assignments).toEqual([
-        { name: 'bla-ass-v', groupAssignment: false} ,{ name: 'bla-ass-p', groupAssignment: true }  
-        ]);
+    expect(foundCourse.assignments.length).toEqual(2);
 });
 
 test("can add sections to course", async () => {

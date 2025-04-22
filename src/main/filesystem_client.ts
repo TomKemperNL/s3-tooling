@@ -132,7 +132,7 @@ export class FileSystem {
             let logLines = soloLog.stdout.split('\n');
             let match = logLines[1].match(changePattern);
             if(match && match[1] !== '-'){
-                let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8' });
+                let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
                 let blameLines = blame.stdout.split('\n');
                 for(let line of blameLines){
                     let blameMatch = line.match(blamePattern);
