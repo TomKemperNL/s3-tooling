@@ -96,7 +96,23 @@ export class FileSystem {
 
     async refreshRepo(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
+        await exec(`git reset HEAD --hard`, { cwd: target });
         await exec(`git fetch --all`, { cwd: target }); //Dit is te sloom om altijd te doen       
+    }
+
+    async getBranches(...repoPath: string[]) {
+        let target = path.join(this.#basePath, ...repoPath);
+        let result = await exec(`git branch --all --remote`, { cwd: target, encoding: 'utf8' });
+        let branches = result.stdout.split('\n').filter(b => b.length > 0).map(b => b.trim());
+        branches = branches.map(b => b.replace(/origin\//, ''));
+        branches = branches.filter(b => b.indexOf('HEAD') === -1);
+        return branches;
+    }
+
+
+    async switchBranch(targetBranch: string, ...repoPath: string[]) {
+        let target = path.join(this.#basePath, ...repoPath);
+        await exec(`git checkout ${targetBranch}`, { cwd: target });
     }
 
     async getRepoStats(...repoPath: string[]) {
@@ -128,11 +144,16 @@ export class FileSystem {
             if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
                 return;
             }
+            if (file.indexOf('node_modules/') !== -1) {
+                return;
+            }
 
             let soloLog = await exec(`git log -1 --format=%H,%aI,%an,%s --numstat \"${file}\"`, { cwd: target, encoding: 'utf8' });
             let logLines = soloLog.stdout.split('\n');
+            if( logLines.length < 3) {
+                return; //Ignore merge commits without any other changes
+            }
             try {
-
                 let match = logLines[2].match(changePattern);
                 let authorMatch = logLines[0].match(newCommitPattern);
                 if (match && match[1] !== '-' && authorMatch && !ignoredAuthors.some(ia => ia === authorMatch[3])) {

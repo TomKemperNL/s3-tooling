@@ -108,6 +108,7 @@ console.log('Ignored authors:', ignoredAuthors);
 
 export class RepositoryStatistics {
     ignoredFiles = ['package-lock.json'];
+    ignoredFolders = ['node_modules'];
 
     data: LoggedCommit[];
     constructor(rawData: LoggedCommit[], public options: { ignoredExtensions: string[]} = {
@@ -115,9 +116,13 @@ export class RepositoryStatistics {
     }) {
         this.data = rawData.filter(c => !ignoredAuthors.includes(c.author));
     }
-
+    
     #accumulateLines(acc, change: LoggedChange) {
         if (this.ignoredFiles.some(f => change.path.match(f))) {
+            change.added = '-';
+            change.removed = '-';
+        }
+        if (this.ignoredFolders.some(f => change.path.match(f))) {
             change.added = '-';
             change.removed = '-';
         }
