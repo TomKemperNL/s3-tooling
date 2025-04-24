@@ -4,6 +4,7 @@ import { RepoDTO, RepoStatisticsDTO } from "../core";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
+import { classMap } from "lit/directives/class-map.js";
 
 @customElement('repository-details')
 export class RepositoryDetails extends LitElement {
@@ -11,6 +12,7 @@ export class RepositoryDetails extends LitElement {
     constructor() {
         super();
         this.ipc = window.electron;
+        this.repoStats = undefined;
     }
 
 
@@ -18,13 +20,18 @@ export class RepositoryDetails extends LitElement {
     repo: RepoDTO;
 
     @property({ type: Object, state: true })
-    repoStats: RepoStatisticsDTO;
+    repoStats?: RepoStatisticsDTO;
+
+    @property({ type: Boolean, state: true })
+    loading: boolean = false;
 
     protected updated(_changedProperties: PropertyValues): void {
         if (_changedProperties.has('repo')) {
+            this.loading = true;
             this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' }).then(
                 stats => {
                     this.repoStats = stats;
+                    this.loading = false;
                 }
             );
         }
@@ -36,6 +43,11 @@ export class RepositoryDetails extends LitElement {
         grid-template-areas:
             "numbers numbers"
             "bar     pie";
+    }
+
+    .loading {
+        opacity: 0.5;
+    }
     `
 
     render() {
@@ -58,6 +70,7 @@ export class RepositoryDetails extends LitElement {
         }
 
         return html`
+        <div class=${classMap({ loading: this.loading })}>
             <p>${this.repo.name}</p>
             <ul style="grid-area: numbers;">
                 <li>Filter (regex): <input type="text" value=".*" disabled></li>
@@ -74,10 +87,12 @@ export class RepositoryDetails extends LitElement {
                     `)}
                 
             </ul>
-            ${when(this.repoStats, () => html`
-                <bar-chart style="grid-area: bar" .data=${{ labels: labels, values: values }}></bar-chart>
-                <pie-chart style="grid-area: pie" .data=${{ labels: blameLabels, values: blameValues }}></pie-chart>
-            `)}
+            
+        </div>
+        ${when(this.repoStats, () => html`
+            <bar-chart class=${classMap({ loading: this.loading })} style="grid-area: bar" .data=${{ labels: labels, values: values }}></bar-chart>
+            <pie-chart class=${classMap({ loading: this.loading })} style="grid-area: pie" .data=${{ labels: blameLabels, values: blameValues }}></pie-chart>
+        `)}
         `;
     }
 }

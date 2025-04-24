@@ -13,7 +13,7 @@ const newCommitPattern = /(\w+),([\d-]+T[\d:]+[^,]+),([^,]+),(.+)/
 const changePattern = /([\d-]+)\s+([\d-]+)\s+(.+)/
 const blamePattern = /(\w+)\s+\((.+?)\s/
 
-export function parseDate(date){
+export function parseDate(date) {
     return new Date(Date.parse(date));
 }
 
@@ -31,15 +31,15 @@ export type LoggedCommit = {
     changes: LoggedChange[]
 }
 
-export function parseLog(logLines: string[]) : LoggedCommit[] {
+export function parseLog(logLines: string[]): LoggedCommit[] {
     let commits = [];
-    let currentCommit : LoggedCommit = null;
+    let currentCommit: LoggedCommit = null;
 
-    for(let line of logLines){
+    for (let line of logLines) {
         let newCommitMatch = line.match(newCommitPattern);
-        
-        if(newCommitMatch){
-            if(currentCommit != null){
+
+        if (newCommitMatch) {
+            if (currentCommit != null) {
                 commits.push(currentCommit);
             }
             currentCommit = {
@@ -49,16 +49,16 @@ export function parseLog(logLines: string[]) : LoggedCommit[] {
                 subject: newCommitMatch[4],
                 changes: []
             }
-        }else{
+        } else {
             let changeMatch = line.match(changePattern)
-            if(changeMatch){
+            if (changeMatch) {
                 currentCommit.changes.push({
                     added: changeMatch[1] === '-' ? '-' : parseInt(changeMatch[1]),
                     removed: changeMatch[2] === '-' ? '-' : parseInt(changeMatch[2]),
                     path: changeMatch[3]
                 })
             }
-        }        
+        }
     }
     commits.push(currentCommit);
 
@@ -68,16 +68,16 @@ export function parseLog(logLines: string[]) : LoggedCommit[] {
 export class FileSystem {
     #basePath = './../s3-tooling-data';
 
-    async cloneRepo(prefix: string[], repo){
+    async cloneRepo(prefix: string[], repo) {
         let target = path.join(this.#basePath, ...prefix);
         let fullTarget = path.join(this.#basePath, ...prefix, repo.name);
-        
-        if(await exists(fullTarget)){
+
+        if (await exists(fullTarget)) {
             return;
         }
 
-        if(!await exists(target)){
-            let options = { recursive: true};
+        if (!await exists(target)) {
+            let options = { recursive: true };
             await mkdir(target, options);
         }
 
@@ -85,70 +85,74 @@ export class FileSystem {
         return fullTarget;
     }
 
-    async getRepoPaths(...prefPath: string[]){
-        let target = path.join(this.#basePath, ...prefPath);      
+    async getRepoPaths(...prefPath: string[]) {
+        let target = path.join(this.#basePath, ...prefPath);
         let result = await readdir(target, { withFileTypes: true });
         let dirs = result.filter(dirent => dirent.isDirectory())
             .map(dirent => dirent.name);
-        
-        return dirs.map(d => prefPath.concat([d]));        
+
+        return dirs.map(d => prefPath.concat([d]));
     }
 
-    async refreshRepo(...repoPath: string[]){
+    async refreshRepo(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         await exec(`git fetch --all`, { cwd: target }); //Dit is te sloom om altijd te doen       
     }
 
-    async getRepoStats(...repoPath: string[]){
+    async getRepoStats(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         let result = await exec(`git log --all --format=%H,%aI,%an,%s --numstat`, { cwd: target, encoding: 'utf8' });
         let logLines = result.stdout.split('\n');
-        
+
         let parsedLog = parseLog(logLines);
         return parsedLog;
     }
 
-    async getOwnStats(){
+    async getOwnStats() {
         let result = await exec(`git log --all --format=%H,%aI,%an,%s --numstat`, { encoding: 'utf8' });
         let logLines = result.stdout.split('\n');
-        
+
         let parsedLog = parseLog(logLines);
         return parsedLog;
     }
 
-    async getBlame(...repoPath: string[]){
+    async getBlame(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
-        
-        
+
+
         let files = filesRaw.stdout.split('\n').filter(f => f.length > 0).map(f => f.trim());
         let report = {};
 
-        async function blameFile(file: string){
-            if(file.endsWith('.json')){ //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
+        async function blameFile(file: string) {
+            if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
                 return;
             }
 
             let soloLog = await exec(`git log -1 --format=%H,%aI,%an,%s --numstat \"${file}\"`, { cwd: target, encoding: 'utf8' });
             let logLines = soloLog.stdout.split('\n');
-            let match = logLines[2].match(changePattern);
-            let authorMatch = logLines[0].match(newCommitPattern);
-            console.log(authorMatch);
-            if(match && match[1] !== '-' && authorMatch && !ignoredAuthors.some(ia => ia === authorMatch[3])){
-                let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
-                let blameLines = blame.stdout.split('\n');
-                for(let line of blameLines){
-                    let blameMatch = line.match(blamePattern);
-                    if(blameMatch && blameMatch[2]){
-                        let author = blameMatch[2].trim();
-                        
-                        if(!report[author]){
-                            report[author] = 0;
+            try {
+
+                let match = logLines[2].match(changePattern);
+                let authorMatch = logLines[0].match(newCommitPattern);
+                if (match && match[1] !== '-' && authorMatch && !ignoredAuthors.some(ia => ia === authorMatch[3])) {
+                    let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
+                    let blameLines = blame.stdout.split('\n');
+                    for (let line of blameLines) {
+                        let blameMatch = line.match(blamePattern);
+                        if (blameMatch && blameMatch[2]) {
+                            let author = blameMatch[2].trim();
+
+                            if (!report[author]) {
+                                report[author] = 0;
+                            }
+                            report[author]++;
                         }
-                        report[author]++;
                     }
                 }
-            }            
+            } catch (e) {
+                console.error('Error in blame', logLines, e);
+            }
         }
 
         await Promise.all(files.map(f => blameFile(f)));
