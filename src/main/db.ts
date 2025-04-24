@@ -282,20 +282,15 @@ export class Db {
 
             let sections = Object.keys(courseDTO.sections);
 
-            async function insertSection(k) {
-                console.log('inserting section ', k)
+            async function insertSection(k) {                
                 let runResult = await this.#runProm('insert into sections(name, courseid) values (?,?)', [k, savedCourse.canvasId]);
                 let sectionId = runResult.lastID
-                async function upsertStudent(s) {
-                    // console.log('\tupserting', s);
-                    let existingStudent = await this.#getProm('select * from students where id = ?', [s.studentId]);
-                    console.log('\tfound', existingStudent === undefined, s.studentId, existingStudent?.studentId)
-                    if (existingStudent === undefined) {
-                        console.log('\tinserting', !existingStudent, s.studentId)
+                async function upsertStudent(s) {                    
+                    let existingStudent = await this.#getProm('select * from students where id = ?', [s.studentId]);                    
+                    if (existingStudent === undefined) {                        
                         await this.#runProm('insert into students(id, email, name) values(?,?,?) on conflict do nothing;', [s.studentId, s.email, s.name]);
                     }
-                    await this.#runProm('insert into students_sections(studentId, sectionId) values(?,?);', [s.studentId, sectionId]);
-                    
+                    await this.#runProm('insert into students_sections(studentId, sectionId) values(?,?);', [s.studentId, sectionId]);                    
                 }
                 await Promise.all(courseDTO.sections[k].map(upsertStudent.bind(this)));
             };

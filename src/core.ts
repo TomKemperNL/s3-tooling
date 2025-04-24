@@ -183,15 +183,12 @@ export class RepositoryStatistics {
         if(someData.length === 0) {
             return [];
         }
-        console.log('Data:', someData);
-        let commits = someData.toSorted((a,b) => a.date.valueOf() - b.date.valueOf());        
-        console.log('Sorted:', commits);
+        let commits = someData.toSorted((a,b) => a.date.valueOf() - b.date.valueOf());                
         let start = startDate || commits[0].date;
 
         let result = []
         let currentCommits = [];
         let nextDate = RepositoryStatistics.#addWeek(start);
-        console.log('Start:', start, 'Next:', nextDate);
         let index = 0;
         while(index < commits.length){
             let c = commits[index];

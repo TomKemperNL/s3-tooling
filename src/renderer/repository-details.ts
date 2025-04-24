@@ -57,7 +57,6 @@ export class RepositoryDetails extends LitElement {
             }
         }
 
-        console.log('stats', labels, values);
         return html`
             <p>${this.repo.name}</p>
             <ul style="grid-area: numbers;">

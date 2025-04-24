@@ -4,6 +4,7 @@ import * as path from 'path';
 import { readdir } from 'fs/promises'
 
 import { promisify } from 'util';
+import { ignoredAuthors } from '../core';
 
 const exec = promisify(proc.exec);
 const exists = promisify(fs.exists);
@@ -128,11 +129,13 @@ export class FileSystem {
                 return;
             }
 
-            let soloLog = await exec(`git log -1 --oneline --numstat \"${file}\"`, { cwd: target, encoding: 'utf8' });
+            let soloLog = await exec(`git log -1 --format=%H,%aI,%an,%s --numstat \"${file}\"`, { cwd: target, encoding: 'utf8' });
             let logLines = soloLog.stdout.split('\n');
-            let match = logLines[1].match(changePattern);
-            if(match && match[1] !== '-'){
-                let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+            let match = logLines[2].match(changePattern);
+            let authorMatch = logLines[0].match(newCommitPattern);
+            console.log(authorMatch);
+            if(match && match[1] !== '-' && authorMatch && !ignoredAuthors.some(ia => ia === authorMatch[3])){
+                let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
                 let blameLines = blame.stdout.split('\n');
                 for(let line of blameLines){
                     let blameMatch = line.match(blamePattern);
