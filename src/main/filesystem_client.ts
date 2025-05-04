@@ -66,7 +66,7 @@ export function parseLog(logLines: string[]): LoggedCommit[] {
 }
 
 export class FileSystem {
-    #basePath = './../s3-tooling-data';
+    #basePath = 'C:/s3-tooling-data';
 
     async cloneRepo(prefix: string[], repo) {
         let target = path.join(this.#basePath, ...prefix);

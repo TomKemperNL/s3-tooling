@@ -43,3 +43,21 @@ export let cisq1 : CourseConfig = {
         }
     ]
 }
+
+export let cisq2 : CourseConfig = {
+    name: 'Continuous Integration and Software Qua2',
+    canvasCourseId: 44762,    
+    canvasGroupsName: '',
+    startDate: new Date(Date.parse('2025-04-14')),
+    githubStudentOrg: 'SD-CISQ2-2025',
+    lastMappingCheck: null,
+    lastRepoCheck: null,
+    lastSectionCheck: null,
+    assignments: [
+        {
+            githubAssignment: 'hupol',
+            groupAssignment: true,
+            canvasId: 349939
+        }
+    ]
+}

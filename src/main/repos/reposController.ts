@@ -88,7 +88,9 @@ export class ReposController {
         repos = repos.filter(r => r.matchesAssignment(assignment));
 
         await this.#updateMembers(repos, assignment);
-        repos = repos.filter(r => r.members.some(m => logins.some(l => m.login === l)));
+        if(filter.sections.length > 0){
+            repos = repos.filter(r => r.members.some(m => logins.some(l => m.login === l)));
+        } //if there is no filter, return all repos
 
         await Promise.all(
             repos.map(r =>
