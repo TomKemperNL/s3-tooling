@@ -2,7 +2,7 @@ import { GithubClient } from "./github_client";
 import { FileSystem } from "./filesystem_client";
 import { CanvasClient } from "./canvas_client";
 
-import { RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter } from "./../core";
+import { RepoFilter, RepoStatisticsDTO, StatsFilter } from "./../core";
 import { ipcMain } from 'electron';
 
 const githubClient = new GithubClient();
@@ -37,6 +37,10 @@ export async function main() {
     ipcMain.handle("repostats:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<RepoStatisticsDTO> => {
         let mainResult = repoController.getRepoStats(courseId, assignment, name, filter);        
         return mainResult;
+    });
+
+    ipcMain.handle("repostats-blame:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) => {
+        return repoController.getBlameStats(courseId, assignment, name, filter);
     });
     
 }

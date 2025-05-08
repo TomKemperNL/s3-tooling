@@ -1,4 +1,4 @@
-import { Assignment, CourseConfig, Repo, RepoDTO, RepoFilter, RepositoryStatistics, RepoStatisticsDTO, StatsFilter } from "../../core";
+import { Assignment, BlameStatisticsDTO, CourseConfig, Repo, RepoDTO, RepoFilter, RepositoryStatistics, RepoStatisticsDTO, StatsFilter } from "../../core";
 import { CanvasClient, getUsernameFromName, SimpleDict } from "../canvas_client";
 import { Db } from "../db";
 import { FileSystem } from "../filesystem_client";
@@ -19,15 +19,15 @@ export class ReposController {
         if (savedCourseConfig.lastMappingCheck && (savedCourseConfig.lastMappingCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
             usermapping = await this.db.getUserMapping(savedCourseConfig.canvasCourseId);
         } else {
-            for(let a of savedCourseConfig.assignments){
-                if(!a.groupAssignment){
+            for (let a of savedCourseConfig.assignments) {
+                if (!a.groupAssignment) {
                     usermapping = await this.canvasClient.getGithubMapping(
                         { course_id: savedCourseConfig.canvasCourseId },
                         { assignment_id: a.canvasId }
                         , a.githubAssignment);
                     await this.db.updateUserMapping(savedCourseConfig.canvasCourseId, usermapping);
-                }                
-            }            
+                }
+            }
         }
         return usermapping;
     }
@@ -44,9 +44,9 @@ export class ReposController {
         return repos;
     }
 
-    async #updateMembers(repos: Repo[], assignment: Assignment): Promise<void> {        
-        async function updateSingleRepoMembers(repo: Repo) : Promise<[Repo, MemberResponse[]]> {
-            if (assignment.groupAssignment) {                
+    async #updateMembers(repos: Repo[], assignment: Assignment): Promise<void> {
+        async function updateSingleRepoMembers(repo: Repo): Promise<[Repo, MemberResponse[]]> {
+            if (assignment.groupAssignment) {
                 let collaborators: MemberResponse[];
                 if (repo.lastMemberCheck && (repo.lastMemberCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
                     collaborators = await this.db.getCollaborators(repo.organization, repo.name)
@@ -61,7 +61,7 @@ export class ReposController {
             }
         }
 
-        let results :any = await Promise.all(repos.map(updateSingleRepoMembers.bind(this)));
+        let results: any = await Promise.all(repos.map(updateSingleRepoMembers.bind(this)));
         for (let [repo, collaborators] of results) {
             repo.members = collaborators;
             await this.db.updateCollaborators(repo.organization, repo.name, collaborators);
@@ -88,7 +88,7 @@ export class ReposController {
         repos = repos.filter(r => r.matchesAssignment(assignment));
 
         await this.#updateMembers(repos, assignment);
-        if(filter.sections.length > 0){
+        if (filter.sections.length > 0) {
             repos = repos.filter(r => r.members.some(m => logins.some(l => m.login === l)));
         } //if there is no filter, return all repos
 
@@ -105,7 +105,7 @@ export class ReposController {
         }));
     }
 
-    async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<RepoStatisticsDTO> {
+    async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
 
         let stats = await this.fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name);
@@ -123,7 +123,15 @@ export class ReposController {
             weekly: {
                 total: coreStats.getLinesPerWeek(savedCourseConfig.startDate),
                 authors: coreStats.getLinesPerAuthorPerWeek(savedCourseConfig.startDate)
-            },
+            }
+        };
+    }
+
+    async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<BlameStatisticsDTO> {
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        let blamePie = await this.fileSystem.getBlame(savedCourseConfig.githubStudentOrg, assignment, name);
+
+        return {
             blamePie
         };
     }

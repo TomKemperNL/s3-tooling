@@ -1,4 +1,4 @@
-import { CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter } from "../core";
+import { BlameStatisticsDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter } from "../core";
 
 declare global {
     interface Window {
@@ -12,6 +12,7 @@ export interface ElectronIPC {
     loadCourse: (id: number) => Promise<CourseDTO>
     loadRepos: (courseId: number, assignment: string, filter: RepoFilter) => Promise<RepoDTO[]>
     getRepoStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<RepoStatisticsDTO>
+    getBlameStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<BlameStatisticsDTO>
 }
 
 

@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { RepoDTO, RepoStatisticsDTO } from "../core";
+import { BlameStatisticsDTO, RepoDTO, RepoStatisticsDTO } from "../core";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
@@ -22,18 +22,28 @@ export class RepositoryDetails extends LitElement {
     @property({ type: Object, state: true })
     repoStats?: RepoStatisticsDTO;
 
+    @property({ type: Object, state: true })
+    blameStats?: BlameStatisticsDTO;
+
     @property({ type: Boolean, state: true })
     loading: boolean = false;
 
     protected updated(_changedProperties: PropertyValues): void {
         if (_changedProperties.has('repo')) {
             this.loading = true;
-            this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' }).then(
+
+            let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' }).then(
                 stats => {
                     this.repoStats = stats;
-                    this.loading = false;
                 }
             );
+            let gettingBlameStats = this.ipc.getBlameStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' }).then(
+                stats => {
+                    this.blameStats = stats;
+                });
+            Promise.all([gettingRepos, gettingBlameStats]).then(() => {
+                this.loading = false;
+            });
         }
     }
 
@@ -62,10 +72,13 @@ export class RepositoryDetails extends LitElement {
                 labels.push('Week ' + (i + 1));
             }
             values = this.repoStats.weekly?.total.map(w => w.added - w.removed);
+        }
 
-            for(let a of Object.keys(this.repoStats?.blamePie)){
+        if(this.blameStats){
+
+            for(let a of Object.keys(this.blameStats?.blamePie)){
                 blameLabels.push(a);
-                blameValues.push(this.repoStats.blamePie[a]);
+                blameValues.push(this.blameStats.blamePie[a]);
             }
         }
 
