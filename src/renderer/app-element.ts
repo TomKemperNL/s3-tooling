@@ -33,22 +33,31 @@ export class AppElement extends LitElement {
 
 
     static styles = css`
-           :host {
+        :host {
             display: grid;
             grid-template-areas:
-                "nav details"
+                "header header"
+                "nav details";
+            grid-template-columns: minmax(min-content, 1fr) 3fr;
         }
+
+        header {
+            align-self: center;
+            justify-self: center;
+        }
+
         `;
 
 
     render() {
         return html`
-        <div style="grid-area: nav;">
-            <h1>Tooling</h1>
+        <header style="grid-area: header;">
+            <h1>HU S3 Tooling</h1>
+        </header>
+        <nav style="grid-area: nav;">            
             <h2>Cursussen</h2>            
             <courses-list @course-loaded=${this.courseLoaded}></courses-list>
-            ${when(this.activeCourse, () => html`                
-                <h2>Cursus</h2>    
+            ${when(this.activeCourse, () => html`  
                 <course-details .course=${this.activeCourse} @repos-loaded=${this.reposLoaded}></course-details>
             `)}
             ${when(this.availableRepos, () => html`                
@@ -56,13 +65,13 @@ export class AppElement extends LitElement {
                 <repositories-list .repos=${this.availableRepos} @repo-selected=${this.repoSelected}></repositories-list>
                                     
             `)}
-        </div>
-        <div style="grid-area: details;">
+        </nav>
+        <main style="grid-area: details;">
             ${when(this.activeRepo, () => html`
                 <repository-details .repo=${this.activeRepo}></repository-details>
             `)}
             
-        </div>
+            </main>
         `
     }
 }

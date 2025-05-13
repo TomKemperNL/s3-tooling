@@ -35,28 +35,34 @@ export class CoursesList extends LitElement {
         });
     }
 
-    loadCourse(c) {
-        return async (e) => {
-            this.loading = true;
-            try {
-                let result = await this.ipc.loadCourse(c.canvasCourseId);
-                if (result) {
-                    this.dispatchEvent(new CourseLoadedEvent(result));
-                }
+    async loadCourse(c) {
+        this.loading = true;
+        try {
+            let result = await this.ipc.loadCourse(c.canvasCourseId);
+            if (result) {
+                this.dispatchEvent(new CourseLoadedEvent(result));
             }
-            finally { this.loading = false; }
         }
+        finally { this.loading = false; }
     };
 
+    dropdownChange(e) {
+        let selected = e.target.value;
+        if (selected) {
+            let course = this.courses.find(c => c.name === selected);
+            if (course) {
+                this.loadCourse(course);
+            }
+        }
+    }
 
     render() {
         return html`            
-            <ul>
+            <select ?disabled=${this.loading} @change=${this.dropdownChange}>
+                <option value="">Select a course</option>
             ${map(this.courses, c => html`
-                <li>${c.name}
-                    <button ?disabled=${this.loading} @click=${this.loadCourse(c)}>Load</button>                    
-                </li>`)}                
-            </ul>`
+                <option value=${c.name}>${c.name}</option>`)}                
+            </select>`
     }
 
 }
