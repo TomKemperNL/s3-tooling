@@ -2,7 +2,7 @@ import { FileSystem } from "../src/main/filesystem_client";
 
 let fs = new FileSystem();
 async function main(){
-    const repo = ['HU-SD-S2-studenten-2425', 'sd-s2-project','sd-s2-project-1-team-1-taak'];
+    const repo = ['HU-SD-S2-studenten-2425', 'sd-s2-project','sd-s2-project-config-wizards'];
     await fs.switchBranch('main', ...repo);
     let result = await fs.getBlame(...repo);
     console.log(result);

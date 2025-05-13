@@ -11,7 +11,8 @@ const exists = promisify(fs.exists);
 const mkdir = promisify(fs.mkdir);
 const newCommitPattern = /(\w+),([\d-]+T[\d:]+[^,]+),([^,]+),(.+)/
 const changePattern = /([\d-]+)\s+([\d-]+)\s+(.+)/
-const blamePattern = /(\w+)\s+\((.+?)\s/
+const blamePattern = /(\w+)\s+\((.+?)\d\d\d\d-\d\d-\d\d/
+const logFormat = '--format=%H,%aI,%an,%s --numstat'
 
 export function parseDate(date) {
     return new Date(Date.parse(date));
@@ -65,6 +66,40 @@ export function parseLog(logLines: string[]): LoggedCommit[] {
     return commits;
 }
 
+export function parseBlame(blameLines: string[]) : { [author: string]: number } {
+    let report = {};
+    for (let line of blameLines) {
+        let blameMatch = line.match(blamePattern);
+        if (blameMatch && blameMatch[2]) {
+            let author = blameMatch[2].trim();
+
+            if (!report[author]) {
+                report[author] = 0;
+            }
+            report[author]++;
+        }
+    }
+    return report;
+}
+
+function combineReports(rep1, rep2){
+    let result = {};
+    function addToReport(key, value) {
+        if (!result[key]) {
+            result[key] = 0;
+        }
+        result[key] += value;
+    }
+
+    for (let k of Object.keys(rep1)) {
+        addToReport(k, rep1[k]);
+    }
+    for (let k of Object.keys(rep2)) {
+        addToReport(k, rep2[k]);
+    }
+    return result;
+}
+
 export class FileSystem {
     #basePath = 'C:/s3-tooling-data';
 
@@ -112,12 +147,15 @@ export class FileSystem {
 
     async switchBranch(targetBranch: string, ...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
-        await exec(`git checkout ${targetBranch}`, { cwd: target });
+        //checkout -f, want in principe hebben we geen changes,
+        //maar mac/linux/windows kunnen issues hebben met line endings,
+        //en dat soort ellende. Dat negeren we maar...
+        await exec(`git checkout -f ${targetBranch}`, { cwd: target });
     }
 
     async getRepoStats(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
-        let result = await exec(`git log --all --format=%H,%aI,%an,%s --numstat`, { cwd: target, encoding: 'utf8' });
+        let result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });
         let logLines = result.stdout.split('\n');
 
         let parsedLog = parseLog(logLines);
@@ -125,7 +163,7 @@ export class FileSystem {
     }
 
     async getOwnStats() {
-        let result = await exec(`git log --all --format=%H,%aI,%an,%s --numstat`, { encoding: 'utf8' });
+        let result = await exec(`git log --all ${logFormat}`, { encoding: 'utf8' });
         let logLines = result.stdout.split('\n');
 
         let parsedLog = parseLog(logLines);
@@ -148,34 +186,22 @@ export class FileSystem {
                 return;
             }
 
-            let soloLog = await exec(`git log -1 --format=%H,%aI,%an,%s --numstat \"${file}\"`, { cwd: target, encoding: 'utf8' });
+            let soloLog = await exec(`git log -1 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' });
             let logLines = soloLog.stdout.split('\n');
-            if( logLines.length < 3) {
+            let [parsedLog] = parseLog(logLines);
+
+            if (parsedLog.changes.length === 0) {
                 return; //Ignore merge commits without any other changes
-            }
-            try {
-                let match = logLines[2].match(changePattern);
-                let authorMatch = logLines[0].match(newCommitPattern);
-                if (match && match[1] !== '-' && authorMatch && !ignoredAuthors.some(ia => ia === authorMatch[3])) {
+            } else if (!ignoredAuthors.some(ia => ia === parsedLog.author)) {
+                try {
                     let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
                     let blameLines = blame.stdout.split('\n');
-                    for (let line of blameLines) {
-                        let blameMatch = line.match(blamePattern);
-                        if (blameMatch && blameMatch[2]) {
-                            let author = blameMatch[2].trim();
-
-                            if (!report[author]) {
-                                report[author] = 0;
-                            }
-                            report[author]++;
-                        }
-                    }
+                    report = combineReports(report, parseBlame(blameLines));
+                } catch (e) {
+                    console.error('Error in blame', logLines, e);
                 }
-            } catch (e) {
-                console.error('Error in blame', logLines, e);
             }
         }
-
         await Promise.all(files.map(f => blameFile(f)));
         return report;
     }

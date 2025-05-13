@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { parseLog } from '../src/main/filesystem_client';
+import { parseBlame, parseLog } from '../src/main/filesystem_client';
 
 test('CanParseChanges', () => {
     let result = parseLog(`eenofandere0123hash,2025-04-09T13:51:33+02:00,WoopWoop,Icons toegvoegd
@@ -36,3 +36,25 @@ test('CanParseSubjectWithCommas', () => {
         expect(result[0].author).toBe('WoopWoop');
         expect(result[0].subject).toBe('Icons, en andere zaken, toegvoegd');
 });
+
+test('Can Parse Author with Spaces', () => {
+    let result = parseLog(`eenofandere0123hash,2025-04-09T13:51:33+02:00,Woop Woop,Icons, en andere zaken, toegvoegd`.split('\n'));
+
+    expect(result[0].author).toBe('Woop Woop');
+});
+
+test('Can parse Blame statistics', () => {
+    let result = parseBlame(`c16973a5 (ABC 2025-05-08 15:14:58 +0200  3) -- Product table
+75fd3085 (ABC 2025-04-16 14:54:54 +0200  4) create table if not exists public.products
+75fd3085 (DEF 2025-04-16 14:54:54 +0200  5) (
+        `.split('\n'));
+    expect(result['ABC']).toBe(2);
+    expect(result['DEF']).toBe(1);
+});
+
+test('Can parse Blame authors with spaces', () => {
+    let result = parseBlame(`c16973a5 (Bob Test 2025-05-08 15:14:58 +0200  3) -- Product table
+75fd3085 (Bob Test 2025-04-16 14:54:54 +0200  4) create table if not exists public.products
+        `.split('\n'));
+    expect(result).toStrictEqual({ 'Bob Test': 2 });
+})
