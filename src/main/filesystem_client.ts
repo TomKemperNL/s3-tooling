@@ -4,7 +4,7 @@ import * as path from 'path';
 import { readdir } from 'fs/promises'
 
 import { promisify } from 'util';
-import { ignoredAuthors } from '../core';
+import { ignoredAuthors } from './repository_statistics';
 
 const exec = promisify(proc.exec);
 const exists = promisify(fs.exists);

@@ -1,5 +1,6 @@
 import { test, expect } from 'vitest';
-import { RepositoryStatistics } from '../src/core';
+import { RepositoryStatistics } from '../src/main/repository_statistics';
+import { extensions } from 'sequelize/lib/utils/validator-extras';
 
 
 test('CanSumLinesPerAuthor', {}, () => {
@@ -133,4 +134,51 @@ test('Can Group Commits Per Week Per Author', {}, () => {
     // expect(perAuthorResult['Job'][2].added).toBe(0); Dit is trickier dan ik had verwacht... maar tot hier werkt het redelijk
     // expect(perAuthorResult['Job'][3].added).toBe(0);
     // expect(perAuthorResult['Job'][4]).toBe(undefined);
+});
+
+
+
+
+test('Can Group Commits By Backend/Frontend/Docs/Other', {}, () => {
+    let stats = new RepositoryStatistics([
+        {
+            author: 'Bob',
+            subject: 'Added some stuff',
+            date: new Date(),
+            hash: '1234567890abcdef',
+            changes: [
+                { added: '-', removed: '-', path: 'test.png' },
+                { added: 1, removed: 2, path: 'test.java' },
+                { added: 3, removed: 4, path: 'test2.js' },
+                { added: 2, removed: 1, path: 'someOtherThings.txt' },
+            ]
+        },
+        {
+            author: 'Alice',
+            subject: 'Added some stuff',
+            date: new Date(),
+            hash: '1234567890abcdefghijk',
+            changes: [
+                { added: '-', removed: '-', path: 'test.png' },
+                { added: 3, removed: 2, path: 'test.java' },
+                { added: 1, removed: 4, path: 'test2.css' }
+            ]
+        }
+    ]);
+
+    let groups = [
+        { 
+            name: "Backend",
+            extensions: [".java"]
+        },
+        {   
+            name: "Frontend",
+            extensions: [".js", ".css", ".html"]
+        }
+    ]
+
+    let result = stats.getGroupedStats(groups);
+    expect(result["Backend"]).toStrictEqual({ added: 4, removed: 4});
+    expect(result["Frontend"]).toStrictEqual({ added: 4, removed: 8});
+    // expect(result["Other"]).toBe({ added: 2, removed: 1}); TODO
 });

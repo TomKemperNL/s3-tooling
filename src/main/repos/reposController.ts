@@ -1,8 +1,9 @@
-import { Assignment, BlameStatisticsDTO, CourseConfig, Repo, RepoDTO, RepoFilter, RepositoryStatistics, RepoStatisticsDTO, StatsFilter } from "../../core";
+import { Assignment, BlameStatisticsDTO, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../../core";
 import { CanvasClient, getUsernameFromName, SimpleDict } from "../canvas_client";
 import { Db } from "../db";
 import { FileSystem } from "../filesystem_client";
 import { GithubClient, MemberResponse, RepoResponse } from "../github_client";
+import { RepositoryStatistics } from "../repository_statistics";
 import { getUsernameFromUrl } from "./../canvas_client";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
@@ -134,5 +135,12 @@ export class ReposController {
         return {
             blamePie
         };
+    }
+
+    async getStatsByUser(courseId: number, assignment: string, name: string, filter: StudentFilter){
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+
+        let stats = await this.fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name);
+        let coreStats = new RepositoryStatistics(stats);
     }
 }
