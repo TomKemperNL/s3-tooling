@@ -111,9 +111,9 @@ export class ReposController {
 
         let stats = await this.fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name);
         let coreStats = new RepositoryStatistics(stats);
-        let authors = coreStats.getLinesPerAuthor();
-        let totals = coreStats.getLinesTotal()
-        let blamePie = await this.fileSystem.getBlame(savedCourseConfig.githubStudentOrg, assignment, name);
+        let authorsGrouped = coreStats.groupByAuthor().map(st => st.getLinesTotal());
+        let totals = coreStats.getLinesTotal()        
+        let authors = authorsGrouped.asRawContent();
 
         return {
             total: {
