@@ -71,36 +71,6 @@ export class RepositoryStatistics {
         }
     }
 
-    #privGetLinesPerWeek(someData: LoggedCommit[], startDate: Date = null): LinesStatistics[] {
-        if (someData.length === 0) {
-            return [];
-        }
-        let commits = someData.toSorted((a, b) => a.date.valueOf() - b.date.valueOf());
-        let start = startDate || commits[0].date;
-
-        let result = []
-        let currentCommits = [];
-        let nextDate = RepositoryStatistics.#addWeek(start);
-        let index = 0;
-        while (index < commits.length) {
-            let c = commits[index];
-            if (c.date < nextDate) {
-                currentCommits.push(c);
-                index++;
-            } else {
-                let weekStats = RepositoryStatistics.#getChanges(currentCommits).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
-                result.push(weekStats);
-                currentCommits = [];
-                nextDate = RepositoryStatistics.#addWeek(nextDate);
-            }
-        }
-        if (currentCommits.length > 0) {
-            let weekStats = RepositoryStatistics.#getChanges(currentCommits).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
-            result.push(weekStats);
-        }
-        return result;
-    }
-
     #privGetCommitsPerWeek(someData: LoggedCommit[], startDate: Date = null): LoggedCommit[][] {
         if (someData.length === 0) {
             return [];
@@ -128,7 +98,6 @@ export class RepositoryStatistics {
         }
         return result;
     }
-
     
     getDistinctAuthors() {
         return [...new Set(this.data.map(c => c.author))];
@@ -136,26 +105,6 @@ export class RepositoryStatistics {
 
     getLinesTotal(): LinesStatistics {
         return RepositoryStatistics.#getChanges(this.data).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
-    }
-
-    getLinesPerAuthorPerWeek(startDate: Date = null): { [author: string]: LinesStatistics[] } {
-        if (this.data.length === 0) {
-            return {};
-        }
-        let commits = this.data.toSorted((a, b) => a.date.valueOf() - b.date.valueOf());
-        let start = startDate || commits[0].date;
-
-        let result = {};
-        for (let author of this.getDistinctAuthors()) {
-            result[author] = this.#privGetLinesPerWeek(commits.filter(c => c.author === author), start);
-        }
-        return result;
-
-    }
-
-
-    getLinesPerWeek(startDate: Date = null): LinesStatistics[] {
-        return this.#privGetLinesPerWeek(this.data, startDate);
     }
 
     groupByWeek(startDate: Date = null): RepositoryStatistics[] {
@@ -193,22 +142,14 @@ export class RepositoryStatistics {
 
 //Dit moet vast handiger kunnen (want nu moet je elke array functie opnieuw implementeren)
 export class GroupedCollection<T> {
-    #content = {};
-    constructor(content: { [name: string]: T }){
-        this.#content = content;
-        for(let key of Object.keys(this.#content)){
-            this[key] = content[key];
-        }
-    }
-
-    asRawContent(){
-        return this.#content;
+    constructor(public content: { [name: string]: T }){
+    
     }
 
     map<Y>(fn: (r: T) => Y) : GroupedCollection<Y> {
         let result = {};
-        for(let key of Object.keys(this.#content)){
-            result[key] = fn(this.#content[key]);
+        for(let key of Object.keys(this.content)){
+            result[key] = fn(this.content[key]);
         }
        
         return new GroupedCollection(result);        
@@ -216,9 +157,9 @@ export class GroupedCollection<T> {
 
     filter(fn: (groupName: string, r: T) => boolean) : GroupedCollection<T> {
         let result = {};
-        for(let key of Object.keys(this.#content)){
-            if (fn(key, this.#content[key])) {
-                result[key] = this.#content[key];
+        for(let key of Object.keys(this.content)){
+            if (fn(key, this.content[key])) {
+                result[key] = this.content[key];
             }
         }
         return new GroupedCollection(result);

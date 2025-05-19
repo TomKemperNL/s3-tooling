@@ -17,7 +17,7 @@ test('CanSumLinesPerAuthor', {}, () => {
             ]
         }
     ]);
-    let result = stats.groupByAuthor().map((a) => a.getLinesTotal());
+    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).content;
 
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
@@ -50,7 +50,7 @@ test('Package-lock & github bot ignored hardcoded', {}, () => {
             ]
         }
     ]);
-    let result = stats.groupByAuthor().map((a) => a.getLinesTotal());
+    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).content;
 
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
@@ -73,10 +73,10 @@ test('Can Ignore Filetypes', {}, () => {
             ]
         }
     ], { ignoredExtensions: ['.json'] });
-    let result = stats.groupByAuthor();
+    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).content;
 
-    expect(result['Bob'].getLinesTotal().added).toBe(4);
-    expect(result['Bob'].getLinesTotal().removed).toBe(6);
+    expect(result['Bob'].added).toBe(4);
+    expect(result['Bob'].removed).toBe(6);
 });
 
 test('Can Group Commits Per Week', {}, () => {
@@ -123,8 +123,9 @@ test('Can Group Commits Per Week Per Author', {}, () => {
 
     let perAuthorResult = stats.groupByAuthor()
         .map(as => as.groupByWeek(new Date('2023-10-01'))
-            .map(w => w.getLinesTotal()));
+            .map(w => w.getLinesTotal())).content;
 
+    console.log(JSON.stringify(perAuthorResult))
     expect(perAuthorResult['Bob'][0].added).toBe(2);
     expect(perAuthorResult['Bob'][1].added).toBe(0);
     expect(perAuthorResult['Bob'][2].added).toBe(0);
@@ -176,8 +177,8 @@ test('Can Group Commits By Backend/Frontend/Docs/Other', {}, () => {
         }
     ]
 
-    let result = stats.groupBy(groups);
-    expect(result["Backend"].getLinesTotal()).toStrictEqual({ added: 4, removed: 4});
-    expect(result["Frontend"].getLinesTotal()).toStrictEqual({ added: 4, removed: 8});
+    let result = stats.groupBy(groups).map(g => g.getLinesTotal()).content;
+    expect(result["Backend"]).toStrictEqual({ added: 4, removed: 4});
+    expect(result["Frontend"]).toStrictEqual({ added: 4, removed: 8});
     // expect(result["Other"]).toBe({ added: 2, removed: 1}); TODO
 });

@@ -113,7 +113,13 @@ export class ReposController {
         let coreStats = new RepositoryStatistics(stats);
         let authorsGrouped = coreStats.groupByAuthor().map(st => st.getLinesTotal());
         let totals = coreStats.getLinesTotal()        
-        let authors = authorsGrouped.asRawContent();
+        let authors = authorsGrouped.content;
+
+        let total = coreStats.groupByWeek(savedCourseConfig.startDate).map(st => st.getLinesTotal());
+        let authorPerWeek = coreStats
+            .groupByAuthor().map(st => 
+                st.groupByWeek(savedCourseConfig.startDate)
+                .map(st => st.getLinesTotal()));
 
         return {
             total: {
@@ -122,8 +128,8 @@ export class ReposController {
             },
             authors,
             weekly: {
-                total: coreStats.getLinesPerWeek(savedCourseConfig.startDate),
-                authors: coreStats.getLinesPerAuthorPerWeek(savedCourseConfig.startDate)
+                total: total,
+                authors: authorPerWeek.content
             }
         };
     }
