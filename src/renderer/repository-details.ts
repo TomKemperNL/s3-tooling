@@ -6,6 +6,16 @@ import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
 import { classMap } from "lit/directives/class-map.js";
 
+export class AuthorSelectedEvent extends Event {
+    static eventName = 'author-selected';
+    constructor(public authorName: string) {
+        super(AuthorSelectedEvent.eventName, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 @customElement('repository-details')
 export class RepositoryDetails extends LitElement {
     ipc: ElectronIPC;
@@ -14,7 +24,6 @@ export class RepositoryDetails extends LitElement {
         this.ipc = window.electron;
         this.repoStats = undefined;
     }
-
 
     @property({ type: Object })
     repo: RepoDTO;
@@ -45,6 +54,14 @@ export class RepositoryDetails extends LitElement {
                 this.loading = false;
             });
         }
+    }
+
+    selectStudent(authorName: string) {
+        return (e: Event) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.dispatchEvent(new AuthorSelectedEvent(authorName));
+        };
     }
 
     static styles = css`
@@ -92,7 +109,7 @@ export class RepositoryDetails extends LitElement {
                     <li>Authors:
                         <ul>
                             ${map(Object.keys(this.repoStats.authors), a => html`
-                                <li><button disabled type="button">Select</button>${a}, Added: ${this.repoStats.authors[a].added} / Removed: ${this.repoStats.authors[a].removed}</li>
+                                <li><button @click=${this.selectStudent(a)} type="button">Select</button>${a}, Added: ${this.repoStats.authors[a].added} / Removed: ${this.repoStats.authors[a].removed}</li>
                             `)}
                         </ul>
 

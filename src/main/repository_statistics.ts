@@ -22,6 +22,24 @@ export class RepositoryStatistics {
     ignoredFolders = ['node_modules'];
 
     data: LoggedCommit[];
+    
+    static backend: GroupDefinition = {
+        name: 'Backend',
+        extensions: ['.java', '.py', '.kt', '.cs', '.rb']
+    }
+    static frontend: GroupDefinition = {
+        name: 'Frontend',
+        extensions: ['.js', '.jsx', '.ts', '.tsx', '.vue']
+    }
+    static markup: GroupDefinition = {
+        name: 'Markup',
+        extensions: ['.html', '.css']
+    }
+    static docs: GroupDefinition = {
+        name: 'Docs',
+        extensions: ['.md', '.txt', 'asciidoc', '.adoc', '.latex']
+    }
+
     constructor(rawData: LoggedCommit[], public options: { ignoredExtensions: string[] } = {
         ignoredExtensions: ['.json'] //TODO: dit is dubbelop met de package-json. Even nadenken wat we willen
     }) {

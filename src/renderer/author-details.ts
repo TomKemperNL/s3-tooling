@@ -1,21 +1,15 @@
-import { LitElement } from "lit";
+import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
-@customElement('author-details')
-export class AuthorDetails extends LitElement {
-
-    @property({ type: String })
-    author: string = '';
-
-    static styles = [
-        // Add your CSS styles here
-    ];
-
-    constructor() {
-        super();
-    }
+@customElement('student-details')
+export class StudentDetails extends LitElement {
+    @property({ type: Object })
+    authorStats: any;
 
     render() {
-        return null;
+        return html`
+            <h3>Author Details</h3>
+            ${JSON.stringify(this.authorStats)}
+        `;
     }
 }

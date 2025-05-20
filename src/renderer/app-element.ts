@@ -5,9 +5,17 @@ import { when } from "lit/directives/when.js";
 import { CourseLoadedEvent } from "./courses-list";
 import { RepoSelectedEvent } from "./repositories-list";
 import { ReposLoadedEvent } from "./course-details";
+import { ElectronIPC } from "./ipc";
+import { AuthorSelectedEvent, StudentSelectedEvent } from "./repository-details";
 
 @customElement("app-element")
 export class AppElement extends LitElement {
+    ipc: ElectronIPC;
+    constructor(){
+        super();
+        this.ipc = window.electron;
+    }
+
     @property({ type: Object })
     activeCourse: CourseDTO;
 
@@ -17,7 +25,8 @@ export class AppElement extends LitElement {
     @property({ type: Object })
     activeRepo: RepoDTO;
 
-
+    @property({ type: Object })
+    activeAuthor: any;
 
     courseLoaded(e: CourseLoadedEvent) {
         this.activeCourse = e.course;
@@ -29,6 +38,18 @@ export class AppElement extends LitElement {
 
     repoSelected(e: RepoSelectedEvent) {
         this.activeRepo = e.repo;
+    }
+
+    authorSelected(e: AuthorSelectedEvent) {        
+        this.ipc.getStudentStats(
+            this.activeRepo.courseId, 
+            this.activeRepo.assignment, 
+            this.activeRepo.name, 
+            { authorName: e.authorName}).then(
+            authorStats => {  
+                console.log('received author stats', authorStats);
+                this.activeAuthor = authorStats;
+            });
     }
 
 
@@ -59,7 +80,11 @@ export class AppElement extends LitElement {
         </div>
         <div style="grid-area: details;">
             ${when(this.activeRepo, () => html`
-                <repository-details .repo=${this.activeRepo}></repository-details>
+                <repository-details @author-selected=${this.authorSelected} .repo=${this.activeRepo}></repository-details>
+            `)}
+
+            ${when(this.activeAuthor, () => html`
+                <student-details .authorStats=${this.activeAuthor}></student-details>
             `)}
             
         </div>

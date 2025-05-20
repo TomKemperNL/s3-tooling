@@ -148,5 +148,24 @@ export class ReposController {
 
         let stats = await this.fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name);
         let coreStats = new RepositoryStatistics(stats);
+
+        let groupedByAuthor = coreStats.groupByAuthor();
+        console.log('grouped', groupedByAuthor);
+        console.log('filter' , filter)
+        let studentStats = groupedByAuthor.content[filter.authorName];
+        let groups = [
+            RepositoryStatistics.backend, 
+            RepositoryStatistics.frontend,
+            RepositoryStatistics.markup,
+            RepositoryStatistics.docs
+        ]
+
+        let total = studentStats.groupBy(groups).map(g => g.getLinesTotal());
+        let weekly = studentStats.groupByWeek(savedCourseConfig.startDate)
+            .map(w => w.groupBy(groups).map(g => g.getLinesTotal()));
+        return {
+            total: total.content,
+            weekly: weekly
+        }        
     }
 }

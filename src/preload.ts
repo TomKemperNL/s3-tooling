@@ -22,5 +22,10 @@ contextBridge.exposeInMainWorld('electron', {
     getBlameStats: async(courseId, assignment, name, filter) => {
         let result = ipcRenderer.invoke('repostats-blame:get', courseId, assignment, name, filter);
         return result;
+    },
+    getStudentStats: async(courseId, assignment, name, filter) => {
+        console.log('getStudentStats', courseId, assignment, name, filter);
+        let result = ipcRenderer.invoke('repostats-student:get', courseId, assignment, name, filter);
+        return result;
     }
 });
