@@ -167,18 +167,49 @@ test('Can Group Commits By Backend/Frontend/Docs/Other', {}, () => {
     ]);
 
     let groups = [
-        { 
-            name: "Backend",
-            extensions: [".java"]
-        },
-        {   
-            name: "Frontend",
-            extensions: [".js", ".css", ".html"]
-        }
+        RepositoryStatistics.backend,
+        RepositoryStatistics.frontendIncludingMarkup        
     ]
 
     let result = stats.groupBy(groups).map(g => g.getLinesTotal()).content;
     expect(result["Backend"]).toStrictEqual({ added: 4, removed: 4});
     expect(result["Frontend"]).toStrictEqual({ added: 4, removed: 8});
     // expect(result["Other"]).toBe({ added: 2, removed: 1}); TODO
+});
+
+test('Can Group Commits By Week, and then by Backend/Frontend/Docs/Other', {}, () => {
+    let stats = new RepositoryStatistics([
+        {
+            author: 'Bob',
+            subject: 'Added some stuff',
+            date: new Date('2023-10-03'),
+            hash: '1234567890abcdef',
+            changes: [
+                { added: '-', removed: '-', path: 'test.png' },
+                { added: 1, removed: 2, path: 'test.java' },
+                { added: 3, removed: 4, path: 'test2.js' },
+                { added: 2, removed: 1, path: 'someOtherThings.txt' },
+            ]
+        },
+        {
+            author: 'Alice',
+            subject: 'Added some stuff',
+            date: new Date('2023-10-02'),
+            hash: '1234567890abcdefghijk',
+            changes: [
+                { added: '-', removed: '-', path: 'test.png' },
+                { added: 3, removed: 2, path: 'test.java' },
+                { added: 1, removed: 4, path: 'test2.css' }
+            ]
+        }
+    ]);
+    let groups = [
+        RepositoryStatistics.backend,
+        RepositoryStatistics.frontendIncludingMarkup        
+    ]
+    let result = stats.groupByWeek(new Date('2023-10-01'))
+        .map(w => w.groupBy(groups).map(g => g.getLinesTotal()));
+
+    expect(result[0]["Backend"]).toStrictEqual({ added: 4, removed: 4});
+    expect(result[0]["Frontend"]).toStrictEqual({ added: 4, removed: 8});
 });

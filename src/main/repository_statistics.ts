@@ -40,6 +40,11 @@ export class RepositoryStatistics {
         extensions: ['.md', '.txt', 'asciidoc', '.adoc', '.latex']
     }
 
+    static frontendIncludingMarkup = {
+        name: "Frontend",
+        extensions: ['.js', '.jsx', '.ts', '.tsx', '.vue', '.html', '.css']
+    };
+
     constructor(rawData: LoggedCommit[], public options: { ignoredExtensions: string[] } = {
         ignoredExtensions: ['.json'] //TODO: dit is dubbelop met de package-json. Even nadenken wat we willen
     }) {
@@ -161,7 +166,6 @@ export class RepositoryStatistics {
 //Dit moet vast handiger kunnen (want nu moet je elke array functie opnieuw implementeren)
 export class GroupedCollection<T> {
     constructor(public content: { [name: string]: T }){
-    
     }
 
     map<Y>(fn: (r: T) => Y) : GroupedCollection<Y> {
