@@ -113,13 +113,17 @@ export class ReposController {
         let coreStats = new RepositoryStatistics(stats);
         let authorsGrouped = coreStats.groupByAuthor().map(st => st.getLinesTotal());
         let totals = coreStats.getLinesTotal()        
-        let authors = authorsGrouped.content;
+        let authors = authorsGrouped.export();
 
-        let total = coreStats.groupByWeek(savedCourseConfig.startDate).map(st => st.getLinesTotal());
+        let totalPerWeek = coreStats
+            .groupByWeek(savedCourseConfig.startDate)
+            .map(st => st.getLinesTotal())
+            .export();
         let authorPerWeek = coreStats
             .groupByAuthor().map(st => 
                 st.groupByWeek(savedCourseConfig.startDate)
-                .map(st => st.getLinesTotal()));
+                .map(st => st.getLinesTotal()))
+            .export();
 
         return {
             total: {
@@ -128,8 +132,8 @@ export class ReposController {
             },
             authors,
             weekly: {
-                total: total,
-                authors: authorPerWeek.content
+                total: totalPerWeek,
+                authors: authorPerWeek
             }
         };
     }
@@ -152,7 +156,7 @@ export class ReposController {
         let groupedByAuthor = coreStats.groupByAuthor();
         console.log('grouped', groupedByAuthor);
         console.log('filter' , filter)
-        let studentStats = groupedByAuthor.content[filter.authorName];
+        let studentStats = groupedByAuthor.get(filter.authorName);
         let groups = [
             RepositoryStatistics.backend, 
             RepositoryStatistics.frontend,
@@ -160,11 +164,11 @@ export class ReposController {
             RepositoryStatistics.docs
         ]
 
-        let total = studentStats.groupBy(groups).map(g => g.getLinesTotal());
+        let total = studentStats.groupBy(groups).map(g => g.getLinesTotal()).export();
         let weekly = studentStats.groupByWeek(savedCourseConfig.startDate)
-            .map(w => w.groupBy(groups).map(g => g.getLinesTotal()));
+            .map(w => w.groupBy(groups).map(g => g.getLinesTotal())).export();
         return {
-            total: total.content,
+            total: total,
             weekly: weekly
         }        
     }

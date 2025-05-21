@@ -17,7 +17,7 @@ test('CanSumLinesPerAuthor', {}, () => {
             ]
         }
     ]);
-    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).content;
+    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).export();
 
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
@@ -50,7 +50,7 @@ test('Package-lock & github bot ignored hardcoded', {}, () => {
             ]
         }
     ]);
-    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).content;
+    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).export();
 
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
@@ -73,7 +73,7 @@ test('Can Ignore Filetypes', {}, () => {
             ]
         }
     ], { ignoredExtensions: ['.json'] });
-    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).content;
+    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).export();
 
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
@@ -96,7 +96,7 @@ test('Can Group Commits Per Week', {}, () => {
         { date: new Date('2023-10-25'), ...someCommit },
     ].reverse());
 
-    let result = stats.groupByWeek().map((w) => w.getLinesTotal());
+    let result = stats.groupByWeek().map((w) => w.getLinesTotal()).export();
     expect(result[0].added, 'Can read multiple commits in 1 week').toBe(2);
     expect(result[1].added, 'Can go to next week').toBe(1);
     expect(result[2].added, 'Can skip an empty week').toBe(0);
@@ -123,7 +123,7 @@ test('Can Group Commits Per Week Per Author', {}, () => {
 
     let perAuthorResult = stats.groupByAuthor()
         .map(as => as.groupByWeek(new Date('2023-10-01'))
-            .map(w => w.getLinesTotal())).content;
+            .map(w => w.getLinesTotal())).export();
 
     console.log(JSON.stringify(perAuthorResult))
     expect(perAuthorResult['Bob'][0].added).toBe(2);
@@ -171,7 +171,7 @@ test('Can Group Commits By Backend/Frontend/Docs/Other', {}, () => {
         RepositoryStatistics.frontendIncludingMarkup        
     ]
 
-    let result = stats.groupBy(groups).map(g => g.getLinesTotal()).content;
+    let result = stats.groupBy(groups).map(g => g.getLinesTotal()).export();
     expect(result["Backend"]).toStrictEqual({ added: 4, removed: 4});
     expect(result["Frontend"]).toStrictEqual({ added: 4, removed: 8});
     // expect(result["Other"]).toBe({ added: 2, removed: 1}); TODO
@@ -208,7 +208,7 @@ test('Can Group Commits By Week, and then by Backend/Frontend/Docs/Other', {}, (
         RepositoryStatistics.frontendIncludingMarkup        
     ]
     let result = stats.groupByWeek(new Date('2023-10-01'))
-        .map(w => w.groupBy(groups).map(g => g.getLinesTotal()));
+        .map(w => w.groupBy(groups).map(g => g.getLinesTotal())).export();
 
     expect(result[0]["Backend"]).toStrictEqual({ added: 4, removed: 4});
     expect(result[0]["Frontend"]).toStrictEqual({ added: 4, removed: 8});

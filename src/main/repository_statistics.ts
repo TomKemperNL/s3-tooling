@@ -130,8 +130,9 @@ export class RepositoryStatistics {
         return RepositoryStatistics.#getChanges(this.data).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
     }
 
-    groupByWeek(startDate: Date = null): RepositoryStatistics[] {
-        return this.#privGetCommitsPerWeek(this.data, startDate).map(cs => new RepositoryStatistics(cs, this.options));
+    groupByWeek(startDate: Date = null): ExportingArray<RepositoryStatistics> {
+        let stats : RepositoryStatistics[] = this.#privGetCommitsPerWeek(this.data, startDate).map(cs => new RepositoryStatistics(cs, this.options))
+        return new ExportingArray<RepositoryStatistics>(stats);
     }
 
     groupByAuthor(): GroupedCollection<RepositoryStatistics> {
@@ -163,9 +164,20 @@ export class RepositoryStatistics {
     }
 }
 
+function isExportable(obj: any): obj is Exportable {
+    return obj && typeof obj.export === 'function';
+}
+interface Exportable{
+    export(): any;
+}
+
 //Dit moet vast handiger kunnen (want nu moet je elke array functie opnieuw implementeren)
 export class GroupedCollection<T> {
-    constructor(public content: { [name: string]: T }){
+    constructor(private content: { [name: string]: T }){
+    }
+
+    get(name: string) : T {
+        return this.content[name];
     }
 
     map<Y>(fn: (r: T) => Y) : GroupedCollection<Y> {
@@ -186,4 +198,46 @@ export class GroupedCollection<T> {
         }
         return new GroupedCollection(result);
     }
+
+    export(){
+        let result = {};
+        for(let key of Object.keys(this.content)){
+            if(isExportable(this.content[key])){
+                result[key] = this.content[key].export();
+            }else{
+                result[key] = this.content[key];    
+            }
+        }
+        return result;
+    }
+}
+
+export class ExportingArray<T> {
+    constructor(private items: T[]) {
+        
+        // Object.setPrototypeOf(this, ExportingArray.prototype);
+    }
+
+    map<Y>(fn: (r: T) => Y) : ExportingArray<Y> {
+        let result = this.items.map(fn);
+        return new ExportingArray(result);
+    }
+
+    filter(fn: (r: T) => boolean) : ExportingArray<T> {
+        let result = this.items.filter(fn);
+        return new ExportingArray(result);
+    }    
+
+    export(){
+        let result = [];
+        for(let item of this.items){
+            if(isExportable(item)){
+                result.push(item.export());
+            }else{
+                result.push(item);    
+            }
+        }
+        return result;
+    }
+
 }
