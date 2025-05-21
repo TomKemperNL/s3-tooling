@@ -79,7 +79,7 @@ export class RepositoryDetails extends LitElement {
 
     render() {
         let labels: string[] = [];
-        let values: number[] = [];
+        let datasets: any[] = [];
       
         let blameLabels: string[] = [];
         let blameValues: number[] = [];
@@ -88,7 +88,8 @@ export class RepositoryDetails extends LitElement {
             for (let i = 0; i < this.repoStats.weekly.total.length; i++) {
                 labels.push('Week ' + (i + 1));
             }
-            values = this.repoStats.weekly?.total.map(w => w.added - w.removed);
+            datasets.push(this.repoStats.weekly?.total.map(w => w.added));
+            datasets.push(this.repoStats.weekly?.total.map(w => w.removed * -1));
         }
 
         if(this.blameStats){
@@ -120,7 +121,11 @@ export class RepositoryDetails extends LitElement {
             
         </div>
         ${when(this.repoStats, () => html`
-            <bar-chart class=${classMap({ loading: this.loading })} style="grid-area: bar" .data=${{ labels: labels, values: values }}></bar-chart>
+            <stacked-bar-chart 
+                class=${classMap({ loading: this.loading })} 
+                style="grid-area: bar" 
+                .labels=${labels} 
+                .datasets=${datasets}></stacked-bar-chart>
             <pie-chart class=${classMap({ loading: this.loading })} style="grid-area: pie" .data=${{ labels: blameLabels, values: blameValues }}></pie-chart>
         `)}
         `;
