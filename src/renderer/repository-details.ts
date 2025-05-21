@@ -144,7 +144,7 @@ export class RepositoryDetails extends LitElement {
             for (let a of Object.keys(this.blameStats?.blamePie)) {
                 blameLabels.push(a);
                 blameValues.push(this.blameStats.blamePie[a]);
-                blameColors.push(this.authorToColor(a, Object.keys(this.blameStats.blamePie)));
+                blameColors.push(this.authorToColor(a, Object.keys(this.repoStats!.authors)));
             }
         }
 
