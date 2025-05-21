@@ -5,10 +5,12 @@ import { ref, createRef } from 'lit/directives/ref.js';
 
 @customElement('pie-chart')
 export class PieChart extends LitElement {
-    @property({ type: Object })
-    data: any = { 
-        values: [], 
-        labels: [] };
+    @property({ type: Array })
+    values: any = [];
+    @property({ type: Array })
+    labels: string[] = [];
+    @property({ type: Array })
+    colors: string[] = [];
 
     canvasRef = createRef();
 
@@ -18,7 +20,7 @@ export class PieChart extends LitElement {
 
     constructor() {
         super();
-      
+
     }
 
     chart: Chart;
@@ -31,7 +33,7 @@ export class PieChart extends LitElement {
     }
 
     updated(changedProperties) {
-        if (changedProperties.has('data')) {
+        if (changedProperties.has('labels') || changedProperties.has('values') || changedProperties.has('colors')) {
             if (this.chart) {
                 this.chart.destroy();
             }
@@ -39,14 +41,21 @@ export class PieChart extends LitElement {
             this.chart = new Chart(<any>this.canvasRef.value, {
                 type: 'pie',
                 data: {
-                    labels: this.data.labels,
+                    labels: this.labels,
                     datasets: [{
                         label: 'Lines by author (current revision)',
-                        data: this.data.values,
-                        borderWidth: 1
+                        data: this.values,
+                        borderWidth: 1,
+                        backgroundColor: this.colors,
                     }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
                 }
-               
             });
         }
     }

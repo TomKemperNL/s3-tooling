@@ -36,18 +36,18 @@ export class StackedBarChart extends LitElement {
             if (this.chart) {
                 this.chart.destroy();
             }
-
             this.chart = new Chart(<any>this.canvasRef.value, {
                 type: 'bar',
                 data: {
                     labels: this.labels,
-                    datasets: this.datasets.map(d => ({
-                        label: 'A',
-                        data: d,
-                        borderWidth: 1
-                    }))
+                    datasets: this.datasets
                 },
                 options: {
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
                     scales: {
                         x: {
                             stacked: true

@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { BlameStatisticsDTO, RepoDTO, RepoStatisticsDTO } from "../core";
+import { BlameStatisticsDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO } from "../core";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
@@ -68,8 +68,8 @@ export class RepositoryDetails extends LitElement {
     :host {
         display: grid;
         grid-template-areas:
-            "numbers numbers"
-            "bar     pie";
+            "bar     bar"
+            "numbers pie";
     }
 
     .loading {
@@ -77,26 +77,74 @@ export class RepositoryDetails extends LitElement {
     }
     `
 
+    colors = [//Heb CoPilot maar de kleuren laten kiezen...
+        "rgba(223,159,159,1)",
+        "rgba(223,191,159,1)",
+        "rgba(223,223,159,1)",
+        "rgba(191,223,159,1)",
+        "rgba(159,223,159,1)",
+        "rgba(159,223,191,1)",
+        "rgba(159,223,223,1)",
+        "rgba(159,191,223,1)",
+        "rgba(159,159,223,1)",
+        "rgba(191,159,223,1)",
+        "rgba(223,159,223,1)",
+        "rgba(223,159,191,1)"
+    ]
+
+    authorToColor(author: string, allAuthors: string[]): string {
+        return this.colors[allAuthors.indexOf(author) % this.colors.length];
+    }
+
+    toDatasets(statsByWeek: RepoStatisticsPerWeekDTO): any[] {
+        let authors = Object.keys(statsByWeek.authors);
+        let datasets: any[] = [];
+
+        for (let a of authors) {
+            let addedNumbers = statsByWeek.authors[a].map(w => w.added);
+            let removedNumbers = statsByWeek.authors[a].map(w => w.removed * -1);
+            let options = {
+                label: a,
+                backgroundColor: this.authorToColor(a, authors),
+                borderColor: this.authorToColor(a, authors),
+                borderWidth: 1
+            }
+
+            datasets.push({
+                data: addedNumbers,
+                ...options
+            });
+
+            datasets.push({
+                data: removedNumbers,
+                ...options
+            });
+        }
+
+        return datasets;
+    }
+
     render() {
         let labels: string[] = [];
         let datasets: any[] = [];
-      
+
         let blameLabels: string[] = [];
         let blameValues: number[] = [];
-        
+        let blameColors: string[] = [];
+
         if (this.repoStats) {
+
             for (let i = 0; i < this.repoStats.weekly.total.length; i++) {
                 labels.push('Week ' + (i + 1));
             }
-            datasets.push(this.repoStats.weekly?.total.map(w => w.added));
-            datasets.push(this.repoStats.weekly?.total.map(w => w.removed * -1));
+            datasets = this.toDatasets(this.repoStats.weekly!);
         }
 
-        if(this.blameStats){
-
-            for(let a of Object.keys(this.blameStats?.blamePie)){
+        if (this.blameStats) {
+            for (let a of Object.keys(this.blameStats?.blamePie)) {
                 blameLabels.push(a);
                 blameValues.push(this.blameStats.blamePie[a]);
+                blameColors.push(this.authorToColor(a, Object.keys(this.blameStats.blamePie)));
             }
         }
 
@@ -106,11 +154,14 @@ export class RepositoryDetails extends LitElement {
             <ul style="grid-area: numbers;">
                 <li>Filter (regex): <input type="text" value=".*" disabled></li>
                 ${when(this.repoStats, () => html`
-                    <li>Added: ${this.repoStats.total.added} / Removed: ${this.repoStats.total.removed}</li>
+                    <li>Added: ${this.repoStats!.total.added} / Removed: ${this.repoStats!.total.removed}</li>
                     <li>Authors:
                         <ul>
-                            ${map(Object.keys(this.repoStats.authors), a => html`
-                                <li><button @click=${this.selectStudent(a)} type="button">Select</button>${a}, Added: ${this.repoStats.authors[a].added} / Removed: ${this.repoStats.authors[a].removed}</li>
+                            ${map(Object.keys(this.repoStats!.authors), a => html`
+                                <li>
+                                    <button @click=${this.selectStudent(a)} type="button">Select</button>
+                                    <span style="color: ${this.authorToColor(a, Object.keys(this.repoStats!.authors))}">${a}</span>, 
+                                    Added: ${this.repoStats!.authors[a].added} / Removed: ${this.repoStats!.authors[a].removed}</li>
                             `)}
                         </ul>
 
@@ -126,7 +177,12 @@ export class RepositoryDetails extends LitElement {
                 style="grid-area: bar" 
                 .labels=${labels} 
                 .datasets=${datasets}></stacked-bar-chart>
-            <pie-chart class=${classMap({ loading: this.loading })} style="grid-area: pie" .data=${{ labels: blameLabels, values: blameValues }}></pie-chart>
+            <pie-chart 
+                class=${classMap({ loading: this.loading })} 
+                style="grid-area: pie" 
+                .labels=${blameLabels}
+                .values=${blameValues}
+                .colors=${blameColors}></pie-chart>
         `)}
         `;
     }
