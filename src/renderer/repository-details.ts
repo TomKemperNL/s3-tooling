@@ -56,6 +56,23 @@ export class RepositoryDetails extends LitElement {
         }
     }
 
+    authors : { [name: string]: boolean } = {};
+    protected willUpdate(_changedProperties: PropertyValues): void {
+        if (_changedProperties.has('repoStats')) {
+            this.authors = {};
+            for(let a of Object.keys(this.repoStats!.authors)) {
+                this.authors[a] = true;
+            }
+        }        
+    }
+
+    toggleAuthor(authorName: string){
+        return e => {
+            this.authors[authorName] = e.target.checked;
+            this.requestUpdate();
+        }
+    }
+
     selectStudent(authorName: string) {
         return (e: Event) => {
             e.preventDefault();
@@ -75,6 +92,9 @@ export class RepositoryDetails extends LitElement {
     .loading {
         opacity: 0.5;
     }
+    ul {
+        list-style: none;
+    }
     `
 
     colors = [//Heb CoPilot maar de kleuren laten kiezen...
@@ -92,21 +112,24 @@ export class RepositoryDetails extends LitElement {
         "rgba(223,159,191,1)"
     ]
 
-    authorToColor(author: string, allAuthors: string[]): string {
-        return this.colors[allAuthors.indexOf(author) % this.colors.length];
+    authorToColor(author: string): string {
+        let authors = Object.keys(this.authors);
+        return this.colors[authors.indexOf(author) % this.colors.length];
     }
 
-    toDatasets(statsByWeek: RepoStatisticsPerWeekDTO): any[] {
-        let authors = Object.keys(statsByWeek.authors);
+    toDatasets(statsByWeek: RepoStatisticsPerWeekDTO): any[] {        
         let datasets: any[] = [];
 
-        for (let a of authors) {
+        for (let a of Object.keys(this.authors)) {
+            if (!this.authors[a]) {
+                continue;
+            }
             let addedNumbers = statsByWeek.authors[a].map(w => w.added);
             let removedNumbers = statsByWeek.authors[a].map(w => w.removed * -1);
             let options = {
                 label: a,
-                backgroundColor: this.authorToColor(a, authors),
-                borderColor: this.authorToColor(a, authors),
+                backgroundColor: this.authorToColor(a),
+                borderColor: this.authorToColor(a),
                 borderWidth: 1
             }
 
@@ -142,9 +165,12 @@ export class RepositoryDetails extends LitElement {
 
         if (this.blameStats) {
             for (let a of Object.keys(this.blameStats?.blamePie)) {
+                if (!this.authors[a]) {
+                    continue;
+                }
                 blameLabels.push(a);
                 blameValues.push(this.blameStats.blamePie[a]);
-                blameColors.push(this.authorToColor(a, Object.keys(this.repoStats!.authors)));
+                blameColors.push(this.authorToColor(a));
             }
         }
 
@@ -158,7 +184,7 @@ export class RepositoryDetails extends LitElement {
                     <li>Authors:
                         <ul>
                             ${map(Object.keys(this.repoStats!.authors), a => html`
-                                <li>
+                                <li><input type="checkbox" ?checked=${this.authors[a]} @change=${this.toggleAuthor(a)}>
                                     <button @click=${this.selectStudent(a)} type="button">Select</button>
                                     <span style="color: ${this.authorToColor(a, Object.keys(this.repoStats!.authors))}">${a}</span>, 
                                     Added: ${this.repoStats!.authors[a].added} / Removed: ${this.repoStats!.authors[a].removed}</li>
