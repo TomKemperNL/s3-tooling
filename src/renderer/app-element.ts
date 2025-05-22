@@ -11,7 +11,7 @@ import { AuthorSelectedEvent, StudentSelectedEvent } from "./repository-details"
 @customElement("app-element")
 export class AppElement extends LitElement {
     ipc: ElectronIPC;
-    constructor(){
+    constructor() {
         super();
         this.ipc = window.electron;
     }
@@ -25,6 +25,8 @@ export class AppElement extends LitElement {
     @property({ type: Object })
     activeRepo: RepoDTO;
 
+    @property({ type: Boolean, state: true })
+    showSettings: boolean = false;
 
     courseLoaded(e: CourseLoadedEvent) {
         this.activeCourse = e.course;
@@ -52,15 +54,34 @@ export class AppElement extends LitElement {
             justify-self: center;
         }
 
+        ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: row;
+            float: right;
+        }
         `;
 
+    async goToSettings() {
+        this.showSettings = true;
+    }
+    async goToDashboard() {
+        this.showSettings = false;
+    }
 
     render() {
         return html`
         <header style="grid-area: header;">
             <h1>HU S3 Tooling</h1>
+            <nav label="app navigation">
+                <ul>
+                    <li><a href="#" @click=${this.goToDashboard}>Dashboard</a></li>
+                    <li><a href="#" @click=${this.goToSettings}>Settings</a></li>
+                </ul>
+            </nav>
         </header>
-        <nav style="grid-area: nav;">            
+        <nav style="grid-area: nav;" label="dashboard navigation">            
             <h2>Cursussen</h2>            
             <courses-list @course-loaded=${this.courseLoaded}></courses-list>
             ${when(this.activeCourse, () => html`  
@@ -72,11 +93,14 @@ export class AppElement extends LitElement {
                                     
             `)}
         </nav>
-        <main style="grid-area: details;">
-            ${when(this.activeRepo, () => html`
-                <repository-details .repo=${this.activeRepo}></repository-details>
-            `)}            
-            </main>
+        <main style="grid-area: details;">            
+        ${when(this.showSettings, () => html`
+            <settings-page></settings-page>`, () => html`            
+                ${when(this.activeRepo, () => html`
+                    <repository-details .repo=${this.activeRepo}></repository-details>
+                `)}
+        `)}
+        </main>
         `
     }
 }

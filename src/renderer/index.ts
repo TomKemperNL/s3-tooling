@@ -4,6 +4,7 @@ import './course-details'
 import './repositories-list'
 import './repository-details'
 import './author-details'
+import './settings-page'
 
 import './charts/bar-chart'
 import './charts/pie-chart'

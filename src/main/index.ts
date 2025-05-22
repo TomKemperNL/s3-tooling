@@ -5,22 +5,38 @@ import { CanvasClient } from "./canvas_client";
 import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "./../core";
 import { ipcMain } from 'electron';
 
-const githubClient = new GithubClient();
-const fileSystem = new FileSystem();
-const canvasClient = new CanvasClient();
 
 import { db } from "./db";
 import { ReposController } from "./repos/reposController";
 import { CoursesController } from "./courses/coursesController";
-const repoController = new ReposController(db, canvasClient, githubClient, fileSystem);
-const coursesController = new CoursesController(db, canvasClient);
+
+import { saveSettings, loadSettings } from "./settings";
+
+
 
 export async function main() {
-    if(!process.env.KEEP_DB) {
+    let settings = await loadSettings();
+    console.log(settings)
+
+    const githubClient = new GithubClient(settings.githubToken);
+    const fileSystem = new FileSystem(settings.dataPath);
+    const canvasClient = new CanvasClient(settings.canvasToken);
+
+    const repoController = new ReposController(db, canvasClient, githubClient, fileSystem);
+    const coursesController = new CoursesController(db, canvasClient);
+
+    if(!settings.keepDB) {
         await db.reset().then(() => db.test());
     }else{
         console.log('keeping db');
     }
+    ipcMain.handle("settings:save", async (e, settings) => {
+        saveSettings(settings);
+    });
+
+    ipcMain.handle("settings:load", async (e) => {
+        return loadSettings();
+    });
 
     ipcMain.handle("courses:get", () => {
         return coursesController.getConfigs();

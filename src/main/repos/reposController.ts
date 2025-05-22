@@ -4,7 +4,6 @@ import { Db } from "../db";
 import { FileSystem } from "../filesystem_client";
 import { GithubClient, MemberResponse, RepoResponse } from "../github_client";
 import { RepositoryStatistics } from "../repository_statistics";
-import { getUsernameFromUrl } from "./../canvas_client";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
 

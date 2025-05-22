@@ -101,7 +101,11 @@ function combineReports(rep1, rep2){
 }
 
 export class FileSystem {
-    #basePath = 'C:/s3-tooling-data';
+    #basePath : string;
+
+    constructor(basePath: string) {
+        this.#basePath = basePath;
+    }
 
     async cloneRepo(prefix: string[], repo) {
         let target = path.join(this.#basePath, ...prefix);
@@ -196,7 +200,9 @@ export class FileSystem {
                 try {
                     let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
                     let blameLines = blame.stdout.split('\n');
-                    report = combineReports(report, parseBlame(blameLines));
+                    let fileResults = parseBlame(blameLines);
+                    console.log('File results', file, fileResults);
+                    report = combineReports(report, fileResults);
                 } catch (e) {
                     console.error('Error in blame', logLines, e);
                 }

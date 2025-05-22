@@ -18,11 +18,15 @@ export type MemberResponse = {
 }
 
 export class GithubClient {
-    #kit = new Octokit({
-        auth: process.env.ACCESS_TOKEN,
-        userAgent: 'ict.hu.nl:S3-Tools:Dev',
-        log: console
-    });
+    #kit: Octokit;
+
+    constructor(githubToken: string) {
+        this.#kit = new Octokit({
+            auth: githubToken,
+            userAgent: 'ict.hu.nl:S3-Tools:Dev',
+            log: console
+        });
+    }
 
     async getSelf() {
         return this.#kit.request('GET /user').then(response => response.data);

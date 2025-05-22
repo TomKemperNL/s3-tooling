@@ -6,6 +6,12 @@ const { contextBridge } = require('electron')
 
 contextBridge.exposeInMainWorld('electron', {
     test: 'Hello World',
+    saveSettings: async (settings) => {
+        return ipcRenderer.invoke('settings:save', settings);
+    },
+    loadSettings: async () => {
+        return ipcRenderer.invoke('settings:load');
+    },
     getCourses: async () => {
         return ipcRenderer.invoke('courses:get');
     },

@@ -89,8 +89,12 @@ export function getUsernameFromUrl(url: string, assignmentName: string){
 }
 
 export class CanvasClient {
-    #token = process.env.CANVAS_TOKEN;
+    #token: string;
     #baseUrl = "https://canvas.hu.nl/api/v1";
+
+    constructor(canvasToken: string) {
+        this.#token = canvasToken;
+    }
 
     async getSelf() {
         let response = await fetch(`${this.#baseUrl}/users/self`, {
