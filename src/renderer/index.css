@@ -1,8 +1,6 @@
 *,
 ::after,
-::before,
-::backdrop,
-::file-selector-button {
+::before {
   box-sizing: inherit;
   border: 0 solid;
 }

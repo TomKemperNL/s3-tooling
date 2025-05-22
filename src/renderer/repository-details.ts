@@ -101,8 +101,12 @@ export class RepositoryDetails extends LitElement {
     :host {
         display: grid;
         grid-template-areas:
-            "bar     bar"
-            "numbers pie";
+            "title title"
+            "pie     bar"
+            "numbers student";
+            ;
+        grid-template-columns: 1fr 2fr;
+        grid-template-rows: min-content minmax(25%, 50%) 1fr;
     }
 
     .loading {
@@ -130,7 +134,12 @@ export class RepositoryDetails extends LitElement {
 
     authorToColor(author: string): string {
         let authors = Object.keys(this.authors);
-        return this.colors[authors.indexOf(author) % this.colors.length];
+        if (authors.indexOf(author) === -1) {
+            return 'rgba(0,0,0,1)';
+        } else {
+            return this.colors[authors.indexOf(author) % this.colors.length];
+        }
+
     }
 
     toDatasets(statsByWeek: RepoStatisticsPerWeekDTO): any[] {
@@ -191,10 +200,9 @@ export class RepositoryDetails extends LitElement {
         }
 
         return html`
-        <div class=${classMap({ loading: this.loading })}>
-            <p>${this.repo.name}</p>
-            <ul style="grid-area: numbers;">
-                <li>Filter (regex): <input type="text" value=".*" disabled></li>
+        <h3 style="grid-area: title">${this.repo.name}</h3>
+        <div style="grid-area: numbers;" class=${classMap({ loading: this.loading })}>
+            <ul>
                 ${when(this.repoStats, () => html`
                     <li>Added: ${this.repoStats!.total.added} / Removed: ${this.repoStats!.total.removed}</li>
                     <li>Authors:
@@ -213,24 +221,31 @@ export class RepositoryDetails extends LitElement {
             </ul>
             
         </div>
+        <div style="grid-area: bar">
         ${when(this.repoStats, () => html`
             <stacked-bar-chart 
                 class=${classMap({ loading: this.loading })} 
-                style="grid-area: bar" 
+                
                 .labels=${labels} 
                 .datasets=${datasets}></stacked-bar-chart>
+        `)}
+        </div>
+        <div style="grid-area: pie">
+        ${when(this.repoStats, () => html`
             <pie-chart 
                 class=${classMap({ loading: this.loading })} 
-                style="grid-area: pie" 
+                
                 .labels=${blameLabels}
                 .values=${blameValues}
                 .colors=${blameColors}></pie-chart>
         `)}
-
-        
+        </div>
+        <div style="grid-area: student">
         ${when(this.activeAuthor, () => html`
-                <student-details .authorName=${this.activeAuthorName} .authorStats=${this.activeAuthor}></student-details>
-            `)}
+                <student-details  .authorName=${this.activeAuthorName} .authorStats=${this.activeAuthor}></student-details>
+            `)}    
+        </div>        
+        
 
         `;
     }
