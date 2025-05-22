@@ -90,6 +90,11 @@ export type RepoStatisticsDTO = {
     weekly: RepoStatisticsPerWeekDTO,
 }
 
+export type AuthorStatisticsDTO = {
+    total: { [group: string]: LinesStatistics },    
+    weekly: { [group: string]: LinesStatistics }[],
+}
+
 export type BlameStatisticsDTO = {
     blamePie: { [name: string] : number}
 }

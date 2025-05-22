@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { BlameStatisticsDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO } from "../core";
+import { AuthorStatisticsDTO, BlameStatisticsDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO } from "../core";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
@@ -38,8 +38,10 @@ export class RepositoryDetails extends LitElement {
     loading: boolean = false;
 
 
+    @property({ type: String, state: true })
+    activeAuthorName: string = '';
     @property({ type: Object })
-    activeAuthor: any;
+    activeAuthor: AuthorStatisticsDTO;
 
     protected updated(_changedProperties: PropertyValues): void {
         if (_changedProperties.has('repo')) {
@@ -79,6 +81,7 @@ export class RepositoryDetails extends LitElement {
 
     selectStudent(authorName: string) {
         return (e: Event) => {
+            this.activeAuthorName = authorName;
             this.ipc.getStudentStats(
                 this.repo.courseId,
                 this.repo.assignment,
@@ -226,7 +229,7 @@ export class RepositoryDetails extends LitElement {
 
         
         ${when(this.activeAuthor, () => html`
-                <student-details .authorStats=${this.activeAuthor}></student-details>
+                <student-details .authorName=${this.activeAuthorName} .authorStats=${this.activeAuthor}></student-details>
             `)}
 
         `;
