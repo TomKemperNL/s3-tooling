@@ -21,11 +21,22 @@ export class RepositoriesList extends LitElement {
         }
     }
 
+    dropdownChange(e) {
+        let selected = e.target.value;
+        if (selected) {
+            let repo = this.repos.find(r => r.name === selected);
+            if (repo) {
+                this.selectRepo(repo)();
+            }
+        }
+    }
+
     render(){
         return html`
-        <ul>
+        <select @change=${this.dropdownChange}>
+            <option value="">Select a repository</option>
             ${map(this.repos, r => html`
-                <li><button @click=${this.selectRepo(r)}>Select</button> ${r.name}</li>
+                <option value=${r.name}>${r.name}</option>
                 `)}
         </ul>`;
     }

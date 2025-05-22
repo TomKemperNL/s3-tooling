@@ -1,0 +1,23 @@
+*,
+::after,
+::before,
+::backdrop,
+::file-selector-button {
+  box-sizing: inherit;
+  border: 0 solid;
+}
+
+:root {
+    font-family: Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    box-sizing: border-box;
+    
+    color: #213547;
+    background-color: #ffffff;
+    --hu-red: #e6302b;
+    --hu-blue: #00a1e1;
+
+    scrollbar-gutter: stable;
+}

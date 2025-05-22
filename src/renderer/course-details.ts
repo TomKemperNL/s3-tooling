@@ -37,21 +37,28 @@ export class CourseDetails extends LitElement {
         };
     }
 
-    loadRepos(a: Assignment) {
-        return async () => {
-            try {
-                this.loading = true;
-                let result = await this.ipc.loadRepos(this.course.canvasId, a.githubAssignment, { sections: this.selectedSections })
-                this.dispatchEvent(new ReposLoadedEvent(result));
-            } finally {
-                this.loading = false;
+    async loadRepos(a: Assignment) {
+        try {
+            this.loading = true;
+            let result = await this.ipc.loadRepos(this.course.canvasId, a.githubAssignment, { sections: this.selectedSections })
+            this.dispatchEvent(new ReposLoadedEvent(result));
+        } finally {
+            this.loading = false;
+        }
+    }
+
+    dropdownChange(e) {
+        let selected = e.target.value;
+        if (selected) {
+            let assignment = this.course.assignments.find(a => a.githubAssignment === selected);
+            if (assignment) {
+                this.loadRepos(assignment);
             }
-        };
+        }
     }
 
     render() {
-        return html`
-            <h2>${this.course.name}</h2>           
+        return html`          
             <h3>Secties</h3>
             <ul>
                 ${map(Object.keys(this.course.sections), k => html`
@@ -65,9 +72,11 @@ export class CourseDetails extends LitElement {
                 `)}
             </ul>
             <h3>Assignments</h3>
-            <ul>
-                ${map(this.course.assignments, a => html`<li>${a.githubAssignment} <button @click=${this.loadRepos(a)} ?disabled=${this.loading} type="button">Load Repositories</button></li>`)}
-            </ul>
+            <select ?disabled=${this.loading} @change=${this.dropdownChange}>
+                <option value="">Select an assignment</option>
+                ${map(this.course.assignments, a => 
+                    html`<option value=${a.githubAssignment}>${a.githubAssignment} </option>`)}
+            </select>
         `
     }
 }
