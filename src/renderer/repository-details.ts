@@ -37,6 +37,10 @@ export class RepositoryDetails extends LitElement {
     @property({ type: Boolean, state: true })
     loading: boolean = false;
 
+
+    @property({ type: Object })
+    activeAuthor: any;
+
     protected updated(_changedProperties: PropertyValues): void {
         if (_changedProperties.has('repo')) {
             this.loading = true;
@@ -56,17 +60,17 @@ export class RepositoryDetails extends LitElement {
         }
     }
 
-    authors : { [name: string]: boolean } = {};
+    authors: { [name: string]: boolean } = {};
     protected willUpdate(_changedProperties: PropertyValues): void {
         if (_changedProperties.has('repoStats')) {
             this.authors = {};
-            for(let a of Object.keys(this.repoStats!.authors)) {
+            for (let a of Object.keys(this.repoStats!.authors)) {
                 this.authors[a] = true;
             }
-        }        
+        }
     }
 
-    toggleAuthor(authorName: string){
+    toggleAuthor(authorName: string) {
         return e => {
             this.authors[authorName] = e.target.checked;
             this.requestUpdate();
@@ -75,11 +79,20 @@ export class RepositoryDetails extends LitElement {
 
     selectStudent(authorName: string) {
         return (e: Event) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.dispatchEvent(new AuthorSelectedEvent(authorName));
+            this.ipc.getStudentStats(
+                this.repo.courseId,
+                this.repo.assignment,
+                this.repo.name,
+                { authorName: authorName }).then(
+                    authorStats => {
+                        console.log('received author stats', authorStats);
+                        this.activeAuthor = authorStats;
+                    });
+
         };
     }
+
+
 
     static styles = css`
     :host {
@@ -117,7 +130,7 @@ export class RepositoryDetails extends LitElement {
         return this.colors[authors.indexOf(author) % this.colors.length];
     }
 
-    toDatasets(statsByWeek: RepoStatisticsPerWeekDTO): any[] {        
+    toDatasets(statsByWeek: RepoStatisticsPerWeekDTO): any[] {
         let datasets: any[] = [];
 
         for (let a of Object.keys(this.authors)) {
@@ -210,6 +223,12 @@ export class RepositoryDetails extends LitElement {
                 .values=${blameValues}
                 .colors=${blameColors}></pie-chart>
         `)}
+
+        
+        ${when(this.activeAuthor, () => html`
+                <student-details .authorStats=${this.activeAuthor}></student-details>
+            `)}
+
         `;
     }
 }
