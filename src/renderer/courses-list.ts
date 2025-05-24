@@ -22,10 +22,10 @@ export class CoursesList extends LitElement {
 
     ipc: ElectronIPC
 
-    @property({ state: true })
+    @property({ type: Array, state: true })
     courses: any[];
 
-    @property({ state: true })
+    @property({ type: Boolean, state: true })
     loading: boolean = false;
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
