@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "./dist/src/main.js",
   "scripts": {
-    "dev": "concurrently \"vite build --watch\" \"tsc --watch\" \"dotenvx run -f .dev.env -- electron .\"",
-    "build": "tsc && vite build",
+    "dev": "concurrently \"vite build --watch\" \"tsc -p ./src/main/tsconfig.json --watch\" \"tsc -p ./src/renderer/tsconfig.json --watch\" \"dotenvx run -f .dev.env -- electron .\"",
+    "build": "tsc -p ./src/main/tsconfig.json && tsc -p ./src/renderer/tsconfig.json && vite build",
     "test": "vitest",
     "start": "dotenvx run -f .dev.env -- electron ."
   },

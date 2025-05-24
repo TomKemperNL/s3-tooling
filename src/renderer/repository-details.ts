@@ -210,7 +210,7 @@ export class RepositoryDetails extends LitElement {
                             ${map(Object.keys(this.repoStats!.authors), a => html`
                                 <li><input type="checkbox" ?checked=${this.authors[a]} @change=${this.toggleAuthor(a)}>
                                     <button @click=${this.selectStudent(a)} type="button">Select</button>
-                                    <span style="color: ${this.authorToColor(a, Object.keys(this.repoStats!.authors))}">${a}</span>, 
+                                    <span style="color: ${this.authorToColor(a)}">${a}</span>, 
                                     Added: ${this.repoStats!.authors[a].added} / Removed: ${this.repoStats!.authors[a].removed}</li>
                             `)}
                         </ul>

@@ -1,6 +1,4 @@
 import { ipcRenderer } from "electron";
-import { get } from "http";
-
 const { contextBridge } = require('electron')
 
 

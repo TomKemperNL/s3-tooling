@@ -1,10 +1,9 @@
 import { LitElement, PropertyValues, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { s2 } from "../temp.ts"
+
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc.ts";
 import { CourseDTO } from "../core.ts";
-import("./ipc.ts")
 
 export class CourseLoadedEvent extends Event {
     constructor(public course: CourseDTO) {
@@ -23,10 +22,10 @@ export class CoursesList extends LitElement {
 
     ipc: ElectronIPC
 
-    @property({ state: true })
+    @property({ type: Array, state: true })
     courses: any[];
 
-    @property({ state: true })
+    @property({ type: Boolean, state: true })
     loading: boolean = false;
 
     protected firstUpdated(_changedProperties: PropertyValues): void {

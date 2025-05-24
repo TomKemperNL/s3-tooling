@@ -6,7 +6,6 @@ import { CourseLoadedEvent } from "./courses-list";
 import { RepoSelectedEvent } from "./repositories-list";
 import { ReposLoadedEvent } from "./course-details";
 import { ElectronIPC } from "./ipc";
-import { AuthorSelectedEvent, StudentSelectedEvent } from "./repository-details";
 
 @customElement("app-element")
 export class AppElement extends LitElement {
