@@ -7,14 +7,10 @@
         "target": "ESNext",
         "module": "NodeNext",
         "moduleResolution": "nodenext",
-        "skipLibCheck": true,
-    },
+        "skipLibCheck": true
+    },    
     "include": [
-        "src/**/*",
-        "test/**/*"
-    ],
-    "exclude": [
-        "src/renderer/**/*",
-        "test/renderer/*"
+        "src",
+        "test"
     ]
 }

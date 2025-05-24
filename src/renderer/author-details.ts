@@ -14,6 +14,9 @@ export class StudentDetails extends LitElement {
     @property({ type: Boolean })
     loading: boolean = false;
 
+    @property({type: String})
+    authorName: string = "";
+
     private colors = [
         "rgba(255, 99, 132, 0.8)",
         "rgba(54, 162, 235, 0.8)",

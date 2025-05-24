@@ -128,7 +128,7 @@ export class CanvasClient {
         if (hasNext && isLast) {
             hasNext = false;
         }
-        let data = await response.json();
+        let data : any = await response.json();
         return {
             data: data,
             hasNext: hasNext
