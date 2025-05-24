@@ -60,6 +60,7 @@ export class AppElement extends LitElement {
             display: flex;
             flex-direction: row;
             float: right;
+            justify-content: space-around
         }
         `;
 
@@ -77,6 +78,8 @@ export class AppElement extends LitElement {
             <nav label="app navigation">
                 <ul>
                     <li><a href="#" @click=${this.goToDashboard}>Dashboard</a></li>
+                    <li><a>Students</a></li>
+                    <li><a>Repositories</a></li>
                     <li><a href="#" @click=${this.goToSettings}>Settings</a></li>
                 </ul>
             </nav>
@@ -90,7 +93,6 @@ export class AppElement extends LitElement {
             ${when(this.availableRepos, () => html`                
                 <h3>Repositories</h3>
                 <repositories-list .repos=${this.availableRepos} @repo-selected=${this.repoSelected}></repositories-list>
-                                    
             `)}
         </nav>
         <main style="grid-area: details;">            

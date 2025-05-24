@@ -186,22 +186,27 @@ export class FileSystem {
             if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
                 return;
             }
+            if (file.endsWith('.pdf')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
+                return;
+            }
             if (file.indexOf('node_modules/') !== -1) {
                 return;
             }
 
             let soloLog = await exec(`git log -1 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' });
             let logLines = soloLog.stdout.split('\n');
-            let [parsedLog] = parseLog(logLines);
+            let [parsedLog] = parseLog(logLines);            
 
             if (parsedLog.changes.length === 0) {
                 return; //Ignore merge commits without any other changes
-            } else if (!ignoredAuthors.some(ia => ia === parsedLog.author)) {
+            } else if (parsedLog.changes.some(c => c.added === '-' || c.removed === '-')) {
+                return; //Ignore binary files
+            }            
+            else if (!ignoredAuthors.some(ia => ia === parsedLog.author)) {
                 try {
                     let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
                     let blameLines = blame.stdout.split('\n');
                     let fileResults = parseBlame(blameLines);
-                    console.log('File results', file, fileResults);
                     report = combineReports(report, fileResults);
                 } catch (e) {
                     console.error('Error in blame', logLines, e);

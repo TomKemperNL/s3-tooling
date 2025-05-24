@@ -21,8 +21,6 @@ async function main() {
         win.loadFile('./dist/src/renderer/index.html')
     }
 
-    console.log('Starting Electron app...');
-
 
     app.whenReady().then(() => {
         createWindow();

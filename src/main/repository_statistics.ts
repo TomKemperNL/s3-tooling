@@ -46,7 +46,7 @@ export class RepositoryStatistics {
     };
 
     constructor(rawData: LoggedCommit[], public options: { ignoredExtensions: string[] } = {
-        ignoredExtensions: ['.json'] //TODO: dit is dubbelop met de package-json. Even nadenken wat we willen
+        ignoredExtensions: ['.json', '.pdf'] //TODO: dit is dubbelop met de package-json. Even nadenken wat we willen
     }) {
         this.data = rawData.filter(c => !ignoredAuthors.includes(c.author));
     }
