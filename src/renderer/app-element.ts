@@ -1,4 +1,4 @@
-import { css, html, LitElement } from "lit";
+import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { CourseDTO, RepoDTO } from "../core";
 import { when } from "lit/directives/when.js";
@@ -6,14 +6,25 @@ import { CourseLoadedEvent } from "./courses-list";
 import { RepoSelectedEvent } from "./repositories-list";
 import { ReposLoadedEvent } from "./course-details";
 import { ElectronIPC } from "./ipc";
+import { Settings } from "../settings";
 
 @customElement("app-element")
 export class AppElement extends LitElement {
     ipc: ElectronIPC;
+    
     constructor() {
         super();
         this.ipc = window.electron;
     }
+
+    protected firstUpdated(_changedProperties: PropertyValues): void {
+        this.ipc.loadSettings().then(settings => {
+            this.settings = settings;
+        }
+    }
+
+    @property({ type: Object })
+    settings: Settings;
 
     @property({ type: Object })
     activeCourse: CourseDTO;
@@ -95,8 +106,10 @@ export class AppElement extends LitElement {
             `)}
         </nav>
         <main style="grid-area: details;">            
-        ${when(this.showSettings, () => html`
-            <settings-page></settings-page>`, () => html`            
+        ${when(this.showSettings, 
+            () => html`
+                <settings-page .settings=${this.settings}></settings-page>`, 
+            () => html`            
                 ${when(this.activeRepo, () => html`
                     <repository-details .repo=${this.activeRepo}></repository-details>
                 `)}
