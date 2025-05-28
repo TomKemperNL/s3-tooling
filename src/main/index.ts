@@ -11,27 +11,31 @@ import { ReposController } from "./repos/reposController";
 import { CoursesController } from "./courses/coursesController";
 
 import { saveSettings, loadSettings } from "./settings";
+import { Settings } from "../settings";
 
-
+function createApp(settings: Settings) {
+    let githubClient = new GithubClient(settings.githubToken);
+    let fileSystem = new FileSystem(settings.dataPath);
+    let canvasClient = new CanvasClient(settings.canvasToken);
+    return {
+        githubClient, fileSystem, canvasClient,
+        repoController: new ReposController(db, canvasClient, githubClient, fileSystem),
+        coursesController: new CoursesController(db, canvasClient)
+    };
+}
 
 export async function main() {
     let settings = await loadSettings();
-    console.log(settings)
+    let app = createApp(settings);
 
-    const githubClient = new GithubClient(settings.githubToken);
-    const fileSystem = new FileSystem(settings.dataPath);
-    const canvasClient = new CanvasClient(settings.canvasToken);
-
-    const repoController = new ReposController(db, canvasClient, githubClient, fileSystem);
-    const coursesController = new CoursesController(db, canvasClient);
-
-    if(!settings.keepDB) {
+    if (!settings.keepDB) {
         await db.reset().then(() => db.test());
-    }else{
+    } else {
         console.log('keeping db');
     }
     ipcMain.handle("settings:save", async (e, settings) => {
         saveSettings(settings);
+        app = createApp(settings);
     });
 
     ipcMain.handle("settings:load", async (e) => {
@@ -39,28 +43,28 @@ export async function main() {
     });
 
     ipcMain.handle("courses:get", () => {
-        return coursesController.getConfigs();
+        return app.coursesController.getConfigs();
     });
 
     ipcMain.handle("course:load", async (e, id) => {
-        return coursesController.loadCourse(id);
+        return app.coursesController.loadCourse(id);
     });
 
     ipcMain.handle("repos:load", async (e, courseId: number, assignment: string, filter: RepoFilter) => {
-       return repoController.loadRepos(courseId, assignment, filter);
+        return app.repoController.loadRepos(courseId, assignment, filter);
     });
 
-    ipcMain.handle("repostats:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<RepoStatisticsDTO> => {
-        let mainResult = repoController.getRepoStats(courseId, assignment, name, filter);        
+    ipcMain.handle("repostats:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> => {
+        let mainResult = app.repoController.getRepoStats(courseId, assignment, name, filter);
         return mainResult;
     });
 
     ipcMain.handle("repostats-blame:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) => {
-        return repoController.getBlameStats(courseId, assignment, name, filter);
+        return app.repoController.getBlameStats(courseId, assignment, name, filter);
     });
 
     ipcMain.handle("repostats-student:get", async (e, courseId: number, assignment: string, name: string, filter: StudentFilter) => {
-        return repoController.getStatsByUser(courseId, assignment, name, filter);
+        return app.repoController.getStatsByUser(courseId, assignment, name, filter);
     });
-    
+
 }

@@ -9,17 +9,17 @@ const settingsFile = path.join(app.getPath('userData'), 'settings.json');
 
 export async function saveSettings(settings: Settings) {
     let settingsData = JSON.stringify(settings);
+    console.log("Saving settings to", settingsFile);
     await writeFile(settingsFile, settingsData, { encoding: 'utf-8' });
 }
 
-function readEnv(): any{
+function readEnv(result: any = {}): any{
     let canvasToken = process.env.CANVAS_TOKEN;
     let githubToken = process.env.ACCESS_TOKEN;
-    let keepDB = process.env.KEEP_DB === 'true';
-    let ignoredAuthors = process.env.IGNORED_AUTHORS ? process.env.IGNORED_AUTHORS.split(',') : [];
-    let dataPath = process.env.DATA_PATH || 'C:/s3-tooling-data';
+    let keepDB = process.env.KEEP_DB;
+    let ignoreAuthors = process.env.IGNORE_AUTHORS
+    let dataPath = process.env.DATA_PATH;
 
-    let result = {};
     if(canvasToken){
         result['canvasToken'] = canvasToken;
     }
@@ -27,10 +27,10 @@ function readEnv(): any{
         result['githubToken'] = githubToken;
     }
     if(keepDB){
-        result['keepDB'] = keepDB;
+        result['keepDB'] = (keepDB == 'true');
     }
-    if(ignoredAuthors){
-        result['ignoredAuthors'] = ignoredAuthors;
+    if(ignoreAuthors){
+        result['ignoreAuthors'] = ignoreAuthors.split(',').map((author: string) => author.trim());
     }
     if(dataPath){
         result['dataPath'] = dataPath;
@@ -43,6 +43,8 @@ export async function loadSettings(): Promise<Settings> {
     if(existsSync(settingsFile)) {
         let settingsData = await readFile(settingsFile, { encoding: 'utf-8' });
         let parsedSettings = JSON.parse(settingsData);
+
+        parsedSettings = readEnv(parsedSettings);
         return parsedSettings;
     }else{
         return readEnv();

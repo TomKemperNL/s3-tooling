@@ -2,6 +2,6 @@ export type Settings = {
     githubToken: string;
     canvasToken: string;
     keepDB: boolean;
-    ignoredAuthors: string[];
+    ignoreAuthors: string[];
     dataPath: string;
 }

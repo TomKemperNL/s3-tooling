@@ -17,15 +17,6 @@ export class AppElement extends LitElement {
         this.ipc = window.electron;
     }
 
-    protected firstUpdated(_changedProperties: PropertyValues): void {
-        this.ipc.loadSettings().then(settings => {
-            this.settings = settings;
-        }
-    }
-
-    @property({ type: Object })
-    settings: Settings;
-
     @property({ type: Object })
     activeCourse: CourseDTO;
 
@@ -108,7 +99,7 @@ export class AppElement extends LitElement {
         <main style="grid-area: details;">            
         ${when(this.showSettings, 
             () => html`
-                <settings-page .settings=${this.settings}></settings-page>`, 
+                <settings-page></settings-page>`, 
             () => html`            
                 ${when(this.activeRepo, () => html`
                     <repository-details .repo=${this.activeRepo}></repository-details>

@@ -13,23 +13,42 @@ export class SettingsPage extends LitElement {
         this.ipc = window.electron;
     }
 
-    @property({ type: Object })
+    @property({ type: Object, state: true })
     settings: Settings;
 
     @property({ type: Boolean, state: true })
     loading: boolean = false;
+
+    async loadSettings() {
+        this.loading = true;
+        let settings = await this.ipc.loadSettings()
+        console.log("Settings loaded:", settings);
+        this.settings = settings;
+        this.loading = false;
+    }
+
+    firstUpdated(): void {
+        this.loadSettings();
+    }
+
+    async saveSettings() {
+        this.loading = true;
+        console.log("Saving settings:", this.settings);
+        await this.ipc.saveSettings(this.settings);
+        this.loading = false;
+    }
 
     render() {
         return html`
             <div>
                 Settings</div>
                 <form>
-                    <ul>
-                        
+                    <ul>                        
                     <li>
                         <label for="canvasToken">Canvas Token:</label>
                         <input
-                            type="text"
+                            required
+                            type="password"
                             id="canvasToken"
                             name="canvasToken"
                             .value=${this.settings.canvasToken || ""}
@@ -41,7 +60,8 @@ export class SettingsPage extends LitElement {
                     <li>
                         <label for="githubToken">GitHub Token:</label>
                         <input
-                            type="text"
+                            required
+                            type="password"
                             id="githubToken"
                             name="githubToken"
                             .value=${this.settings.githubToken || ""}
@@ -53,6 +73,7 @@ export class SettingsPage extends LitElement {
                     <li>
                         <label for="dataPath">Data Path:</label>
                         <input
+                            required
                             type="text"
                             id="dataPath"
                             name="dataPath"
@@ -76,18 +97,26 @@ export class SettingsPage extends LitElement {
                     </li>
                     <li>
                         <label for="ignoredAuthors">Ignored Authors (comma separated):</label>
-                        <input
-                            type="text"
+                        <textarea
                             id="ignoredAuthors"
                             name="ignoredAuthors"
-                            .value=${this.settings.ignoredAuthors ? this.settings.ignoredAuthors.join(", ") : ""}
+                            .value=${this.settings.ignoreAuthors ? this.settings.ignoreAuthors.join(", ") : ""}
                             @input=${(e: Event) => {
-                this.settings.ignoredAuthors = (e.target as HTMLInputElement).value.split(",").map(s => s.trim());
+                this.settings.ignoreAuthors = (e.target as HTMLInputElement).value.split(",").map(s => s.trim());
             }}
-                        />
+                        ></textarea>
                     </li>
                     </ul>
+                    <div>
+                        <button type="button" @click=${this.saveSettings} ?disabled=${this.loading}>
+                            Save Settings
+                        </button>
+                        <button type="button" @click=${this.loadSettings} ?disabled=${this.loading}>
+                            Reload Settings
+                        </button>
+                    </div>
                 </form>
+                
                 `;
     }
 }
