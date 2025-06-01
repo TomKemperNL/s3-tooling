@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld('electron', {
     startup: async () => {
         return ipcRenderer.invoke('startup');
     },
+    openDirectory: async (currentPath?: string) => {
+        console.log('preload openDirectory', currentPath);
+        return ipcRenderer.invoke('dialog:openDirectory', currentPath);
+    },
     saveSettings: async (settings) => {
         return ipcRenderer.invoke('settings:save', settings);
     },

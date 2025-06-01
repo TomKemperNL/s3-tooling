@@ -64,10 +64,13 @@ export class AppElement extends LitElement {
 
     courseLoaded(e: CourseLoadedEvent) {
         this.activeCourse = e.course;
+        this.availableRepos = null;
+        this.activeRepo = null;
     }
 
     reposLoaded(e: ReposLoadedEvent) {
         this.availableRepos = e.repos;
+        this.activeRepo = null;
     }
 
     repoSelected(e: RepoSelectedEvent) {
@@ -96,29 +99,40 @@ export class AppElement extends LitElement {
             list-style: none;
             padding: 0;
             display: flex;
-            flex-direction: row;            
-            justify-content: space-around;
-            align-items: center;
+            flex-direction: row;
+            align-items: stretch;
         }
 
         li {
+            cursor: pointer;
+            text-align: center;
+            flex-grow: 1;
             padding-bottom: 0.5em;
             margin-bottom: 0.1em;
             border-bottom: 1px solid transparent;
         }
-
+        li.user {
+            cursor: default;
+            text-align: left;
+            min-width: 200px;
+            flex-grow: 0;            
+        }
+        .user p {
+            margin: 0;
+        }
         li:hover {
+            background-color: #f0f0f0;
             border-bottom: 1px solid black;
+        }
+        li.user:hover {
+            background-color: inherit;
+            border-bottom: 1px solid transparent;
         }
 
         nav.top {
             display:block;
             width: 100%;
-        }
-
-        .user {
-            float:right;
-        }
+        }        
         `;
 
     async goToSettings() {
@@ -129,8 +143,7 @@ export class AppElement extends LitElement {
     }
 
     async onSettingsChanged(e) {  
-        let startup = await this.ipc.startup();        
-        console.log("new startup", startup);
+        let startup = await this.ipc.startup();
         this.reload(startup);
     }
 
@@ -141,7 +154,7 @@ export class AppElement extends LitElement {
             <nav class="top" label="app navigation">
                 <ul>
                      ${when(this.isActive, () => html`  
-                    <li><a href="#" @click=${this.goToDashboard}>Dashboard</a></li>
+                    <li @click=${this.goToDashboard}><a href="#">Dashboard</a></li>
                     <li><a>Students</a></li>
                     <li><a>Repositories</a></li>
                         `, () => html`
@@ -149,12 +162,10 @@ export class AppElement extends LitElement {
                     <li><a>Students</a></li>
                     <li><a>Repositories</a></li>
                         `)}                    
-                    <li><a href="#" @click=${this.goToSettings}>Settings</a></li>
-                    <li>
-                    <div class="user">
-                    <p>${this.githubUser}</p>
-                    <p>${this.canvasUser}</p>
-                </div>
+                    <li @click=${this.goToSettings}><a href="#">Settings</a></li>
+                    <li class="user">                    
+                        <p>Github: ${this.githubUser}</p>
+                        <p>Canvas: ${this.canvasUser}</p>                    
                     </li>
                 </ul>
                 

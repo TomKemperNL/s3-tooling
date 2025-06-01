@@ -9,6 +9,10 @@ export class ErrorHandlingIPC implements ElectronIPC {
     constructor(ipc: ElectronIPC) {
         this.ipc = ipc;
     }
+    async openDirectory(currentPath?: string): Promise<string> {
+        return this.ipc.openDirectory(currentPath);
+    }
+
     async startup(){
         return this.ipc.startup();
     }

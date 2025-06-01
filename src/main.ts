@@ -1,7 +1,7 @@
 import { config } from "@dotenvx/dotenvx";
 import { main as nodeMain } from "./main/index"
 import * as path from "path";
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
 
 config();
 
@@ -16,7 +16,16 @@ async function main() {
             webPreferences: {
                 preload: path.join(__dirname, 'preload.js')
               }
-        })
+        });
+
+        win.webContents.addListener('will-navigate', (event, url) => {
+            console.log('will-navigate', url);
+            if(url.startsWith('external://')){
+                let newUrl = url.replace('external://', 'https://');
+                shell.openExternal(newUrl);
+                event.preventDefault();
+            }
+        });
 
         win.loadFile('./dist/src/renderer/index.html');        
     }

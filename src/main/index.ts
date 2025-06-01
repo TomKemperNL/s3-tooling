@@ -3,7 +3,7 @@ import { FileSystem } from "./filesystem_client";
 import { CanvasClient } from "./canvas_client";
 
 import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "./../core";
-import { ipcMain } from 'electron';
+import { ipcMain, dialog, app as electronApp } from 'electron';
 import { existsSync } from "fs";
 
 import { db } from "./db";
@@ -58,6 +58,21 @@ export async function main() {
             }
         }
         
+    });
+
+    ipcMain.handle("dialog:openDirectory", async (e, existingValue) => {
+        let suggestedPath = electronApp.getAppPath();
+        if(existingValue){
+            suggestedPath = existingValue;
+        }
+        let dialogResult = await dialog.showOpenDialog({
+            title: "Select Data Directory",
+            properties: ["openDirectory", "createDirectory", "dontAddToRecent", "promptToCreate"],
+            defaultPath: suggestedPath,
+        })
+
+        console.log("Dialog result:", dialogResult);
+        return dialogResult.filePaths[0];
     });
 
     ipcMain.handle("settings:save", async (e, newSettings) => {

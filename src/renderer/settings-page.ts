@@ -1,4 +1,4 @@
-import { html, LitElement } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ElectronIPC } from "./ipc";
 import { Settings } from "../settings";
@@ -51,6 +51,41 @@ export class SettingsPage extends LitElement {
         this.loading = false;
     }
 
+    openDirBrowser() {
+        console.log("Opening directory browser for data path:", this.settings.dataPath);
+        this.ipc.openDirectory(this.settings.dataPath).then((path: string) => {
+            if (path) {
+                this.settings.dataPath = path;
+                this.requestUpdate();
+            }
+        });
+    }
+
+    static styles = css`
+            .hastooltip {
+                position: relative;
+                display: inline-block;
+                cursor: pointer;
+            }
+
+            .tooltip {
+                visibility: hidden;
+                width: 120px;
+                background-color: #fff;
+                border: 1px solid #555;
+                text-align: center;
+                border-radius: 6px;
+                padding: 5px 0;
+                position: absolute;
+                z-index: 1;
+            }
+
+            .hastooltip:hover .tooltip {
+                visibility: visible;
+            }
+        `;
+
+
     render() {
         return html`
             <div>
@@ -58,7 +93,9 @@ export class SettingsPage extends LitElement {
                 <form>
                     <ul>                        
                     <li>
-                        <label for="canvasToken">Canvas Token:</label>
+                        <label for="canvasToken">
+                            <a href="external://canvas.hu.nl/profile/settings#access_tokens_holder">Canvas</a> Token:
+                        </label>
                         <input
                             required
                             type="password"
@@ -71,7 +108,20 @@ export class SettingsPage extends LitElement {
                         />
                     </li>
                     <li>
-                        <label for="githubToken">GitHub Token:</label>
+                        <label for="githubToken">
+                            <a class="hastooltip" href="external://github.com/settings/tokens">GitHub
+                                <div class="tooltip">Benodigde Permissions:
+                                    <ul>
+                                        <li>Repo (full, helaas)</li>
+                                        <li>admin:org-read:org</li>
+                                        <li>user-read:user</li>
+                                        <li>read:discussion</li>
+                                        <li>read:project</li>
+                                        <li>read:ssh_signing_key</li>                                        
+                                    </ul>
+                                    En denk aan de SSO toegang!
+                                </div>
+                            </a> Classic(!) Token:</label>
                         <input
                             required
                             type="password"
@@ -95,6 +145,7 @@ export class SettingsPage extends LitElement {
                 this.settings.dataPath = (e.target as HTMLInputElement).value;
             }}
                         />
+                        <button type="button" @click=${this.openDirBrowser}>Browse</button>
                     </li>                    
                     <li>
                         <label for="ignoredAuthors">Ignored Authors (comma separated):</label>

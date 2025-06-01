@@ -10,6 +10,7 @@ declare global {
 export interface ElectronIPC {
     test: string,
     startup: () => Promise<Startup>
+    openDirectory: (currentPath?: string) => Promise<string>
     saveSettings: (settings: Settings) => Promise<void>
     loadSettings: () => Promise<Settings>
     getCourses: () => Promise<CourseConfig[]>
