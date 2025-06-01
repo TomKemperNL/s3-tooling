@@ -182,14 +182,23 @@ export class FileSystem {
         let files = filesRaw.stdout.split('\n').filter(f => f.length > 0).map(f => f.trim());
         let report = {};
 
+        //Het is jammer, maar helaas dat git blame anders omgaat met binary files dan git log. Dus het zal nog even klooien zijn om er voor te zorgen
+        //dat die 2 getallen met elkaar gaan matchen.
         async function blameFile(file: string) {
+            //git log filtert binaries er ook uit, maar cost een extra console call. Dus een lijstje opbouwen van files die we vaak tegenkomen en echt niet hoeven
+            //te checken is handig qua performance
+            let hardcodedBinaryExtensions = ['.pdf', '.png', '.jar', '.zip', '.jpeg', '.webp', '.pptx', '.docx', '.xslx'];
+            
             if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
                 return;
             }
-            if (file.endsWith('.pdf')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
+            if (hardcodedBinaryExtensions.some(ext => file.toLowerCase().endsWith(ext))) {
                 return;
             }
-            if (file.indexOf('node_modules/') !== -1) {
+            if (file.indexOf('node_modules/') !== -1) { //.gitignore is moeilijk soms...
+                return;
+            }
+            if (file.indexOf('target/') !== -1) {
                 return;
             }
 
