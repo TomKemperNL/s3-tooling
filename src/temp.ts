@@ -44,6 +44,49 @@ export let cisq1 : CourseConfig = {
     ]
 }
 
+export let bep2 : CourseConfig = {
+    name: 'Back-End Programming 2',
+    canvasCourseId: 44752,
+    canvasGroupsName: '',
+    startDate: new Date(Date.parse('2024-09-01')),
+    githubStudentOrg: 'HU-SD-S3-studenten-2425',
+    lastMappingCheck: null,
+    lastRepoCheck: null,
+    lastSectionCheck: null,
+    assignments: [
+        {
+            githubAssignment: 'bep2-v2a-full',
+            groupAssignment: false,
+            canvasId: 315778
+        },
+        {
+            githubAssignment: 'bep2-v2b-full',
+            groupAssignment: false,
+            canvasId: 315778
+        },
+        {
+            githubAssignment: 'bep2-v2c-full',
+            groupAssignment: false,
+            canvasId: 315778
+        },
+        {
+            githubAssignment: 'bep2-v2d-full',
+            groupAssignment: false,
+            canvasId: 315778
+        },
+        {
+            githubAssignment: 'bep2-v2e-full',
+            groupAssignment: false,
+            canvasId: 315778
+        },
+        {
+            githubAssignment: 'bep2-roulette-herkansing',
+            groupAssignment: false,
+            canvasId: 332209
+        }
+    ]
+}
+
 export let cisq2 : CourseConfig = {
     name: 'Continuous Integration and Software Qua2',
     canvasCourseId: 44762,    
