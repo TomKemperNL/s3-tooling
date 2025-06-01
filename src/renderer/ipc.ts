@@ -1,4 +1,4 @@
-import { BlameStatisticsDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../core";
+import { BlameStatisticsDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "../core";
 import { Settings } from "../settings"
 
 declare global {
@@ -9,6 +9,7 @@ declare global {
 
 export interface ElectronIPC {
     test: string,
+    startup: () => Promise<Startup>
     saveSettings: (settings: Settings) => Promise<void>
     loadSettings: () => Promise<Settings>
     getCourses: () => Promise<CourseConfig[]>

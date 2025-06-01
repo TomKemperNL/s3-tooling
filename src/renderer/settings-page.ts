@@ -4,10 +4,21 @@ import { ElectronIPC } from "./ipc";
 import { Settings } from "../settings";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
+import { Startup } from "../core";
+
+export class SettingsChanged extends Event {
+    static readonly eventName = "settings-changed";
+    constructor() {
+        super(SettingsChanged.eventName, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
 
 @customElement("settings-page")
 export class SettingsPage extends LitElement {
-    @consume({context: ipcContext})
+    @consume({ context: ipcContext })
     ipc: ElectronIPC;
 
     constructor() {
@@ -36,6 +47,7 @@ export class SettingsPage extends LitElement {
         this.loading = true;
         console.log("Saving settings:", this.settings);
         await this.ipc.saveSettings(this.settings);
+        this.dispatchEvent(new SettingsChanged());
         this.loading = false;
     }
 

@@ -1,4 +1,4 @@
-import { BlameStatisticsDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../core";
+import { BlameStatisticsDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "../core";
 import { Settings } from "../settings";
 import { ElectronIPC } from "./ipc";
 
@@ -8,6 +8,9 @@ export class ErrorHandlingIPC implements ElectronIPC {
 
     constructor(ipc: ElectronIPC) {
         this.ipc = ipc;
+    }
+    async startup(){
+        return this.ipc.startup();
     }
 
     async saveSettings(settings: Settings): Promise<void> {

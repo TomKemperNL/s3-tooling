@@ -10,6 +10,12 @@ export type Assignment = {
     groupAssignment: boolean
 }
 
+export type Startup = {
+    validSettings: boolean,
+    githubUser: string,
+    canvasUser: string
+}
+
 export class Repo {
     lastMemberCheck: Date;
     name: string;

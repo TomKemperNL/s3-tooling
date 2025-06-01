@@ -1,7 +1,7 @@
 import { config } from "@dotenvx/dotenvx";
 import { main as nodeMain } from "./main/index"
 import * as path from "path";
-const { app, BrowserWindow } = require('electron')
+import { app, BrowserWindow } from 'electron'
 
 config();
 
@@ -18,7 +18,7 @@ async function main() {
               }
         })
 
-        win.loadFile('./dist/src/renderer/index.html')
+        win.loadFile('./dist/src/renderer/index.html');        
     }
 
 

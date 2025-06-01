@@ -4,7 +4,7 @@ import { CanvasClient } from "./canvas_client";
 
 import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "./../core";
 import { ipcMain } from 'electron';
-
+import { existsSync } from "fs";
 
 import { db } from "./db";
 import { ReposController } from "./repos/reposController";
@@ -14,30 +14,55 @@ import { saveSettings, loadSettings } from "./settings";
 import { Settings } from "../settings";
 
 async function createApp(settings: Settings) {
-    let githubClient = new GithubClient(settings.githubToken);
-    let fileSystem = new FileSystem(settings.dataPath);
-    let canvasClient = new CanvasClient(settings.canvasToken);
-
+    try{
+        let githubClient = new GithubClient(settings.githubToken);
+        let fileSystem = new FileSystem(settings.dataPath);
+        let canvasClient = new CanvasClient(settings.canvasToken);
     
-    if (!settings.keepDB) {
-        await db.reset().then(() => db.test());
-    } else {
-        console.log('keeping db');
-    }
 
-    return {
-        githubClient, fileSystem, canvasClient,
-        repoController: new ReposController(db, canvasClient, githubClient, fileSystem),
-        coursesController: new CoursesController(db, canvasClient)
-    };
+        if (!settings.keepDB) {
+            await db.reset().then(() => db.test());
+        } else {
+            console.log('keeping db');
+        }
+    
+        return {
+            githubClient, fileSystem, canvasClient,
+            repoController: new ReposController(db, canvasClient, githubClient, fileSystem),
+            coursesController: new CoursesController(db, canvasClient)
+        };
+    }catch (error) {
+        console.error("Error creating app:", error);
+        return {}
+    }    
 }
 
 export async function main() {
     let settings = await loadSettings();
     let app = await createApp(settings);
 
-    ipcMain.handle("settings:save", async (e, settings) => {
-        saveSettings(settings);
+    ipcMain.handle("startup", async (e) => {
+        let allSettings = !!settings.canvasToken && !!settings.githubToken && !!settings.dataPath;
+        if(allSettings){
+            return {
+                validSettings: true && existsSync(settings.dataPath),
+                githubUser: (await app.githubClient.getSelf()).login,
+                canvasUser: (await app.canvasClient.getSelf()).name                
+            }
+        }else{
+            return {
+                validSettings: false,
+                githubUser: '',
+                canvasUser: '',
+                dirExists: false,                
+            }
+        }
+        
+    });
+
+    ipcMain.handle("settings:save", async (e, newSettings) => {
+        saveSettings(newSettings);
+        settings = newSettings;
         app = await createApp(settings);
     });
 
