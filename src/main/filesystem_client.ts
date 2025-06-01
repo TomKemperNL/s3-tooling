@@ -104,6 +104,9 @@ export class FileSystem {
     #basePath : string;
 
     constructor(basePath: string) {
+        if (!basePath) {
+            throw new Error('Base path for FileSystemClient cannot be empty');
+        }
         this.#basePath = basePath;
     }
 

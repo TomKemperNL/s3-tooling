@@ -6,15 +6,19 @@ import { CourseLoadedEvent } from "./courses-list";
 import { RepoSelectedEvent } from "./repositories-list";
 import { ReposLoadedEvent } from "./course-details";
 import { ElectronIPC } from "./ipc";
-import { Settings } from "../settings";
+import { ipcContext } from "./contexts";
+import { provide } from "@lit/context";
+import { ErrorHandlingIPC } from "./errorHandlingIPC";
 
 @customElement("app-element")
 export class AppElement extends LitElement {
+
+    @provide({ context: ipcContext})
     ipc: ElectronIPC;
     
     constructor() {
         super();
-        this.ipc = window.electron;
+        this.ipc = new ErrorHandlingIPC(window.electron);
     }
 
     @property({ type: Object })

@@ -21,6 +21,9 @@ export class GithubClient {
     #kit: Octokit;
 
     constructor(githubToken: string) {
+        if (!githubToken) {
+            throw new Error('Github token is required');
+        }
         this.#kit = new Octokit({
             auth: githubToken,
             userAgent: 'ict.hu.nl:S3-Tools:Dev',

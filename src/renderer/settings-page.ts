@@ -2,15 +2,17 @@ import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ElectronIPC } from "./ipc";
 import { Settings } from "../settings";
+import { ipcContext } from "./contexts";
+import { consume } from "@lit/context";
 
 @customElement("settings-page")
 export class SettingsPage extends LitElement {
+    @consume({context: ipcContext})
     ipc: ElectronIPC;
 
     constructor() {
         super();
         this.settings = <any>{};
-        this.ipc = window.electron;
     }
 
     @property({ type: Object, state: true })
@@ -21,8 +23,7 @@ export class SettingsPage extends LitElement {
 
     async loadSettings() {
         this.loading = true;
-        let settings = await this.ipc.loadSettings()
-        console.log("Settings loaded:", settings);
+        let settings = await this.ipc.loadSettings();
         this.settings = settings;
         this.loading = false;
     }
@@ -82,19 +83,7 @@ export class SettingsPage extends LitElement {
                 this.settings.dataPath = (e.target as HTMLInputElement).value;
             }}
                         />
-                    </li>
-                    <li>
-                        <label for="keepDB">Keep Database:</label>
-                        <input
-                            type="checkbox"
-                            id="keepDB"
-                            name="keepDB"
-                            ?checked=${this.settings.keepDB || false}
-                            @change=${(e: Event) => {
-                this.settings.keepDB = (e.target as HTMLInputElement).checked;
-            }}
-                        />
-                    </li>
+                    </li>                    
                     <li>
                         <label for="ignoredAuthors">Ignored Authors (comma separated):</label>
                         <textarea
@@ -112,7 +101,7 @@ export class SettingsPage extends LitElement {
                             Save Settings
                         </button>
                         <button type="button" @click=${this.loadSettings} ?disabled=${this.loading}>
-                            Reload Settings
+                            Undo (reload settings)
                         </button>
                     </div>
                 </form>

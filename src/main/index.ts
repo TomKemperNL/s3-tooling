@@ -13,10 +13,18 @@ import { CoursesController } from "./courses/coursesController";
 import { saveSettings, loadSettings } from "./settings";
 import { Settings } from "../settings";
 
-function createApp(settings: Settings) {
+async function createApp(settings: Settings) {
     let githubClient = new GithubClient(settings.githubToken);
     let fileSystem = new FileSystem(settings.dataPath);
     let canvasClient = new CanvasClient(settings.canvasToken);
+
+    
+    if (!settings.keepDB) {
+        await db.reset().then(() => db.test());
+    } else {
+        console.log('keeping db');
+    }
+
     return {
         githubClient, fileSystem, canvasClient,
         repoController: new ReposController(db, canvasClient, githubClient, fileSystem),
@@ -26,16 +34,11 @@ function createApp(settings: Settings) {
 
 export async function main() {
     let settings = await loadSettings();
-    let app = createApp(settings);
+    let app = await createApp(settings);
 
-    if (!settings.keepDB) {
-        await db.reset().then(() => db.test());
-    } else {
-        console.log('keeping db');
-    }
     ipcMain.handle("settings:save", async (e, settings) => {
         saveSettings(settings);
-        app = createApp(settings);
+        app = await createApp(settings);
     });
 
     ipcMain.handle("settings:load", async (e) => {

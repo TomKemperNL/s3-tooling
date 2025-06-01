@@ -4,6 +4,8 @@ import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc.ts";
 import { CourseDTO } from "../core.ts";
+import { consume } from "@lit/context";
+import { ipcContext } from "./contexts.ts";
 
 export class CourseLoadedEvent extends Event {
     constructor(public course: CourseDTO) {
@@ -17,9 +19,9 @@ export class CoursesList extends LitElement {
     constructor() {
         super();
         this.courses = []
-        this.ipc = window.electron;
     }
 
+    @consume({context: ipcContext})
     ipc: ElectronIPC
 
     @property({ type: Array, state: true })

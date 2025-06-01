@@ -93,6 +93,9 @@ export class CanvasClient {
     #baseUrl = "https://canvas.hu.nl/api/v1";
 
     constructor(canvasToken: string) {
+        if(!canvasToken) {
+            throw new Error("Canvas token is required");
+        }
         this.#token = canvasToken;
     }
 

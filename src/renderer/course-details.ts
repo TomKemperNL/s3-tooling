@@ -3,10 +3,12 @@ import { Assignment, CourseDTO, RepoDTO } from "../core";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
+import { ipcContext } from "./contexts";
+import { consume } from "@lit/context";
 
-export class ReposLoadedEvent extends Event{    
-    constructor(public repos: RepoDTO[]){
-        super('repos-loaded')        
+export class ReposLoadedEvent extends Event {
+    constructor(public repos: RepoDTO[]) {
+        super('repos-loaded')
     }
 }
 
@@ -20,11 +22,12 @@ export class CourseDetails extends LitElement {
     loading = false;
 
     selectedSections: string[] = [];
+
+    @consume({context: ipcContext})
     ipc: ElectronIPC
 
     constructor() {
         super();
-        this.ipc = window.electron;
     }
 
     changeSelection(section: string) {
@@ -42,6 +45,9 @@ export class CourseDetails extends LitElement {
             this.loading = true;
             let result = await this.ipc.loadRepos(this.course.canvasId, a.githubAssignment, { sections: this.selectedSections })
             this.dispatchEvent(new ReposLoadedEvent(result));
+        }
+        catch (e) {
+            alert(e);
         } finally {
             this.loading = false;
         }
@@ -74,8 +80,8 @@ export class CourseDetails extends LitElement {
             <h3>Assignments</h3>
             <select ?disabled=${this.loading} @change=${this.dropdownChange}>
                 <option value="">Select an assignment</option>
-                ${map(this.course.assignments, a => 
-                    html`<option value=${a.githubAssignment}>${a.githubAssignment} </option>`)}
+                ${map(this.course.assignments, a =>
+            html`<option value=${a.githubAssignment}>${a.githubAssignment} </option>`)}
             </select>
         `
     }

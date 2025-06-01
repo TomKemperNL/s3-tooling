@@ -5,6 +5,8 @@ import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
 import { classMap } from "lit/directives/class-map.js";
+import { ipcContext } from "./contexts";
+import { consume } from "@lit/context";
 
 export class AuthorSelectedEvent extends Event {
     static eventName = 'author-selected';
@@ -18,10 +20,11 @@ export class AuthorSelectedEvent extends Event {
 
 @customElement('repository-details')
 export class RepositoryDetails extends LitElement {
+    @consume({context: ipcContext})
     ipc: ElectronIPC;
+    
     constructor() {
         super();
-        this.ipc = window.electron;
         this.repoStats = undefined;
     }
 

@@ -1,6 +1,6 @@
 {
-  "name": "gittools",
-  "version": "1.0.0",
+  "name": "s3-tooling",
+  "version": "0.1.0",
   "main": "./dist/src/main.js",
   "scripts": {
     "dev": "concurrently \"vite build --watch\" \"tsc -p ./src/main/tsconfig.json --watch\" \"tsc -p ./src/renderer/tsconfig.json --watch\" \"dotenvx run -f .dev.env -- electron .\"",
@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.39.1",
+    "@lit/context": "^1.1.5",
     "@octokit/rest": "^21.1.1",
     "chart.js": "^4.4.9",
     "lit": "^3.1.4",

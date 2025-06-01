@@ -40,6 +40,7 @@ function readEnv(result: any = {}): any{
 
 
 export async function loadSettings(): Promise<Settings> {
+    console.log("Loading settings from", settingsFile);
     if(existsSync(settingsFile)) {
         let settingsData = await readFile(settingsFile, { encoding: 'utf-8' });
         let parsedSettings = JSON.parse(settingsData);
