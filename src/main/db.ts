@@ -1,6 +1,6 @@
 import { Database } from "sqlite3";
 import fs from 'fs/promises';
-import { bep2, cisq1, cisq2, s2 } from '../temp'
+import { bep1, bep2, cisq1, cisq2, s2 } from '../temp'
 import { CourseConfig, CourseDTO } from "../core";
 import { MemberResponse, RepoResponse } from "./github_client";
 import { SimpleDict } from "./canvas_client";
@@ -349,6 +349,7 @@ export class Db {
         await this.addCourse(cisq1);
         await this.addCourse(cisq2);
         await this.addCourse(bep2);
+        await this.addCourse(bep1);
     }
 
     async delete() {

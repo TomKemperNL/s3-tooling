@@ -7,8 +7,8 @@ import { ipcMain, dialog, app as electronApp } from 'electron';
 import { existsSync } from "fs";
 
 import { db } from "./db";
-import { ReposController } from "./repos/reposController";
-import { CoursesController } from "./courses/coursesController";
+import { ReposController } from "./reposController";
+import { CoursesController } from "./coursesController";
 
 import { saveSettings, loadSettings } from "./settings";
 import { Settings } from "../settings";

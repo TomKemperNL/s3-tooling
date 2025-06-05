@@ -1,6 +1,6 @@
-import { CourseConfig, CourseDTO } from "../../core";
-import { CanvasClient } from "../canvas_client";
-import { Db } from "../db";
+import { CourseConfig, CourseDTO } from "./../core";
+import { CanvasClient } from "./canvas_client";
+import { Db } from "./db";
 
 export class CoursesController{
     constructor(private db: Db, private canvasClient: CanvasClient){

@@ -87,6 +87,24 @@ export let bep2 : CourseConfig = {
     ]
 }
 
+export let bep1 : CourseConfig = {
+    name: 'Back-End Programming 1',
+    canvasCourseId: 39721,
+    canvasGroupsName: '',
+    startDate: new Date(Date.parse('2024-04-01')),
+    githubStudentOrg: 'HU-SD-BEP1-studenten-2324',
+    lastMappingCheck: null,
+    lastRepoCheck: null,
+    lastSectionCheck: null,
+    assignments: [
+        {
+            githubAssignment: 'finalassignment',
+            groupAssignment: false,
+            canvasId: 301506
+        }
+    ]
+}
+
 export let cisq2 : CourseConfig = {
     name: 'Continuous Integration and Software Qua2',
     canvasCourseId: 44762,    
