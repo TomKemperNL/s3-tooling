@@ -102,3 +102,11 @@ export type RepoStatisticsPerWeekDTO = {
     total: LinesStatistics[],
     authors: { [name: string] : LinesStatistics[]}
 }
+
+export type Settings = {
+    githubToken: string;
+    canvasToken: string;
+    keepDB: boolean;
+    ignoreAuthors: string[];
+    dataPath: string;
+}

@@ -1,4 +1,4 @@
-import { Settings } from "../settings";
+import { Settings } from "../shared";
 import { app } from "electron";
 
 import { readFile, writeFile } from "fs/promises";

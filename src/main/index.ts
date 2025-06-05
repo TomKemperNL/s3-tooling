@@ -2,7 +2,7 @@ import { GithubClient } from "./github-client";
 import { FileSystem } from "./filesystem-client";
 import { CanvasClient } from "./canvas-client";
 
-import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
+import { RepoFilter, RepoStatisticsDTO, Settings, StatsFilter, StudentFilter } from "../shared";
 import { ipcMain, dialog, app as electronApp } from 'electron';
 import { existsSync } from "fs";
 
@@ -11,7 +11,7 @@ import { ReposController } from "./repos-controller";
 import { CoursesController } from "./courses-controller";
 
 import { saveSettings, loadSettings } from "./settings";
-import { Settings } from "../settings";
+
 
 async function createApp(settings: Settings) {
     try{

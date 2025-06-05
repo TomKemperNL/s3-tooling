@@ -1,7 +1,7 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ElectronIPC } from "./ipc";
-import { Settings } from "../settings";
+import { Settings } from "../shared";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
 import { Startup } from "../shared";

@@ -1,5 +1,5 @@
 import { BlameStatisticsDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "../shared";
-import { Settings } from "../settings"
+import { Settings } from "../shared"
 
 declare global {
     interface Window {
