@@ -91,7 +91,6 @@ export class RepositoryDetails extends LitElement {
                 this.repo.name,
                 { authorName: authorName }).then(
                     authorStats => {
-                        console.log('received author stats', authorStats);
                         this.activeAuthor = authorStats;
                     });
 

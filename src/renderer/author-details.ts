@@ -60,7 +60,6 @@ export class StudentDetails extends LitElement {
     render() {
         let labels: string[] = [];
         let datasets: any[] = [];
-        console.log('authorStats', this.authorStats);
 
         if (this.authorStats) {
             for (let i = 0; i < this.authorStats.weekly.length; i++) {

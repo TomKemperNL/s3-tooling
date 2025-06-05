@@ -158,9 +158,11 @@ export class GithubClient {
         return issues.map(issue => ({
             ...issue,
             author: issue.author.login,
+            createdAt: new Date(issue.createdAt),
             comments: issue.comments.nodes.map(comment => ({
                 ...comment,
-                author: comment.author.login
+                author: comment.author.login,
+                createdAt: new Date(comment.createdAt),
             }))
         })
         );            
@@ -218,9 +220,11 @@ export class GithubClient {
         return pullRequests.map(pullRequest => ({
             ...pullRequest,
             author: pullRequest.author.login,
+            createdAt: new Date(pullRequest.createdAt),
             comments: pullRequest.comments.nodes.map(comment => ({
                 ...comment,
-                author: comment.author.login
+                author: comment.author.login,
+                createdAt: new Date(comment.createdAt),
             }))
         })
         );            

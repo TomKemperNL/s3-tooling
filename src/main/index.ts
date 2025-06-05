@@ -71,7 +71,6 @@ export async function main() {
             defaultPath: suggestedPath,
         })
 
-        console.log("Dialog result:", dialogResult);
         return dialogResult.filePaths[0];
     });
 

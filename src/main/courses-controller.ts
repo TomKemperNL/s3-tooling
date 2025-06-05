@@ -22,7 +22,6 @@ export class CoursesController{
                 if(!section.students){
                     continue; //Soms heeft een sectie geen studenten? Dan returnt de client null ipv. een []
                 }
-                console.log(section);
                 savedCourse.sections[section.name] = section.students.map(s => ({
                     name: s.name,
                     studentId: parseInt(s.sis_user_id),

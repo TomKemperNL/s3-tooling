@@ -153,8 +153,7 @@ export class ReposController {
         let coreStats = new RepositoryStatistics(stats);
 
         let groupedByAuthor = coreStats.groupByAuthor();
-        console.log('grouped', groupedByAuthor);
-        console.log('filter' , filter)
+        
         let studentStats = groupedByAuthor.get(filter.authorName);
         let groups = [
             RepositoryStatistics.backend, 

@@ -110,3 +110,19 @@ export type Settings = {
     ignoreAuthors: string[];
     dataPath: string;
 }
+
+export type Comment = {
+    body: string,
+    createdAt: Date,
+    author: string,
+}
+
+export type Issue = {
+    title: string,
+    body: string,
+    createdAt: Date,
+    author: string,
+    comments: Comment[]
+}
+
+export type PullRequest = Issue

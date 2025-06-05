@@ -8,7 +8,6 @@ contextBridge.exposeInMainWorld('electron', {
         return ipcRenderer.invoke('startup');
     },
     openDirectory: async (currentPath?: string) => {
-        console.log('preload openDirectory', currentPath);
         return ipcRenderer.invoke('dialog:openDirectory', currentPath);
     },
     saveSettings: async (settings) => {
@@ -35,7 +34,6 @@ contextBridge.exposeInMainWorld('electron', {
         return result;
     },
     getStudentStats: async(courseId, assignment, name, filter) => {
-        console.log('getStudentStats', courseId, assignment, name, filter);
         let result = ipcRenderer.invoke('repostats-student:get', courseId, assignment, name, filter);
         return result;
     }

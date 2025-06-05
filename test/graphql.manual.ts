@@ -22,6 +22,7 @@ async function main() {
       console.log(prs.reduce((acc, pr) => {
         return acc + pr.comments.length;
       }, 0));
+      console.log(result);
     }
     
 }

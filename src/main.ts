@@ -19,7 +19,6 @@ async function main() {
         });
 
         win.webContents.addListener('will-navigate', (event, url) => {
-            console.log('will-navigate', url);
             if(url.startsWith('external://')){
                 let newUrl = url.replace('external://', 'https://');
                 shell.openExternal(newUrl);

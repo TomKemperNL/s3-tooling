@@ -125,7 +125,6 @@ test('Can Group Commits Per Week Per Author', {}, () => {
         .map(as => as.groupByWeek(new Date('2023-10-01'))
             .map(w => w.getLinesTotal())).export();
 
-    console.log(JSON.stringify(perAuthorResult))
     expect(perAuthorResult['Bob'][0].added).toBe(2);
     expect(perAuthorResult['Bob'][1].added).toBe(0);
     expect(perAuthorResult['Bob'][2].added).toBe(0);
