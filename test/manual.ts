@@ -1,4 +1,4 @@
-import { FileSystem } from "../src/main/filesystem_client";
+import { FileSystem } from "../src/main/filesystem-client";
 
 let fs = new FileSystem('C:/s3-tooling-data');
 async function main(){

@@ -1,4 +1,4 @@
-import { RepoResponse } from "./main/github_client";
+import { RepoResponse } from "./main/github-client";
 
 export type Member ={
     login: string;

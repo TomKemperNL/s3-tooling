@@ -1,5 +1,5 @@
 import { LinesStatistics } from "../core";
-import { LoggedChange, LoggedCommit } from "./filesystem_client";
+import { LoggedChange, LoggedCommit } from "./filesystem-client";
 
 export let ignoredAuthors = [
     'github-classroom[bot]'

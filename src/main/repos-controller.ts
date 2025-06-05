@@ -1,9 +1,9 @@
 import { Assignment, BlameStatisticsDTO, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../core";
-import { CanvasClient, getUsernameFromName, SimpleDict } from "./canvas_client";
+import { CanvasClient, getUsernameFromName, SimpleDict } from "./canvas-client";
 import { Db } from "./db";
-import { FileSystem } from "./filesystem_client";
-import { GithubClient, MemberResponse, RepoResponse } from "./github_client";
-import { RepositoryStatistics } from "./repository_statistics";
+import { FileSystem } from "./filesystem-client";
+import { GithubClient, MemberResponse, RepoResponse } from "./github-client";
+import { RepositoryStatistics } from "./repository-statistics";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
 

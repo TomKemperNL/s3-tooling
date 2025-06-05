@@ -1,5 +1,5 @@
-import { CourseConfig, CourseDTO } from "./../core";
-import { CanvasClient } from "./canvas_client";
+import { CourseConfig, CourseDTO } from "../core";
+import { CanvasClient } from "./canvas-client";
 import { Db } from "./db";
 
 export class CoursesController{

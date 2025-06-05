@@ -1,14 +1,14 @@
-import { GithubClient } from "./github_client";
-import { FileSystem } from "./filesystem_client";
-import { CanvasClient } from "./canvas_client";
+import { GithubClient } from "./github-client";
+import { FileSystem } from "./filesystem-client";
+import { CanvasClient } from "./canvas-client";
 
 import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "./../core";
 import { ipcMain, dialog, app as electronApp } from 'electron';
 import { existsSync } from "fs";
 
 import { db } from "./db";
-import { ReposController } from "./reposController";
-import { CoursesController } from "./coursesController";
+import { ReposController } from "./repos-controller";
+import { CoursesController } from "./courses-controller";
 
 import { saveSettings, loadSettings } from "./settings";
 import { Settings } from "../settings";

@@ -6,8 +6,8 @@ import { FakeCanvasClient } from './fakes/FakeCanvasClient';
 import { FakeGithubClient } from './fakes/FakeGithubClient';
 import { FakeFileSystem } from './fakes/FakeFileSystem';
 import { CourseConfig } from '../src/core';
-import { ReposController } from '../src/main/reposController';
-import { CoursesController } from '../src/main/coursesController';
+import { ReposController } from '../src/main/repos-controller';
+import { CoursesController } from '../src/main/courses-controller';
 
 let db: Db = null;
 let reposController: ReposController = null;

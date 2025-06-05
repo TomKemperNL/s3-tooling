@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { RepositoryStatistics } from '../src/main/repository_statistics';
+import { RepositoryStatistics } from '../src/main/repository-statistics';
 import { extensions } from 'sequelize/lib/utils/validator-extras';
 
 
