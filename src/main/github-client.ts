@@ -1,4 +1,5 @@
 import { Octokit } from "@octokit/rest";
+import { Repo } from "../shared";
 
 export type RepoResponse = {
     name: string,
@@ -11,6 +12,16 @@ export type RepoResponse = {
     updated_at: string,
     organization: { login: string},
     lastMemberCheck: Date
+}
+
+export function toRepo(repoResponse: RepoResponse): Repo {
+    return new Repo(
+        repoResponse.name,
+        repoResponse.full_name.split('/')[0], // Organization is the first part of full_name
+        repoResponse.url,
+        repoResponse.ssh_url,
+        repoResponse.html_url,
+        repoResponse.lastMemberCheck);
 }
 
 export type MemberResponse = {

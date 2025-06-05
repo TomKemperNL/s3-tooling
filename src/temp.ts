@@ -1,4 +1,4 @@
-import { CourseConfig } from './core';
+import { CourseConfig } from './shared';
 
 export let s2 : CourseConfig = {
     name: 'Software Development Fundamentals',

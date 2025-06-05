@@ -1,7 +1,7 @@
 import { Database } from "sqlite3";
 import fs from 'fs/promises';
 import { bep1, bep2, cisq1, cisq2, s2 } from '../temp'
-import { CourseConfig, CourseDTO } from "../core";
+import { CourseConfig, CourseDTO } from "../shared";
 import { MemberResponse, RepoResponse } from "./github-client";
 import { SimpleDict } from "./canvas-client";
 

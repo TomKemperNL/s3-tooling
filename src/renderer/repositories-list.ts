@@ -1,5 +1,5 @@
 import { html, LitElement } from "lit";
-import { RepoDTO } from "../core";
+import { RepoDTO } from "../shared";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 

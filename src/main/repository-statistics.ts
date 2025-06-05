@@ -1,4 +1,4 @@
-import { LinesStatistics } from "../core";
+import { LinesStatistics } from "../shared";
 import { LoggedChange, LoggedCommit } from "./filesystem-client";
 
 export let ignoredAuthors = [

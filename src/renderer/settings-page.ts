@@ -4,7 +4,7 @@ import { ElectronIPC } from "./ipc";
 import { Settings } from "../settings";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
-import { Startup } from "../core";
+import { Startup } from "../shared";
 
 export class SettingsChanged extends Event {
     static readonly eventName = "settings-changed";

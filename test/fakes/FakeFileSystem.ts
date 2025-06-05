@@ -1,4 +1,4 @@
-import { Repo } from "../../src/core";
+import { Repo } from "../../src/shared";
 
 export class FakeFileSystem{
     cloneRepo(paths: string[], repo: Repo) {

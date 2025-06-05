@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { CourseDTO, RepoDTO, Startup } from "../core";
+import { CourseDTO, RepoDTO, Startup } from "../shared";
 import { when } from "lit/directives/when.js";
 import { CourseLoadedEvent } from "./courses-list";
 import { RepoSelectedEvent } from "./repositories-list";

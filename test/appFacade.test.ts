@@ -5,7 +5,7 @@ import { Database } from 'sqlite3';
 import { FakeCanvasClient } from './fakes/FakeCanvasClient';
 import { FakeGithubClient } from './fakes/FakeGithubClient';
 import { FakeFileSystem } from './fakes/FakeFileSystem';
-import { CourseConfig } from '../src/core';
+import { CourseConfig } from '../src/shared';
 import { ReposController } from '../src/main/repos-controller';
 import { CoursesController } from '../src/main/courses-controller';
 

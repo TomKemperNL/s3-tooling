@@ -1,4 +1,4 @@
-import { CourseConfig, CourseDTO } from "../core";
+import { CourseConfig, CourseDTO } from "../shared";
 import { CanvasClient } from "./canvas-client";
 import { Db } from "./db";
 

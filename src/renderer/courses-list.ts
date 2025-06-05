@@ -3,7 +3,7 @@ import { customElement, property } from "lit/decorators.js";
 
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
-import { CourseDTO } from "../core";
+import { CourseDTO } from "../shared";
 import { consume } from "@lit/context";
 import { ipcContext } from "./contexts";
 

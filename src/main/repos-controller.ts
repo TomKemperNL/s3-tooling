@@ -1,8 +1,8 @@
-import { Assignment, BlameStatisticsDTO, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../core";
+import { Assignment, BlameStatisticsDTO, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
 import { CanvasClient, getUsernameFromName, SimpleDict } from "./canvas-client";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
-import { GithubClient, MemberResponse, RepoResponse } from "./github-client";
+import { GithubClient, MemberResponse, RepoResponse, toRepo } from "./github-client";
 import { RepositoryStatistics } from "./repository-statistics";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
@@ -40,7 +40,7 @@ export class ReposController {
             repoResponses = await this.githubClient.listRepos(savedCourseConfig.githubStudentOrg);
             await this.db.updateRepoMapping(savedCourseConfig.canvasCourseId, repoResponses);
         }
-        let repos = repoResponses.map(r => new Repo(r));
+        let repos = repoResponses.map(r => toRepo(r));
         return repos;
     }
 

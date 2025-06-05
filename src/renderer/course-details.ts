@@ -1,5 +1,5 @@
 import { html, LitElement } from "lit";
-import { Assignment, CourseDTO, RepoDTO } from "../core";
+import { Assignment, CourseDTO, RepoDTO } from "../shared";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";

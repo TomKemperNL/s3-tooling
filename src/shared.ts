@@ -16,24 +16,17 @@ export type Startup = {
     canvasUser: string
 }
 
-export class Repo {
-    lastMemberCheck: Date;
-    name: string;
-    organization: string;
-    api_url: string;
-    ssh_url: string;
-    http_url: string;
+export class Repo {  
     members: Member[] = [];
 
-    constructor(private response: RepoResponse) {
-        this.name = response.name;
-        // this.organization = response.organization.login;
-        this.organization = response.full_name.split('/')[0]; //Org is ineens leeg? Vreemd
-        this.api_url = response.url;
-        this.ssh_url = response.ssh_url;
-        this.http_url = response.html_url;
-        this.lastMemberCheck = response.lastMemberCheck;
-    }
+    constructor(public name: string, 
+                public organization: string, 
+                public api_url: string, 
+                public ssh_url: string, 
+                public http_url: string,
+                public lastMemberCheck: Date) {
+        
+    }   
     
     matchesAssignment(assignment: Assignment) {
         return this.name.startsWith(assignment.githubAssignment);

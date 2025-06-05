@@ -2,7 +2,7 @@ import { GithubClient } from "./github-client";
 import { FileSystem } from "./filesystem-client";
 import { CanvasClient } from "./canvas-client";
 
-import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "./../core";
+import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
 import { ipcMain, dialog, app as electronApp } from 'electron';
 import { existsSync } from "fs";
 
