@@ -177,13 +177,11 @@ export class ReposController {
         let prGroupedByAuthor = projectStats.groupByAuthor();
         
         let studentStats = groupedByAuthor.get(filter.authorName);
-
         let prStudentStats = prGroupedByAuthor.get(filter.authorName);
         if(!prStudentStats){
             prStudentStats = new ProjectStatistics([], []);
         }
-        console.log('studentStats', studentStats, 'prStudentStats', prStudentStats);
-
+        
         let groups = [
             RepositoryStatistics.backend, 
             RepositoryStatistics.frontend,

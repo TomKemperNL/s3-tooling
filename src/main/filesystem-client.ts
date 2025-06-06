@@ -160,12 +160,18 @@ export class FileSystem {
         await exec(`git checkout -f ${targetBranch}`, { cwd: target });
     }
 
-    async getRepoStats(...repoPath: string[]) {
+    repoCache: { [repoPath: string]: LoggedCommit[] } = {};
+
+    async getRepoStats(...repoPath: string[]) {        
         let target = path.join(this.#basePath, ...repoPath);
+        if (this.repoCache[target]) {
+            return this.repoCache[target];
+        }
         let result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });
         let logLines = result.stdout.split('\n');
 
         let parsedLog = parseLog(logLines);
+        this.repoCache[target] = parsedLog;
         return parsedLog;
     }
 
