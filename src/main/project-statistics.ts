@@ -1,72 +1,117 @@
-import { Issue, PullRequest, Comment } from "../shared";
+import { Issue, PullRequest, Comment, LinesStatistics } from "../shared";
 import { GroupedCollection, ExportingArray } from "./repository-statistics";
 
 export class ProjectStatistics {
-
-    
     constructor(private issues: Issue[], private prs: PullRequest[], private comments: Comment[] = []) {
-        
+        if (comments.length === 0) {
+            this.comments = issues.reduce((acc, issue) => {
+                return acc.concat(issue.comments);
+            }, []);
+            this.comments = prs.reduce((acc, pr) => {
+                return acc.concat(pr.comments);
+            }, this.comments);
+        }
     }
 
-    groupByAuthor() : GroupedCollection<ProjectStatistics>{
+    groupByAuthor(): GroupedCollection<ProjectStatistics> {
         let results = {};
-        function addOrAppend(type, key, value){
-            if(!results[key]){
+        function addOrAppend(type, key, value) {
+            if (!results[key]) {
                 results[key] = {
                     issues: [],
                     prs: [],
                     comments: []
                 }
             }
-            results[key][type].push(value);            
+            results[key][type].push(value);
         }
 
-        for(let i of this.issues){
-            addOrAppend('issues', i.author, { ...i, comments: []});
-            for(let c of i.comments){
+        for (let i of this.issues) {
+            addOrAppend('issues', i.author, { ...i, comments: [] });
+            for (let c of i.comments) {
                 addOrAppend('comments', c.author, c);
             }
         }
-        for(let pr of this.prs){
-            addOrAppend('prs', pr.author, { ...pr, comments: []});
-            for(let c of pr.comments){
+        for (let pr of this.prs) {
+            addOrAppend('prs', pr.author, { ...pr, comments: [] });
+            for (let c of pr.comments) {
                 addOrAppend('comments', c.author, c);
             }
         }
 
-        for(let author of Object.keys(results)){
+        for (let author of Object.keys(results)) {
             results[author] = new ProjectStatistics(
-                results[author].issues, 
+                results[author].issues,
                 results[author].prs,
                 results[author].comments
             );
         }
-        
+
         return new GroupedCollection<ProjectStatistics>(results);
     }
 
-    static #getLines(carrier: Issue | PullRequest){
-        let commentLines = carrier.comments
-            .map(c => c.body.split("\n").length)
-            .reduce((a,b)=> a+b, 0);
-        return carrier.body.split("\n").length + (carrier.title ? 1 : 0) + commentLines;
+    static #getLines(carrier: Issue | PullRequest) {
+        return carrier.body.split("\n").length + (carrier.title ? 1 : 0);
     }
 
-    getLines() : { lines: number} {
+    getLines(): LinesStatistics {
         let issueStats = this.issues.reduce((acc, issue) => {
-            return {lines: acc.lines + ProjectStatistics.#getLines(issue)}
-        }, {lines: 0});
+            return { lines: acc.lines + ProjectStatistics.#getLines(issue) }
+        }, { lines: 0 });
         let prStats = this.prs.reduce((acc, pr) => {
-            return {lines: acc.lines + ProjectStatistics.#getLines(pr)}
-        }, { lines: 0});
+            return { lines: acc.lines + ProjectStatistics.#getLines(pr) }
+        }, { lines: 0 });
 
         let commentStats = this.comments.reduce((acc, comment) => {
-            return {lines: acc.lines + comment.body.split('\n').length}
-        }, { lines: 0});
+            return { lines: acc.lines + comment.body.split('\n').length }
+        }, { lines: 0 });
 
         let total = {
-            lines: issueStats.lines + prStats.lines + commentStats.lines
+            added: issueStats.lines + prStats.lines + commentStats.lines,
+            removed: 0
         };
-        return total;   
+        return total;
     }
+
+    static #addWeek(date: Date) {
+        let newDate = new Date(date);
+        const weekMs = 7 * 24 * 60 * 60 * 1000;
+        return new Date(newDate.valueOf() + weekMs);
+    }
+
+    groupByWeek(): ExportingArray<ProjectStatistics> {
+        let gathered = [];
+        
+        //Algoritmisch gaan we hiervan huilen...
+        let earliestDate = Math.min(
+            Math.min(...this.issues.map(i => i.createdAt.valueOf())),
+            Math.min(...this.prs.map(pr => pr.createdAt.valueOf())),
+            Math.min(...this.comments.map(c => c.createdAt.valueOf()))
+        );
+        let lastDate = Math.max(
+            Math.max(...this.issues.map(i => i.createdAt.valueOf())),
+            Math.max(...this.prs.map(pr => pr.createdAt.valueOf())),
+            Math.max(...this.comments.map(c => c.createdAt.valueOf()))
+        );
+        let startDate = new Date(earliestDate);
+        let nextDate = ProjectStatistics.#addWeek(startDate);
+        
+        while (nextDate.valueOf() <= lastDate) {
+            let weekIssues = this.issues.filter(i => i.createdAt >= startDate && i.createdAt < nextDate);
+            let weekPrs = this.prs.filter(pr => pr.createdAt >= startDate && pr.createdAt < nextDate);
+            let weekComments = this.comments.filter(c => c.createdAt >= startDate && c.createdAt < nextDate);
+
+            gathered.push(new ProjectStatistics(weekIssues, weekPrs, weekComments));
+            startDate = nextDate;
+            nextDate = ProjectStatistics.#addWeek(startDate);
+        }
+        let weekIssues = this.issues.filter(i => i.createdAt >= startDate && i.createdAt < nextDate);
+        let weekPrs = this.prs.filter(pr => pr.createdAt >= startDate && pr.createdAt < nextDate);
+        let weekComments = this.comments.filter(c => c.createdAt >= startDate && c.createdAt < nextDate);
+
+        
+        gathered.push(new ProjectStatistics(weekIssues, weekPrs, weekComments));
+        return new ExportingArray(gathered);
+    }
+
 }
