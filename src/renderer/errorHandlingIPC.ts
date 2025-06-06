@@ -1,4 +1,4 @@
-import { BlameStatisticsDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "../shared";
+import { BlameStatisticsDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "../shared";
 import { Settings } from "../shared";
 import { ElectronIPC } from "./ipc";
 
@@ -9,6 +9,37 @@ export class ErrorHandlingIPC implements ElectronIPC {
     constructor(ipc: ElectronIPC) {
         this.ipc = ipc;
     }
+    async getBranchInfo(courseId: number, assignment: string, name: string) : Promise<BranchInfo>{
+        try{
+            return await this.ipc.getBranchInfo(courseId, assignment, name);
+        }
+        catch (error) {
+            console.error("Error fetching branch info:", error);
+            alert("Failed to load branch info:" + error.message);
+            throw error; // Rethrow the error to be handled by the caller
+        }        
+    }
+
+    async refreshRepo(courseId: number, assignment: string, name: string): Promise<void>{
+        try{
+            await this.ipc.refreshRepo(courseId, assignment, name);
+        }catch (error) {
+            console.error("Error refreshing repository:", error);
+            alert("Failed to refresh repository:" + error.message);
+            throw error; // Rethrow the error to be handled by the caller
+        }
+    };
+
+    async switchBranch(courseId: number, assignment: string, name: string, newBranch: string): Promise<void>{
+        try {
+            await this.ipc.switchBranch(courseId, assignment, name, newBranch);
+        } catch (error) {
+            console.error("Error switching branch:", error);
+            alert("Failed to switch branch:" + error.message);
+            throw error; // Rethrow the error to be handled by the caller
+        }
+    }
+    
     async openDirectory(currentPath?: string): Promise<string> {
         return this.ipc.openDirectory(currentPath);
     }

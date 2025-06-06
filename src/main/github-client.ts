@@ -244,4 +244,13 @@ export class GithubClient {
         this.cachedPrs[org][repo] = results;
         return results;
     }
+
+    clearCache(org: string, repo: string) {
+        if (this.cachedIssues[org]) {
+            delete this.cachedIssues[org][repo];
+        }
+        if (this.cachedPrs[org]) {
+            delete this.cachedPrs[org][repo];
+        }
+    }
 }

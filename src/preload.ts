@@ -36,5 +36,14 @@ contextBridge.exposeInMainWorld('electron', {
     getStudentStats: async(courseId, assignment, name, filter) => {
         let result = ipcRenderer.invoke('repostats-student:get', courseId, assignment, name, filter);
         return result;
+    },
+    getBranchInfo: async (courseId, assignment, name) => {
+        return ipcRenderer.invoke('repos:getBranchInfo', courseId, assignment, name);
+    },
+    refreshRepo: async (courseId, assignment, name) => {
+        return ipcRenderer.invoke('repos:refresh', courseId, assignment, name);
+    },
+    switchBranch: async (courseId, assignment, name, newBranch) => {
+        return ipcRenderer.invoke('repos:switchBranch', courseId, assignment, name, newBranch);
     }
 });

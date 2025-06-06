@@ -133,3 +133,8 @@ export type Issue = {
 }
 
 export type PullRequest = Issue
+
+export type BranchInfo = {
+    currentBranch: string,
+    availableBranches: string[],
+}

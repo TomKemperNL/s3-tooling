@@ -139,7 +139,15 @@ export class FileSystem {
     async refreshRepo(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         await exec(`git reset HEAD --hard`, { cwd: target });
-        await exec(`git fetch --all`, { cwd: target }); //Dit is te sloom om altijd te doen       
+        await exec(`git fetch --all`, { cwd: target }); //Dit is te sloom om altijd te doen    
+        await exec(`git pull`, { cwd: target });
+        delete this.repoCache[target];   
+    }
+
+    async getCurrentBranch(...repoPath: string[]) {
+        let target = path.join(this.#basePath, ...repoPath);
+        let result = await exec(`git rev-parse --abbrev-ref HEAD`, { cwd: target, encoding: 'utf8' });
+        return result.stdout.trim();
     }
 
     async getBranches(...repoPath: string[]) {

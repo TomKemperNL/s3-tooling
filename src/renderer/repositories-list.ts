@@ -38,6 +38,6 @@ export class RepositoriesList extends LitElement {
             ${map(this.repos, r => html`
                 <option value=${r.name}>${r.name}</option>
                 `)}
-        </ul>`;
+            </select>`;
     }
 }

@@ -1,4 +1,4 @@
-import { Assignment, BlameStatisticsDTO, combineStats, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
+import { Assignment, BlameStatisticsDTO, BranchInfo, combineStats, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
 import { CanvasClient, getUsernameFromName, SimpleDict } from "./canvas-client";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
@@ -8,8 +8,8 @@ import { RepositoryStatistics } from "./repository-statistics";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
 
-function mergePies(pie1: {[name:string]: number}, pie2: {[name:string]: number}): {[name:string]: number} {
-    let merged: {[name:string]: number} = {};
+function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: number }): { [name: string]: number } {
+    let merged: { [name: string]: number } = {};
     for (let key in pie1) {
         merged[key] = (merged[key] || 0) + pie1[key];
     }
@@ -20,7 +20,7 @@ function mergePies(pie1: {[name:string]: number}, pie2: {[name:string]: number})
 }
 
 export class ReposController {
-
+   
     constructor(private db: Db, private canvasClient: CanvasClient, private githubClient: GithubClient, private fileSystem: FileSystem) {
 
     }
@@ -117,6 +117,30 @@ export class ReposController {
         }));
     }
 
+    async getBranchInfo(courseId: number, assignment: string, name: string): Promise<BranchInfo> {
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+
+        let [currentBranch, branches] = await Promise.all([
+            this.fileSystem.getCurrentBranch(savedCourseConfig.githubStudentOrg, assignment, name),
+            this.fileSystem.getBranches(savedCourseConfig.githubStudentOrg, assignment, name)]);
+
+        return {
+            currentBranch: currentBranch,
+            availableBranches: branches
+        };
+    }
+
+    async refresh(courseId: number, assignment: string, name: string): Promise<void> {
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        this.githubClient.clearCache(savedCourseConfig.githubStudentOrg, name);
+        await this.fileSystem.refreshRepo(savedCourseConfig.githubStudentOrg, assignment, name);
+    }
+
+    async switchBranch(courseId: number, assignment: string, name: string, newBranch: string): Promise<void> {
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        await this.fileSystem.switchBranch(newBranch, savedCourseConfig.githubStudentOrg, assignment, name)
+    }
+
     async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
 
@@ -125,7 +149,7 @@ export class ReposController {
             await this.githubClient.listIssues(savedCourseConfig.githubStudentOrg, name),
             await this.githubClient.listPullRequests(savedCourseConfig.githubStudentOrg, name)
         ]);
-        
+
         let coreStats = new RepositoryStatistics(stats);
         let projectStats = new ProjectStatistics(issues, prs);
         let authorsGrouped = coreStats.groupByAuthor().map(st => st.getLinesTotal());
@@ -141,13 +165,13 @@ export class ReposController {
             .groupByWeek(savedCourseConfig.startDate)
             .map(st => st.getLines())
         let authorPerWeek = coreStats
-            .groupByAuthor().map(st => 
+            .groupByAuthor().map(st =>
                 st.groupByWeek(savedCourseConfig.startDate)
-                .map(st => st.getLinesTotal()))
+                    .map(st => st.getLinesTotal()))
         let prAuthorPerWeek = projectStats
-            .groupByAuthor().map(st => 
+            .groupByAuthor().map(st =>
                 st.groupByWeek(savedCourseConfig.startDate)
-                .map(st => st.getLines()))
+                    .map(st => st.getLines()))
 
         return {
             total: {
@@ -163,7 +187,7 @@ export class ReposController {
         };
     }
 
-    
+
 
     async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<BlameStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
@@ -173,14 +197,14 @@ export class ReposController {
             this.githubClient.listPullRequests(savedCourseConfig.githubStudentOrg, name)
         ]);
         let projectStats = new ProjectStatistics(issues, prs);
-        let docsPie: {[name:string]: number} = projectStats.groupByAuthor().map(st => st.getLines().added).export(); 
-        
+        let docsPie: { [name: string]: number } = projectStats.groupByAuthor().map(st => st.getLines().added).export();
+
         return {
             blamePie: mergePies(blamePie, docsPie)
         };
     }
 
-    async getStatsByUser(courseId: number, assignment: string, name: string, filter: StudentFilter){
+    async getStatsByUser(courseId: number, assignment: string, name: string, filter: StudentFilter) {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
 
         let [stats, issues, prs] = await Promise.all([
@@ -188,24 +212,24 @@ export class ReposController {
             this.githubClient.listIssues(savedCourseConfig.githubStudentOrg, name),
             this.githubClient.listPullRequests(savedCourseConfig.githubStudentOrg, name)
         ]);
-                
+
         let coreStats = new RepositoryStatistics(stats);
         let projectStats = new ProjectStatistics(issues, prs);
 
         let groupedByAuthor = coreStats.groupByAuthor();
         let prGroupedByAuthor = projectStats.groupByAuthor();
-        
+
         let studentStats = groupedByAuthor.get(filter.authorName);
         let prStudentStats = prGroupedByAuthor.get(filter.authorName);
-        if(!prStudentStats){
+        if (!prStudentStats) {
             prStudentStats = new ProjectStatistics([], []);
         }
-        if(!studentStats){
+        if (!studentStats) {
             studentStats = new RepositoryStatistics([]);
         }
-        
+
         let groups = [
-            RepositoryStatistics.backend, 
+            RepositoryStatistics.backend,
             RepositoryStatistics.frontend,
             RepositoryStatistics.markup,
             RepositoryStatistics.docs
@@ -218,23 +242,23 @@ export class ReposController {
             .map(w => w.groupBy(groups).map(g => g.getLinesTotal()));
         let prWeekly = prStudentStats.groupByWeek(savedCourseConfig.startDate)
             .map(w => w.asGrouped("Communication").map(g => g.getLines()));
-        
-        
+
+
         let length = Math.max(weekly.length, prWeekly.length);
-        prWeekly = prWeekly.pad(length, 
+        prWeekly = prWeekly.pad(length,
             new ProjectStatistics([], []).asGrouped("Communication").map(g => g.getLines()));
         weekly = weekly.pad(length,
             new RepositoryStatistics([]).groupBy(groups).map(g => g.getLinesTotal()));
 
 
-        let totalCombined = total.combine(prTotal, combineStats);    
+        let totalCombined = total.combine(prTotal, combineStats);
         let weeklyCombined = weekly.combine(prWeekly, (g1, g2) => {
             return g1.combine(g2, combineStats)
         });
-        
+
         return {
             total: totalCombined.export(),
             weekly: weeklyCombined.export()
-        }        
+        }
     }
 }

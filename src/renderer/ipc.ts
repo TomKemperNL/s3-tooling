@@ -19,6 +19,9 @@ export interface ElectronIPC {
     getRepoStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<RepoStatisticsDTO>
     getBlameStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<BlameStatisticsDTO>
     getStudentStats: (courseId: number, assignment: string, name: string, filter: StudentFilter) => Promise<any>
+    getBranchInfo: (courseId: number, assignment: string, name: string) => Promise<any>
+    refreshRepo: (courseId: number, assignment: string, name: string) => Promise<void>
+    switchBranch: (courseId: number, assignment: string, name: string, newBranch: string) => Promise<void>
 }
 
 

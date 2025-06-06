@@ -31,6 +31,12 @@ export class RepositoryDetails extends LitElement {
     @property({ type: Object })
     repo: RepoDTO;
 
+    @property({ type: String, state: true })
+    currentBranch: string = '';
+    @property({ type: Array, state: true })
+    branches: string[] = [];
+
+
     @property({ type: Object, state: true })
     repoStats?: RepoStatisticsDTO;
 
@@ -39,7 +45,6 @@ export class RepositoryDetails extends LitElement {
 
     @property({ type: Boolean, state: true })
     loading: boolean = false;
-
 
     @property({ type: String, state: true })
     activeAuthorName: string = '';
@@ -50,16 +55,15 @@ export class RepositoryDetails extends LitElement {
         if (_changedProperties.has('repo')) {
             this.loading = true;
 
-            let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' }).then(
-                stats => {
-                    this.repoStats = stats;
-                }
-            );
-            let gettingBlameStats = this.ipc.getBlameStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' }).then(
-                stats => {
-                    this.blameStats = stats;
-                });
-            Promise.all([gettingRepos, gettingBlameStats]).then(() => {
+            let gettingBranchInfo = this.ipc.getBranchInfo(this.repo.courseId, this.repo.assignment, this.repo.name);
+            let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
+            let gettingBlameStats = this.ipc.getBlameStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
+            Promise.all([gettingBranchInfo, gettingRepos, gettingBlameStats]).then(([branchInfo, repoStats, blamestats]) => {
+                console.log('Branch info', branchInfo);
+                this.currentBranch = branchInfo.currentBranch;
+                this.branches = branchInfo.availableBranches;
+                this.repoStats = repoStats;
+                this.blameStats = blamestats;
                 this.loading = false;
             });
         }
@@ -174,6 +178,22 @@ export class RepositoryDetails extends LitElement {
         return datasets;
     }
 
+    async refresh(e){
+        this.loading = true;
+        await this.ipc.refreshRepo(this.repo.courseId, this.repo.assignment, this.repo.name);
+        this.repo = {...this.repo};
+        this.loading = false;
+    }
+
+    async switchBranch(e){
+        let selected = e.target.value;
+        if (selected && selected !== this.currentBranch) {
+            this.currentBranch = selected;            
+            await this.ipc.switchBranch(this.repo.courseId, this.repo.assignment, this.repo.name, selected);
+            await this.refresh(null);            
+        }
+    }
+
     render() {
         let labels: string[] = [];
         let datasets: any[] = [];
@@ -202,7 +222,15 @@ export class RepositoryDetails extends LitElement {
         }
 
         return html`
-        <h3 style="grid-area: title">${this.repo.name}</h3>
+        <div style="grid-area: title">
+            <h3>${this.repo.name}</h3>
+            <p><select ?disabled=${this.loading} @change=${this.switchBranch}>
+                ${map(this.branches, b => html`
+                    <option value=${b} ?selected=${b === this.currentBranch}>${b}</option>
+                `)}
+            </select><button ?disabled=${this.loading} click=${this.refresh}>Refresh</button></p>
+        </div>        
+        
         <div style="grid-area: numbers;" class=${classMap({ loading: this.loading })}>
             <ul>
                 ${when(this.repoStats, () => html`

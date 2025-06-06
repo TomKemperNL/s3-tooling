@@ -92,6 +92,20 @@ export async function main() {
         return app.coursesController.loadCourse(id);
     });
 
+    ipcMain.handle("repos:getBranchInfo", async (e, courseId: number, assignment: string, name: string) => {
+        return app.repoController.getBranchInfo(courseId, assignment, name);
+    });
+
+    ipcMain.handle("repos:refresh", async (e, courseId: number, assignment: string, name: string) => {
+        return app.repoController.refresh(courseId, assignment, name);
+    });
+
+    ipcMain.handle("repos:switchBranch", async (e, courseId: number, assignment: string, name: string, newBranch: string) => {
+        return app.repoController.switchBranch(courseId, assignment, name, newBranch);
+    });
+
+    
+
     ipcMain.handle("repos:load", async (e, courseId: number, assignment: string, filter: RepoFilter) => {
         return app.repoController.loadRepos(courseId, assignment, filter);
     });
