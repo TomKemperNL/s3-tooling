@@ -13,6 +13,10 @@ export class ProjectStatistics {
         }
     }
 
+    asGrouped(groupName: string) {
+        return new GroupedCollection({ [groupName]: this });
+    }
+
     groupByAuthor(): GroupedCollection<ProjectStatistics> {
         let results = {};
         function addOrAppend(type, key, value) {
@@ -79,16 +83,17 @@ export class ProjectStatistics {
         return new Date(newDate.valueOf() + weekMs);
     }
 
-    groupByWeek(): ExportingArray<ProjectStatistics> {
+    groupByWeek(beginDate?: Date): ExportingArray<ProjectStatistics> {
         let gathered = [];
         
         //Algoritmisch gaan we hiervan huilen...
         let earliestDate = Math.min(
+            !!beginDate ? beginDate.valueOf() : new Date().valueOf(),
             Math.min(...this.issues.map(i => i.createdAt.valueOf())),
             Math.min(...this.prs.map(pr => pr.createdAt.valueOf())),
             Math.min(...this.comments.map(c => c.createdAt.valueOf()))
         );
-        let lastDate = Math.max(
+        let lastDate = Math.max(            
             Math.max(...this.issues.map(i => i.createdAt.valueOf())),
             Math.max(...this.prs.map(pr => pr.createdAt.valueOf())),
             Math.max(...this.comments.map(c => c.createdAt.valueOf()))

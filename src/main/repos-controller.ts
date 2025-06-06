@@ -1,8 +1,9 @@
-import { Assignment, BlameStatisticsDTO, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
+import { Assignment, BlameStatisticsDTO, combineStats, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
 import { CanvasClient, getUsernameFromName, SimpleDict } from "./canvas-client";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient, MemberResponse, RepoResponse, toRepo } from "./github-client";
+import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
@@ -108,31 +109,45 @@ export class ReposController {
     async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
 
-        let stats = await this.fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name);
+        let [stats, issues, prs] = await Promise.all([
+            await this.fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
+            await this.githubClient.listIssues(savedCourseConfig.githubStudentOrg, name),
+            await this.githubClient.listPullRequests(savedCourseConfig.githubStudentOrg, name)
+        ]);
+        
         let coreStats = new RepositoryStatistics(stats);
+        let projectStats = new ProjectStatistics(issues, prs);
         let authorsGrouped = coreStats.groupByAuthor().map(st => st.getLinesTotal());
-        let totals = coreStats.getLinesTotal()        
-        let authors = authorsGrouped.export();
+        let prAuthorsGrouped = projectStats.groupByAuthor().map(st => st.getLines());
+        let totals = coreStats.getLinesTotal();
+        let prTotals = projectStats.getLines();
+
 
         let totalPerWeek = coreStats
             .groupByWeek(savedCourseConfig.startDate)
             .map(st => st.getLinesTotal())
-            .export();
+        let prTotalPerWeek = projectStats
+            .groupByWeek(savedCourseConfig.startDate)
+            .map(st => st.getLines())
         let authorPerWeek = coreStats
             .groupByAuthor().map(st => 
                 st.groupByWeek(savedCourseConfig.startDate)
                 .map(st => st.getLinesTotal()))
-            .export();
+        let prAuthorPerWeek = projectStats
+            .groupByAuthor().map(st => 
+                st.groupByWeek(savedCourseConfig.startDate)
+                .map(st => st.getLines()))
 
         return {
             total: {
-                added: totals.added,
-                removed: totals.removed
+                added: totals.added + prTotals.added,
+                removed: totals.removed + prTotals.removed
             },
-            authors,
+            authors: authorsGrouped.combine(prAuthorsGrouped, combineStats).export(),
             weekly: {
-                total: totalPerWeek,
+                total: totalPerWeek.combine(prTotalPerWeek, combineStats).export(),
                 authors: authorPerWeek
+                    .combine(prAuthorPerWeek, (ea1, ea2) => ea1.combine(ea2, combineStats)).export()
             }
         };
     }
@@ -149,12 +164,26 @@ export class ReposController {
     async getStatsByUser(courseId: number, assignment: string, name: string, filter: StudentFilter){
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
 
-        let stats = await this.fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name);
+        let [stats, issues, prs] = await Promise.all([
+            this.fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
+            this.githubClient.listIssues(savedCourseConfig.githubStudentOrg, name),
+            this.githubClient.listPullRequests(savedCourseConfig.githubStudentOrg, name)
+        ]);
+                
         let coreStats = new RepositoryStatistics(stats);
+        let projectStats = new ProjectStatistics(issues, prs);
 
         let groupedByAuthor = coreStats.groupByAuthor();
+        let prGroupedByAuthor = projectStats.groupByAuthor();
         
         let studentStats = groupedByAuthor.get(filter.authorName);
+
+        let prStudentStats = prGroupedByAuthor.get(filter.authorName);
+        if(!prStudentStats){
+            prStudentStats = new ProjectStatistics([], []);
+        }
+        console.log('studentStats', studentStats, 'prStudentStats', prStudentStats);
+
         let groups = [
             RepositoryStatistics.backend, 
             RepositoryStatistics.frontend,
@@ -162,12 +191,30 @@ export class ReposController {
             RepositoryStatistics.docs
         ]
 
-        let total = studentStats.groupBy(groups).map(g => g.getLinesTotal()).export();
+        let total = studentStats.groupBy(groups).map(g => g.getLinesTotal());
+        let prTotal = prStudentStats.asGrouped("Communication").map(g => g.getLines());
+
         let weekly = studentStats.groupByWeek(savedCourseConfig.startDate)
-            .map(w => w.groupBy(groups).map(g => g.getLinesTotal())).export();
+            .map(w => w.groupBy(groups).map(g => g.getLinesTotal()));
+        let prWeekly = prStudentStats.groupByWeek(savedCourseConfig.startDate)
+            .map(w => w.asGrouped("Communication").map(g => g.getLines()));
+        
+        
+        let length = Math.max(weekly.length, prWeekly.length);
+        prWeekly = prWeekly.pad(length, 
+            new ProjectStatistics([], []).asGrouped("Communication").map(g => g.getLines()));
+        weekly = weekly.pad(length,
+            new RepositoryStatistics([]).groupBy(groups).map(g => g.getLinesTotal()));
+
+
+        let totalCombined = total.combine(prTotal, combineStats);    
+        let weeklyCombined = weekly.combine(prWeekly, (g1, g2) => {
+            return g1.combine(g2, combineStats)
+        });
+        
         return {
-            total: total,
-            weekly: weekly
+            total: totalCombined.export(),
+            weekly: weeklyCombined.export()
         }        
     }
 }

@@ -82,6 +82,13 @@ export type LinesStatistics = {
     added: number,
     removed: number
 }
+export function combineStats(...stats: LinesStatistics[]): LinesStatistics {
+    return stats.reduce((acc, stat) => ({
+        added: acc.added + stat.added,
+        removed: acc.removed + stat.removed
+    }), { added: 0, removed: 0 });
+}
+
 
 export type RepoStatisticsDTO = {
     total: LinesStatistics,

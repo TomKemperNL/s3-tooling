@@ -3,6 +3,7 @@ import { ProjectStatistics } from '../src/main/project-statistics';
 import { extensions } from 'sequelize/lib/utils/validator-extras';
 import { a } from 'vitest/dist/chunks/suite.d.FvehnV49.js';
 import { Issue, PullRequest } from '../src/shared';
+import { ExportingArray, GroupedCollection } from '../src/main/repository-statistics';
 
 
 test('CanSumLinesPerAuthor', {}, () => {
@@ -56,4 +57,53 @@ test('Can Group ProjectItems Per Week', {}, () => {
     expect(result[2].added, 'Can skip an empty week').toBe(0);
     expect(result[3].added).toBe(2);
     expect(result[4]).toBe(undefined);
+});
+
+test('Can combine stat groups', () => {
+    let someStuff = new GroupedCollection({
+        'Bob': { added: 1, removed: 2 },
+        'Fred': { added: 3, removed: 4 }
+    });
+
+    let someOtherStuff = new GroupedCollection({
+        'Bob': { added: 1, removed: 2 },
+        'Anny': { added: 2, removed: 3 }
+    });
+
+    let result = someStuff.combine(someOtherStuff, (a, b) => ({
+        added: a.added + b.added,
+        removed: a.removed + b.removed
+    })).export();
+
+    expect(result['Bob'].added).toBe(2);
+    expect(result['Bob'].removed).toBe(4);
+    expect(result['Fred'].added).toBe(3);
+    expect(result['Fred'].removed).toBe(4);
+    expect(result['Anny'].added).toBe(2);
+    expect(result['Anny'].removed).toBe(3);   
+});
+
+test('Can combine stat arrays', () => {
+    let someStuff = new ExportingArray([
+       { added: 1, removed: 2 },
+       { added: 3, removed: 4 }
+    ]);
+
+    let someOtherStuff = new ExportingArray([
+       { added: 0, removed: 0 },
+       { added: 1, removed: 2 },
+       { added: 2, removed: 3 }
+    ]);
+
+    let result = someStuff.combine(someOtherStuff, (a, b) => ({
+        added: a.added + b.added,
+        removed: a.removed + b.removed
+    })).export();
+
+    expect(result[0].added).toBe(1);
+    expect(result[0].removed).toBe(2);
+    expect(result[1].added).toBe(4);
+    expect(result[1].removed).toBe(6);
+    expect(result[2].added).toBe(2);
+    expect(result[2].removed).toBe(3);   
 });

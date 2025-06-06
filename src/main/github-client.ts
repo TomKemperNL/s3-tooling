@@ -1,5 +1,5 @@
 import { Octokit } from "@octokit/rest";
-import { Repo } from "../shared";
+import { Issue, PullRequest, Repo } from "../shared";
 
 export type RepoResponse = {
     name: string,
@@ -105,8 +105,12 @@ export class GithubClient {
         return comments;
     }
 
+    cachedIssues: {[org: string]: { [repo: string]: Issue[] } } = {};
 
     async listIssues(org, repo) {
+        if( this.cachedIssues[org] && this.cachedIssues[org][repo]) {
+            return this.cachedIssues[org][repo];
+        }
         let nextCursor = "";
         let hasNextPage = true;
         let issues = [];
@@ -155,7 +159,7 @@ export class GithubClient {
             issue.comments.nodes = await this.#fetchComments(issue.id);
         }
 
-        return issues.map(issue => ({
+        let result = issues.map(issue => ({
             ...issue,
             author: issue.author.login,
             createdAt: new Date(issue.createdAt),
@@ -164,11 +168,19 @@ export class GithubClient {
                 author: comment.author.login,
                 createdAt: new Date(comment.createdAt),
             }))
-        })
-        );            
+        }));
+        this.cachedIssues[org] = this.cachedIssues[org] || {};
+        this.cachedIssues[org][repo] = result;
+        return result;            
     }
 
+    cachedPrs: {[org: string]: { [repo: string]: PullRequest[] } } = {};
+
     async listPullRequests(org, repo) {
+        if( this.cachedPrs[org] && this.cachedPrs[org][repo]) {
+            return this.cachedPrs[org][repo];
+        }
+
         let nextCursor = "";
         let hasNextPage = true;
         let pullRequests = [];
@@ -217,7 +229,7 @@ export class GithubClient {
             pullRequest.comments.nodes = await this.#fetchComments(pullRequest.id);
         }
 
-        return pullRequests.map(pullRequest => ({
+        let results = pullRequests.map(pullRequest => ({
             ...pullRequest,
             author: pullRequest.author.login,
             createdAt: new Date(pullRequest.createdAt),
@@ -228,5 +240,8 @@ export class GithubClient {
             }))
         })
         );            
+        this.cachedPrs[org] = this.cachedPrs[org] || {};
+        this.cachedPrs[org][repo] = results;
+        return results;
     }
 }
