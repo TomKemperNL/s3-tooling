@@ -8,6 +8,17 @@ import { RepositoryStatistics } from "./repository-statistics";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
 
+function mergePies(pie1: {[name:string]: number}, pie2: {[name:string]: number}): {[name:string]: number} {
+    let merged: {[name:string]: number} = {};
+    for (let key in pie1) {
+        merged[key] = (merged[key] || 0) + pie1[key];
+    }
+    for (let key in pie2) {
+        merged[key] = (merged[key] || 0) + pie2[key];
+    }
+    return merged;
+}
+
 export class ReposController {
 
     constructor(private db: Db, private canvasClient: CanvasClient, private githubClient: GithubClient, private fileSystem: FileSystem) {
@@ -152,12 +163,20 @@ export class ReposController {
         };
     }
 
+    
+
     async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<BlameStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        let blamePie = await this.fileSystem.getBlame(savedCourseConfig.githubStudentOrg, assignment, name);
-
+        let [blamePie, issues, prs] = await Promise.all([
+            this.fileSystem.getBlame(savedCourseConfig.githubStudentOrg, assignment, name),
+            this.githubClient.listIssues(savedCourseConfig.githubStudentOrg, name),
+            this.githubClient.listPullRequests(savedCourseConfig.githubStudentOrg, name)
+        ]);
+        let projectStats = new ProjectStatistics(issues, prs);
+        let docsPie: {[name:string]: number} = projectStats.groupByAuthor().map(st => st.getLines().added).export(); 
+        
         return {
-            blamePie
+            blamePie: mergePies(blamePie, docsPie)
         };
     }
 
@@ -180,6 +199,9 @@ export class ReposController {
         let prStudentStats = prGroupedByAuthor.get(filter.authorName);
         if(!prStudentStats){
             prStudentStats = new ProjectStatistics([], []);
+        }
+        if(!studentStats){
+            studentStats = new RepositoryStatistics([]);
         }
         
         let groups = [
