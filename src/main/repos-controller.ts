@@ -119,10 +119,22 @@ export class ReposController {
 
     async getBranchInfo(courseId: number, assignment: string, name: string): Promise<BranchInfo> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        let defaultBranch = await this.fileSystem.getDefaultBranch(savedCourseConfig.githubStudentOrg, assignment, name);
+        if (!defaultBranch) {
+            defaultBranch = 'main'; // fallback to main if no default branch is found
+        }
 
         let [currentBranch, branches] = await Promise.all([
             this.fileSystem.getCurrentBranch(savedCourseConfig.githubStudentOrg, assignment, name),
-            this.fileSystem.getBranches(savedCourseConfig.githubStudentOrg, assignment, name)]);
+            this.fileSystem.getBranches(defaultBranch, savedCourseConfig.githubStudentOrg, assignment, name)]);
+
+        if(branches.indexOf(currentBranch) === -1) {
+            branches.push(currentBranch);
+        }
+        if (branches.indexOf(defaultBranch) === -1) {
+            branches.push(defaultBranch);
+        }
+        branches.sort();
 
         return {
             currentBranch: currentBranch,
@@ -249,7 +261,7 @@ export class ReposController {
             new ProjectStatistics([], []).asGrouped("Communication").map(g => g.getLines()));
         weekly = weekly.pad(length,
             new RepositoryStatistics([]).groupBy(groups).map(g => g.getLinesTotal()));
-
+        
 
         let totalCombined = total.combine(prTotal, combineStats);
         let weeklyCombined = weekly.combine(prWeekly, (g1, g2) => {

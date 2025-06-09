@@ -179,6 +179,7 @@ export class RepositoryDetails extends LitElement {
     }
 
     async refresh(e){
+        console.log('Refreshing repository', this.repo);
         this.loading = true;
         await this.ipc.refreshRepo(this.repo.courseId, this.repo.assignment, this.repo.name);
         this.repo = {...this.repo};
@@ -228,7 +229,7 @@ export class RepositoryDetails extends LitElement {
                 ${map(this.branches, b => html`
                     <option value=${b} ?selected=${b === this.currentBranch}>${b}</option>
                 `)}
-            </select><button ?disabled=${this.loading} click=${this.refresh}>Refresh</button></p>
+            </select><button type="button" ?disabled=${this.loading} @click=${this.refresh}>Refresh</button></p>
         </div>        
         
         <div style="grid-area: numbers;" class=${classMap({ loading: this.loading })}>

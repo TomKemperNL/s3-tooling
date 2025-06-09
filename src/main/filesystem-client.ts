@@ -136,26 +136,50 @@ export class FileSystem {
         return dirs.map(d => prefPath.concat([d]));
     }
 
+     //Dit is te sloom om altijd te doen    
     async refreshRepo(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         await exec(`git reset HEAD --hard`, { cwd: target });
-        await exec(`git fetch --all`, { cwd: target }); //Dit is te sloom om altijd te doen    
-        await exec(`git pull`, { cwd: target });
+        await exec(`git fetch --all`, { cwd: target });
+        try{
+            await exec(`git pull`, { cwd: target });
+        }catch (e) {
+            //TODO: dit kan gebeuren als de remote branch is verwijderd,
+            //moeten we nog beter kunnen detecteren 
+            console.error('Error pulling repo', e);
+        }
+
+        
         delete this.repoCache[target];   
     }
 
     async getCurrentBranch(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
-        let result = await exec(`git rev-parse --abbrev-ref HEAD`, { cwd: target, encoding: 'utf8' });
+        let result = await exec(`git branch --show-current`, { cwd: target, encoding: 'utf8' });
         return result.stdout.trim();
     }
 
-    async getBranches(...repoPath: string[]) {
+    async getDefaultBranch(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
-        let result = await exec(`git branch --all --remote`, { cwd: target, encoding: 'utf8' });
+        let result = await exec(`git remote show origin`, { cwd: target, encoding: 'utf8' });
+        let lines = result.stdout.split('\n');
+        
+        let defaultBranchLine = lines.find(line => line.trim().startsWith('HEAD branch:'));
+        if (defaultBranchLine) {
+            return defaultBranchLine.replace('HEAD branch:', '').trim();
+        } else {
+            throw new Error('Could not determine default branch');
+        }
+    }
+
+    async getBranches(defaultBranch, ...repoPath: string[]) {
+        let target = path.join(this.#basePath, ...repoPath);
+        let result = await exec(`git branch --all --remote --no-merge ${defaultBranch}`, { cwd: target, encoding: 'utf8' });
         let branches = result.stdout.split('\n').filter(b => b.length > 0).map(b => b.trim());
         branches = branches.map(b => b.replace(/origin\//, ''));
         branches = branches.filter(b => b.indexOf('HEAD') === -1);
+
+        branches = [...new Set(branches.sort())];
         return branches;
     }
 
@@ -175,19 +199,11 @@ export class FileSystem {
         if (this.repoCache[target]) {
             return this.repoCache[target];
         }
-        let result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });
+        let result = await exec(`git log ${logFormat}`, { cwd: target, encoding: 'utf8' });
         let logLines = result.stdout.split('\n');
 
         let parsedLog = parseLog(logLines);
         this.repoCache[target] = parsedLog;
-        return parsedLog;
-    }
-
-    async getOwnStats() {
-        let result = await exec(`git log --all ${logFormat}`, { encoding: 'utf8' });
-        let logLines = result.stdout.split('\n');
-
-        let parsedLog = parseLog(logLines);
         return parsedLog;
     }
 
@@ -219,7 +235,16 @@ export class FileSystem {
                 return;
             }
 
-            let soloLog = await exec(`git log -1 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' });
+            let soloLog = null;
+            try{
+                soloLog = await exec(`git log -1 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' });
+            }catch (e) {
+                //Als er een casing-probleem (zelfde file bestaat/bestond onder meerdere spellingen) is, 
+                // dan geeft git log hier een hele vreemde error
+                console.error('Error in git log', e);
+                return; 
+            }
+            
             let logLines = soloLog.stdout.split('\n');
             let [parsedLog] = parseLog(logLines);            
 
