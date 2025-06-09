@@ -11,6 +11,7 @@ import { ReposController } from "./repos-controller";
 import { CoursesController } from "./courses-controller";
 
 import { saveSettings, loadSettings } from "./settings";
+import { StatisticsController } from "./statistics-controller";
 
 
 async function createApp(settings: Settings) {
@@ -29,7 +30,8 @@ async function createApp(settings: Settings) {
         return {
             githubClient, fileSystem, canvasClient,
             repoController: new ReposController(db, canvasClient, githubClient, fileSystem),
-            coursesController: new CoursesController(db, canvasClient)
+            coursesController: new CoursesController(db, canvasClient),
+            statisticsController: new StatisticsController(db, githubClient, fileSystem),
         };
     }catch (error) {
         console.error("Error creating app:", error);
@@ -111,16 +113,16 @@ export async function main() {
     });
 
     ipcMain.handle("repostats:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> => {
-        let mainResult = app.repoController.getRepoStats(courseId, assignment, name, filter);
+        let mainResult = app.statisticsController.getRepoStats(courseId, assignment, name, filter);
         return mainResult;
     });
 
     ipcMain.handle("repostats-blame:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) => {
-        return app.repoController.getBlameStats(courseId, assignment, name, filter);
+        return app.statisticsController.getBlameStats(courseId, assignment, name, filter);
     });
 
     ipcMain.handle("repostats-student:get", async (e, courseId: number, assignment: string, name: string, filter: StudentFilter) => {
-        return app.repoController.getStatsByUser(courseId, assignment, name, filter);
+        return app.statisticsController.getStatsByUser(courseId, assignment, name, filter);
     });
 
 }
