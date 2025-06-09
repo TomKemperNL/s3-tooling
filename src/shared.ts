@@ -35,7 +35,7 @@ export class Repo {
 
 export type CourseConfig = {
     name: string;
-    canvasCourseId: number;    
+    canvasId: number;    
     canvasGroupsName: string;
     startDate: Date,
     githubStudentOrg: string;    

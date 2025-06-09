@@ -40,7 +40,7 @@ export type RepoDb = {
 function courseDbToConfig(r: CourseDb, as: AssignmentDb[]): CourseConfig {
     return {
         name: r.name,
-        canvasCourseId: r.canvasId,        
+        canvasId: r.canvasId,        
         canvasGroupsName: r.canvasGroups,
         startDate: r.startDate ? new Date(Date.parse(r.startDate)) : null,
         githubStudentOrg: r.githubStudentOrg,
@@ -115,7 +115,7 @@ export class Db {
                 ?,?,
                 ?)`, [
             courseConfig.name, courseConfig.startDate?.toISOString(),
-            courseConfig.canvasCourseId, courseConfig.canvasGroupsName,
+            courseConfig.canvasId, courseConfig.canvasGroupsName,
             courseConfig.githubStudentOrg
             ]);
 
@@ -123,7 +123,7 @@ export class Db {
                 await this.#runProm(`insert into course_assignments(
                     courseId, githubAssignment, canvasId, groupAssignment) values(
                     ?,?,?,?
-                    )`, courseConfig.canvasCourseId, as.githubAssignment, as.canvasId, as.groupAssignment)
+                    )`, courseConfig.canvasId, as.githubAssignment, as.canvasId, as.groupAssignment)
             }
         });
 

@@ -35,22 +35,18 @@ export class RepositoryDetails extends LitElement {
     currentBranch: string = '';
     @property({ type: Array, state: true })
     branches: string[] = [];
-
-
     @property({ type: Object, state: true })
     repoStats?: RepoStatisticsDTO;
-
     @property({ type: Object, state: true })
     blameStats?: BlameStatisticsDTO;
-
     @property({ type: Boolean, state: true })
     loading: boolean = false;
-
     @property({ type: String, state: true })
     activeAuthorName: string = '';
-    @property({ type: Object })
+    @property({ type: Object, state: true })
     activeAuthor: AuthorStatisticsDTO;
 
+    
     protected updated(_changedProperties: PropertyValues): void {
         if (_changedProperties.has('repo')) {
             this.loading = true;
@@ -59,7 +55,6 @@ export class RepositoryDetails extends LitElement {
             let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
             let gettingBlameStats = this.ipc.getBlameStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
             Promise.all([gettingBranchInfo, gettingRepos, gettingBlameStats]).then(([branchInfo, repoStats, blamestats]) => {
-                console.log('Branch info', branchInfo);
                 this.currentBranch = branchInfo.currentBranch;
                 this.branches = branchInfo.availableBranches;
                 this.repoStats = repoStats;
@@ -100,28 +95,6 @@ export class RepositoryDetails extends LitElement {
 
         };
     }
-
-
-
-    static styles = css`
-    :host {
-        display: grid;
-        grid-template-areas:
-            "title title"
-            "pie     bar"
-            "numbers student";
-            ;
-        grid-template-columns: 1fr 2fr;
-        grid-template-rows: min-content minmax(25%, 50%) 1fr;
-    }
-
-    .loading {
-        opacity: 0.5;
-    }
-    ul {
-        list-style: none;
-    }
-    `
 
     colors = [//Heb CoPilot maar de kleuren laten kiezen...
         "rgba(223,159,159,1)",
@@ -194,6 +167,26 @@ export class RepositoryDetails extends LitElement {
             await this.refresh(null);            
         }
     }
+
+    static styles = css`
+    :host {
+        display: grid;
+        grid-template-areas:
+            "title title"
+            "pie     bar"
+            "numbers student";
+            ;
+        grid-template-columns: 1fr 2fr;
+        grid-template-rows: min-content minmax(25%, 50%) 1fr;
+    }
+
+    .loading {
+        opacity: 0.5;
+    }
+    ul {
+        list-style: none;
+    }
+    `
 
     render() {
         let labels: string[] = [];
@@ -275,9 +268,7 @@ export class RepositoryDetails extends LitElement {
         ${when(this.activeAuthor, () => html`
                 <student-details  .authorName=${this.activeAuthorName} .authorStats=${this.activeAuthor}></student-details>
             `)}    
-        </div>        
-        
-
+        </div>
         `;
     }
 }

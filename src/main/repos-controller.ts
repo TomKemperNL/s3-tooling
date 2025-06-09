@@ -29,15 +29,15 @@ export class ReposController {
         let usermapping: SimpleDict = null;
 
         if (savedCourseConfig.lastMappingCheck && (savedCourseConfig.lastMappingCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
-            usermapping = await this.db.getUserMapping(savedCourseConfig.canvasCourseId);
+            usermapping = await this.db.getUserMapping(savedCourseConfig.canvasId);
         } else {
             for (let a of savedCourseConfig.assignments) {
                 if (!a.groupAssignment) {
                     usermapping = await this.canvasClient.getGithubMapping(
-                        { course_id: savedCourseConfig.canvasCourseId },
+                        { course_id: savedCourseConfig.canvasId },
                         { assignment_id: a.canvasId }
                         , a.githubAssignment);
-                    await this.db.updateUserMapping(savedCourseConfig.canvasCourseId, usermapping);
+                    await this.db.updateUserMapping(savedCourseConfig.canvasId, usermapping);
                 }
             }
         }
@@ -47,10 +47,10 @@ export class ReposController {
     async #getRepos(savedCourseConfig: CourseConfig): Promise<Repo[]> {
         let repoResponses: RepoResponse[]
         if (savedCourseConfig.lastRepoCheck && (savedCourseConfig.lastRepoCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
-            repoResponses = await this.db.selectReposByCourse(savedCourseConfig.canvasCourseId)
+            repoResponses = await this.db.selectReposByCourse(savedCourseConfig.canvasId)
         } else {
             repoResponses = await this.githubClient.listRepos(savedCourseConfig.githubStudentOrg);
-            await this.db.updateRepoMapping(savedCourseConfig.canvasCourseId, repoResponses);
+            await this.db.updateRepoMapping(savedCourseConfig.canvasId, repoResponses);
         }
         let repos = repoResponses.map(r => toRepo(r));
         return repos;

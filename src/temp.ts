@@ -2,7 +2,7 @@ import { CourseConfig } from './shared';
 
 export let s2 : CourseConfig = {
     name: 'Software Development Fundamentals',
-    canvasCourseId: 44633,    
+    canvasId: 44633,    
     canvasGroupsName: 'Projectteams SD S2',
     startDate: new Date(Date.parse('2025-02-10')),
     githubStudentOrg: 'HU-SD-S2-studenten-2425',
@@ -27,7 +27,7 @@ export let s2 : CourseConfig = {
 
 export let cisq1 : CourseConfig = {
     name: 'Continuous Integration and Software Qua1',
-    canvasCourseId: 44760,    
+    canvasId: 44760,    
     canvasGroupsName: '',
     startDate: new Date(Date.parse('2025-02-04')),
     githubStudentOrg: 'huict',
@@ -46,7 +46,7 @@ export let cisq1 : CourseConfig = {
 
 export let bep2 : CourseConfig = {
     name: 'Back-End Programming 2',
-    canvasCourseId: 44752,
+    canvasId: 44752,
     canvasGroupsName: '',
     startDate: new Date(Date.parse('2024-09-01')),
     githubStudentOrg: 'HU-SD-S3-studenten-2425',
@@ -89,7 +89,7 @@ export let bep2 : CourseConfig = {
 
 export let bep1 : CourseConfig = {
     name: 'Back-End Programming 1',
-    canvasCourseId: 39721,
+    canvasId: 39721,
     canvasGroupsName: '',
     startDate: new Date(Date.parse('2024-04-01')),
     githubStudentOrg: 'HU-SD-BEP1-studenten-2324',
@@ -107,7 +107,7 @@ export let bep1 : CourseConfig = {
 
 export let cisq2 : CourseConfig = {
     name: 'Continuous Integration and Software Qua2',
-    canvasCourseId: 44762,    
+    canvasId: 44762,    
     canvasGroupsName: '',
     startDate: new Date(Date.parse('2025-04-14')),
     githubStudentOrg: 'SD-CISQ2-2025',
