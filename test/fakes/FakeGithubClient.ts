@@ -11,4 +11,14 @@ export class FakeGithubClient {
         this.apiCalls++;
         return this.members[repo];
     }
+
+    async listIssues(org: string, repo: string) {
+        this.apiCalls++;
+        return [];
+    }
+
+    async listPullRequests(org: string, repo: string) {
+        this.apiCalls++;
+        return [];
+    }
 }

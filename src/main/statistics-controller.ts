@@ -22,6 +22,7 @@ export class StatisticsController {
 
     }
     
+    //Todo: courseconfig wegwerken... te weinig nodig om een hele DB dependency te pakken
     async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
 
