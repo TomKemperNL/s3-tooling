@@ -123,7 +123,7 @@ export class FileSystem {
             await mkdir(target, options);
         }
 
-        await exec(`git clone ${repo.http_url}`, { cwd: target });
+        await exec(`git clone "${repo.http_url}"`, { cwd: target });
         return fullTarget;
     }
 
@@ -174,7 +174,7 @@ export class FileSystem {
 
     async getBranches(defaultBranch, ...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
-        let result = await exec(`git branch --all --remote --no-merge ${defaultBranch}`, { cwd: target, encoding: 'utf8' });
+        let result = await exec(`git branch --all --remote --no-merge "${defaultBranch}"`, { cwd: target, encoding: 'utf8' });
         let branches = result.stdout.split('\n').filter(b => b.length > 0).map(b => b.trim());
         branches = branches.map(b => b.replace(/origin\//, ''));
         branches = branches.filter(b => b.indexOf('HEAD') === -1);
@@ -189,7 +189,7 @@ export class FileSystem {
         //checkout -f, want in principe hebben we geen changes,
         //maar mac/linux/windows kunnen issues hebben met line endings,
         //en dat soort ellende. Dat negeren we maar...
-        await exec(`git checkout -f ${targetBranch}`, { cwd: target });
+        await exec(`git checkout -f "${targetBranch}"`, { cwd: target });
     }
 
     repoCache: { [repoPath: string]: LoggedCommit[] } = {};
