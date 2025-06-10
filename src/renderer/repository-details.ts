@@ -7,6 +7,7 @@ import { ElectronIPC } from "./ipc";
 import { classMap } from "lit/directives/class-map.js";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
+import { HTMLInputEvent } from "./events";
 
 export class AuthorSelectedEvent extends Event {
     static eventName = 'author-selected';
@@ -75,7 +76,7 @@ export class RepositoryDetails extends LitElement {
     }
 
     toggleAuthor(authorName: string) {
-        return e => {
+        return (e: HTMLInputEvent) => {
             this.authors[authorName] = e.target.checked;
             this.requestUpdate();
         }
@@ -151,7 +152,7 @@ export class RepositoryDetails extends LitElement {
         return datasets;
     }
 
-    async refresh(e){
+    async refresh(e: Event){
         console.log('Refreshing repository', this.repo);
         this.loading = true;
         await this.ipc.refreshRepo(this.repo.courseId, this.repo.assignment, this.repo.name);
@@ -159,7 +160,7 @@ export class RepositoryDetails extends LitElement {
         this.loading = false;
     }
 
-    async switchBranch(e){
+    async switchBranch(e: HTMLInputEvent){
         let selected = e.target.value;
         if (selected && selected !== this.currentBranch) {
             this.currentBranch = selected;            

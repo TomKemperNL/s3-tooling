@@ -1,5 +1,5 @@
 import { Chart } from "chart.js";
-import { html, LitElement } from "lit";
+import { html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ref, createRef } from 'lit/directives/ref.js';
 
@@ -12,10 +12,6 @@ export class StackedBarChart extends LitElement {
     labels: string[] = [];
 
     canvasRef = createRef();
-
-    static styles = [
-        // Add your CSS styles here
-    ];
 
     constructor() {
         super();
@@ -31,7 +27,7 @@ export class StackedBarChart extends LitElement {
         }
     }
 
-    updated(changedProperties) {
+    updated(changedProperties: PropertyValues) {
         if (changedProperties.has('datasets') || changedProperties.has('labels')) {
             if (this.chart) {
                 this.chart.destroy();

@@ -1,7 +1,7 @@
 import { Database } from "sqlite3";
 import fs from 'fs/promises';
 import { bep1, bep2, cisq1, cisq2, s2 } from '../temp'
-import { CourseConfig, CourseDTO } from "../shared";
+import { CourseConfig, CourseDTO, StudentDTO } from "../shared";
 import { MemberResponse, RepoResponse } from "./github-client";
 import { SimpleDict } from "./canvas-client";
 
@@ -160,7 +160,7 @@ export class Db {
                 join students s on ss.studentid = s.id
                 join githubAccounts gha on s.id = gha.studentId
                 where c.canvasId = ?`, [courseId]);
-        let result = {};
+        let result : SimpleDict = {};
         for (let r of rows) {
             result[r.email] = r.username;
         }
@@ -229,10 +229,9 @@ export class Db {
     }
 
     //TODO: uitzoeken hoe je dit netter promisified...
-
     #runProm(query: string, ...args: any[]): Promise<undefined | { lastID: number }> {
         return new Promise((resolve, reject) => {
-            this.#db.run(query, ...args, function (err) {
+            this.#db.run(query, ...args, function (err: Error) {
                 if (err) { reject(err); } else {
                     if (this.lastID) {
                         resolve(this);
@@ -246,7 +245,7 @@ export class Db {
 
     #execProm(query: string, ...args: any[]): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.#db.exec(query, ...args, function (err) {
+            this.#db.exec(query, ...args, function (err: Error) {
                 if (err) { reject(err); } else {
                     resolve();
                 }
@@ -256,7 +255,7 @@ export class Db {
 
     #getProm<T>(query: string, ...args: any[]): Promise<T> {
         return new Promise((resolve, reject) => {
-            this.#db.get(query, ...args, function (err, result) {
+            this.#db.get(query, ...args, function (err: Error, result: T) {
                 if (err) { reject(err); } else {
                     resolve(result);
                 }
@@ -266,7 +265,7 @@ export class Db {
 
     #allProm<T>(query: string, ...args: any[]): Promise<T[]> {
         return new Promise((resolve, reject) => {
-            this.#db.all(query, ...args, function (err, result) {
+            this.#db.all(query, ...args, function (err: Error, result: T[]) {
                 if (err) { reject(err); } else {
                     resolve(result);
                 }
@@ -282,10 +281,10 @@ export class Db {
 
             let sections = Object.keys(courseDTO.sections);
 
-            async function insertSection(k) {                
+            async function insertSection(k: string) {                
                 let runResult = await this.#runProm('insert into sections(name, courseid) values (?,?)', [k, savedCourse.canvasId]);
                 let sectionId = runResult.lastID
-                async function upsertStudent(s) {                    
+                async function upsertStudent(s: StudentDTO) {                    
                     let existingStudent = await this.#getProm('select * from students where id = ?', [s.studentId]);                    
                     if (existingStudent === undefined) {                        
                         await this.#runProm('insert into students(id, email, name) values(?,?,?) on conflict do nothing;', [s.studentId, s.email, s.name]);
@@ -300,7 +299,7 @@ export class Db {
         });
     }
 
-    async getCourse(canvasId) {
+    async getCourse(canvasId: number) {        
         let rows = await this.#allProm<any>(`
                 select c.name as courseName, sec.name as sectionName, stu.name as studentName, stu.id as studentId, * from courses c 
                     left join sections sec on sec.courseId = c.canvasid

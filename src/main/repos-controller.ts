@@ -81,7 +81,7 @@ export class ReposController {
     }
 
 
-    async loadRepos(courseId, assignmentName, filter: RepoFilter): Promise<RepoDTO[]> {
+    async loadRepos(courseId: number, assignmentName: string, filter: RepoFilter): Promise<RepoDTO[]> {
         let savedCourse = await this.db.getCourse(courseId);
         let assignment = savedCourse.assignments.find(a => a.githubAssignment === assignmentName);
         if (!assignment) {

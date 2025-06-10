@@ -18,8 +18,8 @@ export class ProjectStatistics {
     }
 
     groupByAuthor(): GroupedCollection<ProjectStatistics> {
-        let results = {};
-        function addOrAppend(type, key, value) {
+        let results: { [name: string]: any } = {};
+        function addOrAppend<T>(type: string, key: string, value: T) {
             if (!results[key]) {
                 results[key] = {
                     issues: [],
@@ -85,7 +85,7 @@ export class ProjectStatistics {
 
     groupByWeek(beginDate?: Date): ExportingArray<ProjectStatistics> {
         let gathered = [];
-        
+
         //Algoritmisch gaan we hiervan huilen...
         let earliestDate = Math.min(
             !!beginDate ? beginDate.valueOf() : new Date().valueOf(),
@@ -93,14 +93,14 @@ export class ProjectStatistics {
             Math.min(...this.prs.map(pr => pr.createdAt.valueOf())),
             Math.min(...this.comments.map(c => c.createdAt.valueOf()))
         );
-        let lastDate = Math.max(            
+        let lastDate = Math.max(
             Math.max(...this.issues.map(i => i.createdAt.valueOf())),
             Math.max(...this.prs.map(pr => pr.createdAt.valueOf())),
             Math.max(...this.comments.map(c => c.createdAt.valueOf()))
         );
         let startDate = new Date(earliestDate);
         let nextDate = ProjectStatistics.#addWeek(startDate);
-        
+
         while (nextDate.valueOf() <= lastDate) {
             let weekIssues = this.issues.filter(i => i.createdAt >= startDate && i.createdAt < nextDate);
             let weekPrs = this.prs.filter(pr => pr.createdAt >= startDate && pr.createdAt < nextDate);
@@ -114,7 +114,7 @@ export class ProjectStatistics {
         let weekPrs = this.prs.filter(pr => pr.createdAt >= startDate && pr.createdAt < nextDate);
         let weekComments = this.comments.filter(c => c.createdAt >= startDate && c.createdAt < nextDate);
 
-        
+
         gathered.push(new ProjectStatistics(weekIssues, weekPrs, weekComments));
         return new ExportingArray(gathered);
     }

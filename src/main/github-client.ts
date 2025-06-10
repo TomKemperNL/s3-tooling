@@ -46,7 +46,7 @@ export class GithubClient {
         return this.#kit.request('GET /user').then(response => response.data);
     }
 
-    async getMembers(org, repo): Promise<MemberResponse[]> {
+    async getMembers(org: string, repo: string): Promise<MemberResponse[]> {
         let response = await this.#kit.repos.listCollaborators({
             repo: repo,
             owner: org
@@ -54,7 +54,7 @@ export class GithubClient {
         return response.data;
     }
 
-    async listRepos(org): Promise<RepoResponse[]> {
+    async listRepos(org: string): Promise<RepoResponse[]> {
         let pagination = this.#kit.paginate.iterator(this.#kit.repos.listForOrg,
             {
                 per_page: 100,
@@ -62,18 +62,18 @@ export class GithubClient {
             }
         );
 
-        let repos = [];
+        let repos : RepoResponse[]= [];
         for await (const response of pagination) {
-            repos = repos.concat(response.data);
+            repos = repos.concat(<any>response.data);
         }
 
         return repos;
     }
 
-    async #fetchComments(issueId: string) {
+    async #fetchComments(issueId: string) : Promise<Comment[]> {
         let nextCursor = "";
         let hasNextPage = true;
-        let comments = [];
+        let comments : Comment[] = [];
 
         while (hasNextPage) {
             let response: any = await this.#kit.graphql(`
@@ -107,13 +107,13 @@ export class GithubClient {
 
     cachedIssues: {[org: string]: { [repo: string]: Issue[] } } = {};
 
-    async listIssues(org, repo) {
+    async listIssues(org: string, repo: string) : Promise<Issue[]> {
         if( this.cachedIssues[org] && this.cachedIssues[org][repo]) {
             return this.cachedIssues[org][repo];
         }
         let nextCursor = "";
         let hasNextPage = true;
-        let issues = [];
+        let issues : any[] = [];
 
         while (hasNextPage) {
             let response: any = await this.#kit.graphql(`
@@ -163,7 +163,7 @@ export class GithubClient {
             ...issue,
             author: issue.author.login,
             createdAt: new Date(issue.createdAt),
-            comments: issue.comments.nodes.map(comment => ({
+            comments: issue.comments.nodes.map((comment: any) => ({
                 ...comment,
                 author: comment.author.login,
                 createdAt: new Date(comment.createdAt),
@@ -176,14 +176,14 @@ export class GithubClient {
 
     cachedPrs: {[org: string]: { [repo: string]: PullRequest[] } } = {};
 
-    async listPullRequests(org, repo) {
+    async listPullRequests(org: string, repo: string) {
         if( this.cachedPrs[org] && this.cachedPrs[org][repo]) {
             return this.cachedPrs[org][repo];
         }
 
         let nextCursor = "";
         let hasNextPage = true;
-        let pullRequests = [];
+        let pullRequests : any[]= [];
 
         while (hasNextPage) {
             let response: any = await this.#kit.graphql(`
@@ -233,7 +233,7 @@ export class GithubClient {
             ...pullRequest,
             author: pullRequest.author.login,
             createdAt: new Date(pullRequest.createdAt),
-            comments: pullRequest.comments.nodes.map(comment => ({
+            comments: pullRequest.comments.nodes.map((comment: any) => ({
                 ...comment,
                 author: comment.author.login,
                 createdAt: new Date(comment.createdAt),

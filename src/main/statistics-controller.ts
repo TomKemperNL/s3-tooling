@@ -63,7 +63,7 @@ export class StatisticsController {
             authors: authorsGrouped.combine(prAuthorsGrouped, combineStats).export(),
             weekly: {
                 total: totalPerWeek.combine(prTotalPerWeek, combineStats).export(),
-                authors: authorPerWeek
+                authors: <any>authorPerWeek //TODO: deze any is een bug denk ik...
                     .combine(prAuthorPerWeek, (ea1, ea2) => ea1.combine(ea2, combineStats)).export()
             }
         };

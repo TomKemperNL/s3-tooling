@@ -78,8 +78,7 @@ test("canLoadEmptyRepos", async () => {
 test("canLoadSoloRepos", async () => {
     canvasFake.mapping = { 'test@example.com': 'githubtest' }
     githubFake.repos = [
-        {
-            id: 42, 
+        {                       
             name: verantwoordingAssignmentName + '-githubtest',
             full_name: 'bla-org/' + verantwoordingAssignmentName + '-githubtest',
             organization: { login: 'bla-org' }

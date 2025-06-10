@@ -1,7 +1,10 @@
+import { RepoResponse } from "../../src/main/github-client";
+import { Issue, PullRequest } from "../../src/shared";
+
 export class FakeGithubClient {
     apiCalls = 0;
-    repos = [];
-    async listRepos(){
+    repos: any[] = [];
+    async listRepos() : Promise<RepoResponse[]>{
         this.apiCalls++;
         return this.repos;
     }
@@ -12,12 +15,12 @@ export class FakeGithubClient {
         return this.members[repo];
     }
 
-    async listIssues(org: string, repo: string) {
+    async listIssues(org: string, repo: string) : Promise<Issue[]> {
         this.apiCalls++;
         return [];
     }
 
-    async listPullRequests(org: string, repo: string) {
+    async listPullRequests(org: string, repo: string) : Promise<PullRequest[]> {
         this.apiCalls++;
         return [];
     }
