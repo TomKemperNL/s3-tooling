@@ -15,13 +15,15 @@ export class FakeGithubClient {
         return this.members[repo];
     }
 
+    issues: Issue[] = [];
     async listIssues(org: string, repo: string) : Promise<Issue[]> {
         this.apiCalls++;
-        return [];
+        return this.issues;
     }
 
+    pullRequests: PullRequest[] = [];
     async listPullRequests(org: string, repo: string) : Promise<PullRequest[]> {
         this.apiCalls++;
-        return [];
+        return this.pullRequests;
     }
 }

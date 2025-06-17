@@ -6,7 +6,8 @@ export class FakeFileSystem{
         return Promise.resolve();
     }
 
+    commits: LoggedCommit[] = [];
     async getRepoStats(...paths: string[]) : Promise<LoggedCommit[]> {
-        return [];
+        return this.commits;
     }
 }
