@@ -1,7 +1,7 @@
 import { Issue, PullRequest, Comment, LinesStatistics } from "../shared";
-import { GroupedCollection, ExportingArray } from "./repository-statistics";
+import { ExportingArray, GroupedCollection, Statistics } from "./statistics";
 
-export class ProjectStatistics {
+export class ProjectStatistics implements Statistics<ProjectStatistics> {
     constructor(private issues: Issue[], private prs: PullRequest[], private comments: Comment[] = []) {
         if (comments.length === 0) {
             this.comments = issues.reduce((acc, issue) => {
@@ -11,6 +11,23 @@ export class ProjectStatistics {
                 return acc.concat(pr.comments);
             }, this.comments);
         }
+    }
+
+    getDistinctAuthors(): string[] {
+        let authors = new Set<string>();
+        for (let i of this.issues) {
+            authors.add(i.author);
+            for (let c of i.comments) {
+                authors.add(c.author);
+            }
+        }
+        for (let pr of this.prs) {
+            authors.add(pr.author);
+            for (let c of pr.comments) {
+                authors.add(c.author);
+            }
+        }
+        return Array.from(authors);
     }
 
     asGrouped(groupName: string) {
@@ -54,16 +71,16 @@ export class ProjectStatistics {
         return new GroupedCollection<ProjectStatistics>(results);
     }
 
-    static #getLines(carrier: Issue | PullRequest) {
+    static #getLinesTotal(carrier: Issue | PullRequest) {
         return carrier.body.split("\n").length + (carrier.title ? 1 : 0);
     }
 
-    getLines(): LinesStatistics {
+    getLinesTotal(): LinesStatistics {
         let issueStats = this.issues.reduce((acc, issue) => {
-            return { lines: acc.lines + ProjectStatistics.#getLines(issue) }
+            return { lines: acc.lines + ProjectStatistics.#getLinesTotal(issue) }
         }, { lines: 0 });
         let prStats = this.prs.reduce((acc, pr) => {
-            return { lines: acc.lines + ProjectStatistics.#getLines(pr) }
+            return { lines: acc.lines + ProjectStatistics.#getLinesTotal(pr) }
         }, { lines: 0 });
 
         let commentStats = this.comments.reduce((acc, comment) => {

@@ -14,7 +14,7 @@ import { saveSettings, loadSettings } from "./settings";
 import { StatisticsController } from "./statistics-controller";
 
 
-async function createApp(settings: Settings) {
+export async function createApp(settings: Settings) {
     try{
         let githubClient = new GithubClient(settings.githubToken);
         let fileSystem = new FileSystem(settings.dataPath);
@@ -26,12 +26,14 @@ async function createApp(settings: Settings) {
         } else {
             console.log('keeping db');
         }
+
+        let reposController = new ReposController(db, canvasClient, githubClient, fileSystem);
     
         return {
             githubClient, fileSystem, canvasClient,
-            repoController: new ReposController(db, canvasClient, githubClient, fileSystem),
+            repoController: reposController,
             coursesController: new CoursesController(db, canvasClient),
-            statisticsController: new StatisticsController(db, githubClient, fileSystem),
+            statisticsController: new StatisticsController(db, githubClient, fileSystem, reposController),
         };
     }catch (error) {
         console.error("Error creating app:", error);

@@ -6,6 +6,7 @@ import { readdir } from 'fs/promises'
 import { promisify } from 'util';
 import { ignoredAuthors } from './repository-statistics';
 import { Repo } from '../shared';
+import { GroupDefinition } from './statistics';
 
 const exec = promisify(proc.exec);
 const exists = promisify(fs.exists);
@@ -207,6 +208,15 @@ export class FileSystem {
         this.repoCache[target] = parsedLog;
         return parsedLog;
     }
+
+    async getGroupBlame(groups: GroupDefinition[], ...repoPath: string[]) {
+        let target = path.join(this.#basePath, ...repoPath);
+        let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
+        let report : {[groups:string]: number} = {};
+
+        return report;
+    }
+
 
     async getBlame(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);

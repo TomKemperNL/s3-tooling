@@ -5,7 +5,8 @@ import { readFile, writeFile } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 
-const settingsFile = path.join(app.getPath('userData'), 'settings.json');
+const appPath = !!app ? app.getPath('userData') : process.cwd();
+const settingsFile = path.join(appPath, 'settings.json');
 
 export async function saveSettings(settings: Settings) {
     let settingsData = JSON.stringify(settings);
