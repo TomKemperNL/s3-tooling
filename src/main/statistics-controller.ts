@@ -50,20 +50,44 @@ export class StatisticsController {
                 return;
             }
             let sectionStats = await this.getClassStats(courseId, assignment, section);
-            result[section] = sectionStats;
+            return sectionStats;
         }
-        for (let section of Object.keys(savedCourse.sections)) {
-            await addSection(section);
+        let totals = {
+            added: 0,
+            removed: 0
+        };
+        let groupedTotals : any = {
         }
 
-        return result;
+        for (let section of Object.keys(savedCourse.sections)) {
+            let sectionStats = await addSection(section);
+            result[section] = sectionStats;
+            totals.added += sectionStats.total.added;
+            totals.removed += sectionStats.total.removed;
+
+            let sectionGroups = sectionStats.groups;
+            for (let group of Object.keys(sectionGroups)) {
+                if (!groupedTotals[group]) {
+                    groupedTotals[group] = { added: 0, removed: 0 };
+                }
+                groupedTotals[group].added += sectionGroups[group].added;
+                groupedTotals[group].removed += sectionGroups[group].removed;
+            }
+        }
+
+        return {
+            total: totals,
+            sections: result,
+            groups: groupedTotals
+        };
     }
 
     async getClassStats(courseId: number, assignment: string, section: string) : Promise<any>{
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        let groups = this.#getGroups(savedCourseConfig);
         let repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
 
-        let result : { [repo: string]: any }= {};
+        let teamResults : { [repo: string]: any }= {};
         let addRepo = async (repo: RepoDTO) => {
             let [coreStats, projectStats] = await Promise.all([
                 this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, repo.name),
@@ -78,23 +102,40 @@ export class StatisticsController {
             let prTotalPerWeek = projectStats
                 .groupByWeek(savedCourseConfig.startDate)
                 .map(st => st.getLinesTotal())
+            let groupsGrouped = coreStats.groupBy(groups).map(st => st.getLinesTotal());
+            let prGroupsGrouped = projectStats.asGrouped("Communication").map(st => st.getLinesTotal());
+        
                 
-            result[repo.name] = {
+            teamResults[repo.name] = {
                 total: combineStats(totals, prTotals),
+                groups: groupsGrouped.combine(prGroupsGrouped, combineStats).export(),
                 weekly: totalPerWeek.combine(prTotalPerWeek, combineStats).export()
             };
         }
 
         await Promise.all(repos.map(addRepo));
         
-        let totals = Object.keys(result).reduce((acc : any, key) => {
-            acc[key] = result[key].total;
+        let totals = Object.keys(teamResults).reduce((acc : any, key) => {
+            acc[key] = teamResults[key].total;
             return acc;
         }, {});
-        let weeklies = Object.keys(result).reduce((acc : any, key) => {
-            acc[key] = result[key].weekly;
+        let weeklies = Object.keys(teamResults).reduce((acc : any, key) => {
+            acc[key] = teamResults[key].weekly;
             return acc;
         }, {});
+        
+        let grouped = Object.keys(teamResults).reduce((groupTotals: any, key) => {
+            let teamGroups = teamResults[key].groups;
+            for (let group of Object.keys(teamGroups)) {
+                if (!groupTotals[group]) {
+                    groupTotals[group] = { added: 0, removed: 0 };
+                }
+                groupTotals[group].added = (groupTotals[group].added || 0) + teamGroups[group].added;
+                groupTotals[group].removed = (groupTotals[group].removed || 0) + teamGroups[group].removed;
+            }
+            return groupTotals;
+        }, {});
+        console.log("Grouped", grouped);
 
         return {
             total: {
@@ -104,7 +145,8 @@ export class StatisticsController {
                     (acc: number, stat: LinesStatistics) => acc + stat.removed, 0)
             },
             teams: totals,
-            weekly: weeklies
+            groups: grouped,
+            // weekly: weeklies
         };
     }
 
@@ -160,7 +202,7 @@ export class StatisticsController {
         let totals = coreStats.getLinesTotal();
         let prTotals = projectStats.getLinesTotal();
 
-        let groupsGrouped = coreStats.groupByAuthor().map(st => st.getLinesTotal());
+        let groupsGrouped = coreStats.groupBy(groups).map(st => st.getLinesTotal());
         let prGroupsGrouped = projectStats.asGrouped("Communication").map(st => st.getLinesTotal());
 
         let totalPerWeek = coreStats

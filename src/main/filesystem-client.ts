@@ -201,7 +201,7 @@ export class FileSystem {
         if (this.repoCache[target]) {
             return this.repoCache[target];
         }
-        let result = await exec(`git log ${logFormat}`, { cwd: target, encoding: 'utf8' });
+        let result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });
         let logLines = result.stdout.split('\n');
 
         let parsedLog = parseLog(logLines);
