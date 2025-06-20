@@ -9,7 +9,7 @@ import { ExportingArray, GroupedCollection } from '../src/main/statistics';
 test('CanSumLinesPerAuthor', {}, () => {
     let stats = new ProjectStatistics([
         {
-            author: 'Bob',
+            author: 'Bob@Home',
             title: 'Some stuff is broken',
             body: 'This is a test issue',
             createdAt: new Date(),
@@ -23,12 +23,17 @@ test('CanSumLinesPerAuthor', {}, () => {
         createdAt: new Date(),
         comments: [
             {
-                author: 'Bob',
+                author: 'Bob2',
                 body: "I want it now!\nAnd it better be good.",
                 createdAt: new Date()
             }
         ]
     }]);
+
+    stats.mapAuthors({
+        'Bob@Home': 'Bob',
+        'Bob2': 'Bob'       
+    });
 
     let results = stats.groupByAuthor().map(s => s.getLinesTotal()).export();
 

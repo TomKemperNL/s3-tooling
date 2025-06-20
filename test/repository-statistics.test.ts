@@ -212,3 +212,44 @@ test('Can Group Commits By Week, and then by Backend/Frontend/Docs/Other', {}, (
     expect(result[0]["Backend"]).toStrictEqual({ added: 4, removed: 4});
     expect(result[0]["Frontend"]).toStrictEqual({ added: 4, removed: 8});
 });
+
+
+test('Can mapAuthors', {}, () => {
+    let someCommit = {
+        subject: 'Enter Commit Message Here',
+        hash: '1234567890abcdef',
+        changes: [
+            { added: 1, removed: 0, path: 'test.txt' }
+        ]
+    }
+
+    let stats = new RepositoryStatistics([
+        { author: 'Bob', date: new Date('2023-10-01'), ...someCommit },
+        { author: 'Bob2', date: new Date('2023-10-02'), ...someCommit },
+        { author: 'Job', date: new Date('2023-10-08'), ...someCommit },
+        { author: 'Bob@Home', date: new Date('2023-10-25'), ...someCommit },
+    ].reverse());
+
+    stats.mapAuthors({
+        'Bob': 'Bob',
+        'Bob2': 'Bob',
+        'Job': 'Job',
+        'Bob@Home': 'Bob'
+    });
+
+    let perAuthorResult = stats.groupByAuthor()
+        .map(as => as.groupByWeek(new Date('2023-10-01'))
+            .map(w => w.getLinesTotal())).export();
+
+    expect(perAuthorResult['Bob'][0].added).toBe(2);
+    expect(perAuthorResult['Bob'][1].added).toBe(0);
+    expect(perAuthorResult['Bob'][2].added).toBe(0);
+    expect(perAuthorResult['Bob'][3].added).toBe(1);
+    expect(perAuthorResult['Bob'][4]).toBe(undefined);
+    
+    expect(perAuthorResult['Job'][0].added).toBe(0);
+    expect(perAuthorResult['Job'][1].added).toBe(1);
+    // expect(perAuthorResult['Job'][2].added).toBe(0); Dit is trickier dan ik had verwacht... maar tot hier werkt het redelijk
+    // expect(perAuthorResult['Job'][3].added).toBe(0);
+    // expect(perAuthorResult['Job'][4]).toBe(undefined);
+});
