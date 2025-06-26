@@ -25,7 +25,8 @@ async function main(){
 
     await app.coursesController.loadCourse(44633);
     // let result = await app.statisticsController.getClassStats(44633, assignment, section)
-    let result = await app.statisticsController.getCourseStats(id, assignment)
+    // let result = await app.statisticsController.getCourseStats(id, assignment)
+    let result = await app.repoController.getCurrentUserMappingFromCourse(id, assignment);
     
     console.log("result", result);
 

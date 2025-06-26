@@ -20,7 +20,7 @@ function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: num
 }
 
 export class ReposController {
-   
+
     constructor(private db: Db, private canvasClient: CanvasClient, private githubClient: GithubClient, private fileSystem: FileSystem) {
 
     }
@@ -80,7 +80,6 @@ export class ReposController {
         }
     }
 
-
     async loadRepos(courseId: number, assignmentName: string, filter: RepoFilter): Promise<RepoDTO[]> {
         let savedCourse = await this.db.getCourse(courseId);
         let assignment = savedCourse.assignments.find(a => a.githubAssignment === assignmentName);
@@ -128,7 +127,7 @@ export class ReposController {
             this.fileSystem.getCurrentBranch(savedCourseConfig.githubStudentOrg, assignment, name),
             this.fileSystem.getBranches(defaultBranch, savedCourseConfig.githubStudentOrg, assignment, name)]);
 
-        if(branches.indexOf(currentBranch) === -1) {
+        if (branches.indexOf(currentBranch) === -1) {
             branches.push(currentBranch);
         }
         if (branches.indexOf(defaultBranch) === -1) {
@@ -152,4 +151,46 @@ export class ReposController {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         await this.fileSystem.switchBranch(newBranch, savedCourseConfig.githubStudentOrg, assignment, name)
     }
+
+
+
+
+    async getCurrentUserMappingFromCourse(courseId: number, assignment: string): Promise<any> {
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        let savedCourse = await this.db.getCourse(courseId);
+
+        let sectionsResults: any = {};
+
+        let loadRepo = async (repo: RepoDTO): Promise<any> => {
+            let users = (await this.githubClient.getMembers(savedCourseConfig.githubStudentOrg, repo.name)).map(m => m.login);
+            let commits = await this.fileSystem.getRepoStats(
+                savedCourseConfig.githubStudentOrg, assignment, repo.name);
+            let stats = new RepositoryStatistics(commits);
+            let authors = stats.getDistinctAuthors();
+            return { authors, users };
+        }
+
+        let loadSection = async (section: string): Promise<any> => {
+            let currentSectionResult: any = {}
+            let reposForSection = await this.loadRepos(courseId, assignment, {
+                sections: [section]
+            });
+
+            await Promise.all(
+                reposForSection.map(async repo => {
+                    let result = await loadRepo(repo);
+                    currentSectionResult[repo.name] = result;
+                }));
+
+            return currentSectionResult;
+        }
+
+        for(let section of Object.keys(savedCourse.sections)) {
+            let currentSectionResult = await loadSection(section);
+                sectionsResults[section] = currentSectionResult;
+        }
+
+        return sectionsResults;
+    }
 }
+
