@@ -118,10 +118,18 @@ export class RepositoryStatistics implements Statistics<RepositoryStatistics> {
         return result;
     }
 
+    mapAuthors(authorMapping: {[alias: string]: string}){
+        this.data.forEach(commit => {
+            if (authorMapping[commit.author]) {
+                commit.author = authorMapping[commit.author];
+            }
+        });
+    }
+
     getDistinctAuthors() {
         return [...new Set(this.data.map(c => c.author))];
     }
-
+    
     getLinesTotal(): LinesStatistics {
         return RepositoryStatistics.#getChanges(this.data).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
     }

@@ -75,6 +75,30 @@ export class ProjectStatistics implements Statistics<ProjectStatistics> {
         return carrier.body.split("\n").length + (carrier.title ? 1 : 0);
     }
 
+    mapAuthors(authorMapping: { [alias: string]: string }) {
+        this.issues.forEach(issue => {
+            if (authorMapping[issue.author]) {
+                issue.author = authorMapping[issue.author];
+            }
+            issue.comments.forEach(comment => {
+                if (authorMapping[comment.author]) {
+                    comment.author = authorMapping[comment.author];
+                }
+            });
+        });
+
+        this.prs.forEach(pr => {
+            if (authorMapping[pr.author]) {
+                pr.author = authorMapping[pr.author];
+            }
+            pr.comments.forEach(comment => {
+                if (authorMapping[comment.author]) {
+                    comment.author = authorMapping[comment.author];
+                }
+            });
+        });
+    }
+
     getLinesTotal(): LinesStatistics {
         let issueStats = this.issues.reduce((acc, issue) => {
             return { lines: acc.lines + ProjectStatistics.#getLinesTotal(issue) }
