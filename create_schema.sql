@@ -41,24 +41,20 @@ create table
 
 create table githubAccounts(
     username text primary key,
-    studentId integer not null references students (id)
+    studentId integer references students (id)
 );
 
 create table githubCommitNames(
     id integer primary key autoincrement,
     name text not null,
-    email text
-);
-
-create table
-    students_githubCommitNames (
-        studentId integer not null references students (id),
-        githubCommitNameId integer not null references githubCommitNames (id),
-        primary key (studentId, githubCommitNameId)
+    organization text not null,
+    repository text not null,
+    username text not null references githubAccounts(username),
+    foreign key(organization, repository) references repositories(organization, name)
 );
 
 create table 
-    repositories (        
+    repositories (
         courseId integer not null references courses (canvasId),        
         organization text,
         name text,
@@ -74,8 +70,9 @@ create table
     );
 
 create table repository_members(
-    organization text not null references repositories(organization),
-    name text not null references repositories(name),
+    organization text not null,
+    name text not null,
     username text not null references githubAccounts(username),
     primary key(organization, name, username)
+    foreign key(organization, name) references repositories(organization, name)
 );

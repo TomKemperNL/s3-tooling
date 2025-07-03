@@ -1,8 +1,10 @@
 import { CourseConfig } from './shared';
+import { readFile } from 'fs/promises';
+import { existsSync } from 'fs';
 
-export let s2 : CourseConfig = {
+export let s2: CourseConfig = {
     name: 'Software Development Fundamentals',
-    canvasId: 44633,    
+    canvasId: 44633,
     canvasGroupsName: 'Projectteams SD S2',
     startDate: new Date(Date.parse('2025-02-10')),
     githubStudentOrg: 'HU-SD-S2-studenten-2425',
@@ -24,10 +26,36 @@ export let s2 : CourseConfig = {
     ]
 }
 
+export function importUserMappingTemp() {
+    if (existsSync("C://s3-tooling-data/usermappingS2.json")) {
+        console.log("Using local user mapping file");
+        return readFile("C://s3-tooling-data/usermappingS2.json", { encoding: 'utf-8' })
+            .then(data => JSON.parse(data))
+            .then(allMapped => {
+                let result = {};
+                let classes = Object.keys(allMapped);
+                for (let c of classes) {
+                    let teams = Object.keys(allMapped[c]);
+                    for (let t of teams) {
+                        let teamMapped = allMapped[c][t].mapped;
+                        Object.assign(result, teamMapped);
+                    }
+                }
+                return result;
+            })
+            .catch(err => {
+                console.error("Error reading user mapping file:", err);
+                return {};
+            });
+    } else {
+        return Promise.resolve({});
+    }
+}
 
-export let cisq1 : CourseConfig = {
+
+export let cisq1: CourseConfig = {
     name: 'Continuous Integration and Software Qua1',
-    canvasId: 44760,    
+    canvasId: 44760,
     canvasGroupsName: '',
     startDate: new Date(Date.parse('2025-02-04')),
     githubStudentOrg: 'huict',
@@ -44,7 +72,7 @@ export let cisq1 : CourseConfig = {
     ]
 }
 
-export let bep2 : CourseConfig = {
+export let bep2: CourseConfig = {
     name: 'Back-End Programming 2',
     canvasId: 44752,
     canvasGroupsName: '',
@@ -87,7 +115,7 @@ export let bep2 : CourseConfig = {
     ]
 }
 
-export let bep1 : CourseConfig = {
+export let bep1: CourseConfig = {
     name: 'Back-End Programming 1',
     canvasId: 39721,
     canvasGroupsName: '',
@@ -105,9 +133,9 @@ export let bep1 : CourseConfig = {
     ]
 }
 
-export let cisq2 : CourseConfig = {
+export let cisq2: CourseConfig = {
     name: 'Continuous Integration and Software Qua2',
-    canvasId: 44762,    
+    canvasId: 44762,
     canvasGroupsName: '',
     startDate: new Date(Date.parse('2025-04-14')),
     githubStudentOrg: 'SD-CISQ2-2025',

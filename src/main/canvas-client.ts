@@ -33,6 +33,7 @@ type PageResponse<T> = {
 }
 
 export type SimpleDict = { [key: string]: string | number };
+export type StringDict = { [key: string]: string };
 
 function parseLinkHeader(header: string): SimpleDict {
     const links : {[key: string]: string} = {};
