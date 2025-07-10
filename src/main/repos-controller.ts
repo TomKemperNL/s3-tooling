@@ -1,5 +1,5 @@
 import { Assignment, BlameStatisticsDTO, BranchInfo, combineStats, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
-import { CanvasClient, getUsernameFromName, SimpleDict } from "./canvas-client";
+import { CanvasClient, getUsernameFromName, SimpleDict, StringDict } from "./canvas-client";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient, MemberResponse, RepoResponse, toRepo } from "./github-client";
@@ -26,7 +26,7 @@ export class ReposController {
     }
 
     async #getUserMapping(savedCourseConfig: CourseConfig): Promise<SimpleDict> {
-        let usermapping: SimpleDict = null;
+        let usermapping: StringDict = null;
 
         if (savedCourseConfig.lastMappingCheck && (savedCourseConfig.lastMappingCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
             usermapping = await this.db.getUserMapping(savedCourseConfig.canvasId);

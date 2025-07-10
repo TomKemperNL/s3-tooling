@@ -1,13 +1,11 @@
 import { test, expect } from 'vitest';
 import { ProjectStatistics } from '../src/main/project-statistics';
-import { extensions } from 'sequelize/lib/utils/validator-extras';
-import { a } from 'vitest/dist/chunks/suite.d.FvehnV49.js';
 import { Issue, PullRequest } from '../src/shared';
 import { ExportingArray, GroupedCollection } from '../src/main/statistics';
 
 
 test('CanSumLinesPerAuthor', {}, () => {
-    let stats = new ProjectStatistics([
+    let stats = new ProjectStatistics("Communication", [
         {
             author: 'Bob@Home',
             title: 'Some stuff is broken',
@@ -49,7 +47,7 @@ test('Can Group ProjectItems Per Week', {}, () => {
         comments: []
     }
 
-    let stats = new ProjectStatistics([
+    let stats = new ProjectStatistics("Communication", [
         { createdAt: new Date('2023-10-01'), ...someIssueOrPr },
         { createdAt: new Date('2023-10-02'), ...someIssueOrPr },
         { createdAt: new Date('2023-10-08'), ...someIssueOrPr },

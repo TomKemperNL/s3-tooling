@@ -1,8 +1,8 @@
 import { Issue, PullRequest, Comment, LinesStatistics } from "../shared";
 import { ExportingArray, GroupedCollection, Statistics } from "./statistics";
 
-export class ProjectStatistics implements Statistics<ProjectStatistics> {
-    constructor(private issues: Issue[], private prs: PullRequest[], private comments: Comment[] = []) {
+export class ProjectStatistics implements Statistics {
+    constructor(private groupName: string, private issues: Issue[], private prs: PullRequest[], private comments: Comment[] = []) {
         if (comments.length === 0) {
             this.comments = issues.reduce((acc, issue) => {
                 return acc.concat(issue.comments);
@@ -30,8 +30,12 @@ export class ProjectStatistics implements Statistics<ProjectStatistics> {
         return Array.from(authors);
     }
 
-    asGrouped(groupName: string) {
+    #asGrouped(groupName: string) {
         return new GroupedCollection({ [groupName]: this });
+    }
+
+    groupBySubject(): GroupedCollection<ProjectStatistics> {
+        return this.#asGrouped(this.groupName)
     }
 
     groupByAuthor(): GroupedCollection<ProjectStatistics> {
@@ -62,6 +66,7 @@ export class ProjectStatistics implements Statistics<ProjectStatistics> {
 
         for (let author of Object.keys(results)) {
             results[author] = new ProjectStatistics(
+                "Communication",
                 results[author].issues,
                 results[author].prs,
                 results[author].comments
@@ -147,7 +152,7 @@ export class ProjectStatistics implements Statistics<ProjectStatistics> {
             let weekPrs = this.prs.filter(pr => pr.createdAt >= startDate && pr.createdAt < nextDate);
             let weekComments = this.comments.filter(c => c.createdAt >= startDate && c.createdAt < nextDate);
 
-            gathered.push(new ProjectStatistics(weekIssues, weekPrs, weekComments));
+            gathered.push(new ProjectStatistics(this.groupName, weekIssues, weekPrs, weekComments));
             startDate = nextDate;
             nextDate = ProjectStatistics.#addWeek(startDate);
         }
@@ -156,7 +161,7 @@ export class ProjectStatistics implements Statistics<ProjectStatistics> {
         let weekComments = this.comments.filter(c => c.createdAt >= startDate && c.createdAt < nextDate);
 
 
-        gathered.push(new ProjectStatistics(weekIssues, weekPrs, weekComments));
+        gathered.push(new ProjectStatistics(this.groupName, weekIssues, weekPrs, weekComments));
         return new ExportingArray(gathered);
     }
 

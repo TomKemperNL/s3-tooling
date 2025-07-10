@@ -1,11 +1,13 @@
 import { LinesStatistics } from "../shared";
 
-export interface Statistics<T> {
-    groupByAuthor(): GroupedCollection<T>
+export interface Statistics {
     getDistinctAuthors(): string[];
-    groupByWeek(startDate: Date): ExportingArray<T> 
-    groupByAuthor(): GroupedCollection<T>    
+
+    groupByAuthor(): GroupedCollection<Statistics>    
+    groupByWeek(startDate: Date): ExportingArray<Statistics> 
+    groupByAuthor(): GroupedCollection<Statistics>    
     getLinesTotal(): LinesStatistics;
+    groupBySubject(): GroupedCollection<Statistics>;
 }
 
 export type GroupDefinition = {

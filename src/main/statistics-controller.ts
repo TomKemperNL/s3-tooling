@@ -35,7 +35,7 @@ export class StatisticsController {
             this.githubClient.listIssues(org, name),
             this.githubClient.listPullRequests(org, name)
         ]);
-        return new ProjectStatistics(issues, prs);        
+        return new ProjectStatistics("Communication", issues, prs);        
     }
 
     async getCourseStats(courseId: number, assignment: string){
@@ -103,7 +103,7 @@ export class StatisticsController {
                 .groupByWeek(savedCourseConfig.startDate)
                 .map(st => st.getLinesTotal())
             let groupsGrouped = coreStats.groupBy(groups).map(st => st.getLinesTotal());
-            let prGroupsGrouped = projectStats.asGrouped("Communication").map(st => st.getLinesTotal());
+            let prGroupsGrouped = projectStats.groupBySubject().map(st => st.getLinesTotal());
         
                 
             teamResults[repo.name] = {
@@ -203,7 +203,7 @@ export class StatisticsController {
         let prTotals = projectStats.getLinesTotal();
 
         let groupsGrouped = coreStats.groupBy(groups).map(st => st.getLinesTotal());
-        let prGroupsGrouped = projectStats.asGrouped("Communication").map(st => st.getLinesTotal());
+        let prGroupsGrouped = projectStats.groupBySubject().map(st => st.getLinesTotal());
 
         let totalPerWeek = coreStats
             .groupByWeek(savedCourseConfig.startDate)
@@ -217,7 +217,7 @@ export class StatisticsController {
                 st.groupByWeek(savedCourseConfig.startDate)
                     .map(st => st.getLinesTotal()))
         let prGroupsPerWeek = projectStats
-            .asGrouped("Communication").map(st =>
+            .groupBySubject().map(st =>
                 st.groupByWeek(savedCourseConfig.startDate)
                     .map(st => st.getLinesTotal()))
 
@@ -269,7 +269,7 @@ export class StatisticsController {
         let studentStats = groupedByAuthor.get(filter.authorName);
         let prStudentStats = prGroupedByAuthor.get(filter.authorName);
         if (!prStudentStats) {
-            prStudentStats = new ProjectStatistics([], []);
+            prStudentStats = new ProjectStatistics("Communication", [], []);
         }
         if (!studentStats) {
             studentStats = new RepositoryStatistics([]);
@@ -278,16 +278,16 @@ export class StatisticsController {
         let groups = this.#getGroups(savedCourseConfig);
 
         let total = studentStats.groupBy(groups).map(g => g.getLinesTotal());
-        let prTotal = prStudentStats.asGrouped("Communication").map(g => g.getLinesTotal());
+        let prTotal = prStudentStats.groupBySubject().map(g => g.getLinesTotal());
 
         let weekly = studentStats.groupByWeek(savedCourseConfig.startDate)
             .map(w => w.groupBy(groups).map(g => g.getLinesTotal()));
         let prWeekly = prStudentStats.groupByWeek(savedCourseConfig.startDate)
-            .map(w => w.asGrouped("Communication").map(g => g.getLinesTotal()));
+            .map(w => w.groupBySubject().map(g => g.getLinesTotal()));
 
         let length = Math.max(weekly.length, prWeekly.length);
         prWeekly = prWeekly.pad(length,
-            new ProjectStatistics([], []).asGrouped("Communication").map(g => g.getLinesTotal()));
+            new ProjectStatistics("Communication", [], []).groupBySubject().map(g => g.getLinesTotal()));
         weekly = weekly.pad(length,
             new RepositoryStatistics([]).groupBy(groups).map(g => g.getLinesTotal()));
         

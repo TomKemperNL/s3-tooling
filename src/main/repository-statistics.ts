@@ -13,7 +13,7 @@ if (ignoredAuthorsEnv) {
 
 console.log('Ignored authors:', ignoredAuthors);
 
-export class RepositoryStatistics implements Statistics<RepositoryStatistics> {
+export class RepositoryStatistics implements Statistics {
     ignoredFiles = ['package-lock.json'];
     ignoredFolders = ['node_modules'];
 
@@ -147,6 +147,10 @@ export class RepositoryStatistics implements Statistics<RepositoryStatistics> {
             result[author] = authorResult;
         }
         return new GroupedCollection(result);
+    }
+
+    groupBySubject(): GroupedCollection<Statistics> {
+        return <any> null; //TODO: implement this
     }
 
     groupBy(groups: GroupDefinition[]): GroupedCollection<RepositoryStatistics> {
