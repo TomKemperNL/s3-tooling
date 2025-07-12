@@ -2,12 +2,87 @@ import { LinesStatistics } from "../shared";
 
 export interface Statistics {
     getDistinctAuthors(): string[];
+    getLinesTotal(): LinesStatistics;
 
     groupByAuthor(): GroupedCollection<Statistics>    
     groupByWeek(startDate: Date): ExportingArray<Statistics> 
-    groupByAuthor(): GroupedCollection<Statistics>    
-    getLinesTotal(): LinesStatistics;
+    groupByAuthor(): GroupedCollection<Statistics>        
     groupBySubject(): GroupedCollection<Statistics>;
+}
+
+export class CombinedStats implements Statistics {
+    constructor(private stats: Statistics[]) {
+    }
+    getDistinctAuthors(): string[] {
+        let authors = new Set<string>();
+        for (let stat of this.stats) {
+            for (let author of stat.getDistinctAuthors()) {
+                authors.add(author);
+            }
+        }
+        return [...authors];
+    }
+
+    getLinesTotal(): LinesStatistics {
+        return this.stats.reduce((acc, stat) => {
+            let lines = stat.getLinesTotal();
+            acc.added += lines.added;
+            acc.removed += lines.removed;
+            return acc;
+        }, { added: 0, removed: 0 });
+    }
+
+    #group(grouper: (stat: Statistics) => GroupedCollection<Statistics>){
+        let tempResults : { [name: string]: Statistics[] } = {};
+        let groupedResult = this.stats.reduce((acc, stat) => {
+            let grouped = grouper(stat);
+            for(let key of grouped.keys) {
+                if(!acc[key]){
+                    acc[key] = [];
+                }
+                acc[key].push(grouped.get(key));
+            }
+            return acc;
+        }, tempResults);
+
+        let result: { [name: string]: Statistics } = {};
+        for(let key of Object.keys(groupedResult)) {
+            result[key] = new CombinedStats(groupedResult[key]);
+        }
+        return new GroupedCollection<Statistics>(result);
+    }
+
+    groupByAuthor(): GroupedCollection<Statistics> {
+        return this.#group(stat => stat.groupByAuthor());
+    }
+
+    groupByWeek(startDate: Date): ExportingArray<Statistics> {
+        let tempResults: Statistics[][] = [];
+        let groupedResult = this.stats.reduce((acc, stat) => {
+            let grouped = stat.groupByWeek(startDate);
+            for (let ix = 0; ix < grouped.length; ix++) {
+                if (!acc[ix]) {
+                    acc[ix] = [];
+                }
+                let flattened = grouped.export();
+                acc[ix].push(flattened[ix]);
+            }
+            return acc;
+        }, tempResults);
+
+        function mapper(arr?: Statistics[]): Statistics {
+            if (!arr) {
+                return new CombinedStats([]);
+            }
+            return new CombinedStats(arr);
+        }
+
+        return new ExportingArray(tempResults.map(mapper));
+    }
+    
+    groupBySubject(): GroupedCollection<Statistics> {
+        return this.#group(stat => stat.groupBySubject());
+    }
 }
 
 export type GroupDefinition = {
@@ -30,6 +105,10 @@ export class GroupedCollection<T> {
 
     get(name: string): T {
         return this.content[name];
+    }
+
+    get keys(): string[] {
+        return Object.keys(this.content);
     }
 
     map<Y>(fn: (r: T) => Y): GroupedCollection<Y> {
