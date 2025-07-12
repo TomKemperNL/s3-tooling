@@ -41,7 +41,7 @@ export class RepositoryStatistics implements Statistics {
         extensions: ['.js', '.jsx', '.ts', '.tsx', '.vue', '.html', '.css']
     };
 
-    constructor(rawData: LoggedCommit[], public options: { ignoredExtensions: string[] } = {
+    constructor(private groups: GroupDefinition[], rawData: LoggedCommit[], public options: { ignoredExtensions: string[] } = {
         ignoredExtensions: ['.json', '.pdf'] //TODO: dit is dubbelop met de package-json. Even nadenken wat we willen
     }) {
         this.data = rawData.filter(c => !ignoredAuthors.includes(c.author));
@@ -135,7 +135,8 @@ export class RepositoryStatistics implements Statistics {
     }
 
     groupByWeek(startDate: Date = null): ExportingArray<RepositoryStatistics> {
-        let stats: RepositoryStatistics[] = this.#privGetCommitsPerWeek(this.data, startDate).map(cs => new RepositoryStatistics(cs, this.options))
+        let stats: RepositoryStatistics[] = this.#privGetCommitsPerWeek(this.data, startDate)
+            .map(cs => new RepositoryStatistics(this.groups, cs, this.options))
         return new ExportingArray<RepositoryStatistics>(stats);
     }
 
@@ -143,17 +144,17 @@ export class RepositoryStatistics implements Statistics {
         let result: { [name: string]: RepositoryStatistics } = {};
         for (let author of this.getDistinctAuthors()) {
             let authorCommits = this.data.filter(c => c.author === author);
-            let authorResult = new RepositoryStatistics(authorCommits, this.options);
+            let authorResult = new RepositoryStatistics(this.groups, authorCommits, this.options);
             result[author] = authorResult;
         }
         return new GroupedCollection(result);
     }
 
     groupBySubject(): GroupedCollection<Statistics> {
-        return <any> null; //TODO: implement this
+        return this.#groupBy(this.groups);
     }
 
-    groupBy(groups: GroupDefinition[]): GroupedCollection<RepositoryStatistics> {
+    #groupBy(groups: GroupDefinition[]): GroupedCollection<RepositoryStatistics> {
         let result: { [name: string]: RepositoryStatistics } = {};
         for (let group of groups) {
             let groupCommits = [];
@@ -164,7 +165,7 @@ export class RepositoryStatistics implements Statistics {
                 }
 
             }
-            let groupResult = new RepositoryStatistics(groupCommits, this.options);
+            let groupResult = new RepositoryStatistics(this.groups, groupCommits, this.options);
             result[group.name] = groupResult;
         }
 

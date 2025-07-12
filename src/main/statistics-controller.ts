@@ -6,6 +6,7 @@ import { GithubClient } from "./github-client";
 import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 import { ReposController } from "./repos-controller";
+import { GroupDefinition } from "./statistics";
 
 function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: number }): { [name: string]: number } {
     let merged: { [name: string]: number } = {};
@@ -25,9 +26,9 @@ export class StatisticsController {
 
     }
     
-    async #getRepoStats(org: string, assignment: string, name: string){
+    async #getRepoStats(groups: GroupDefinition[], org: string, assignment: string, name: string){        
         let commits = await this.fileSystem.getRepoStats(org, assignment, name);
-        return new RepositoryStatistics(commits);
+        return new RepositoryStatistics(groups, commits);
     }
 
     async #getProjectStats(org: string, name: string) {
@@ -84,13 +85,13 @@ export class StatisticsController {
 
     async getClassStats(courseId: number, assignment: string, section: string) : Promise<any>{
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        let groups = this.#getGroups(savedCourseConfig);
+        
         let repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
 
         let teamResults : { [repo: string]: any }= {};
         let addRepo = async (repo: RepoDTO) => {
             let [coreStats, projectStats] = await Promise.all([
-                this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, repo.name),
+                this.#getRepoStats(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment, repo.name),
                 this.#getProjectStats(savedCourseConfig.githubStudentOrg, repo.name)
             ]);
 
@@ -102,7 +103,7 @@ export class StatisticsController {
             let prTotalPerWeek = projectStats
                 .groupByWeek(savedCourseConfig.startDate)
                 .map(st => st.getLinesTotal())
-            let groupsGrouped = coreStats.groupBy(groups).map(st => st.getLinesTotal());
+            let groupsGrouped = coreStats.groupBySubject().map(st => st.getLinesTotal());
             let prGroupsGrouped = projectStats.groupBySubject().map(st => st.getLinesTotal());
         
                 
@@ -153,8 +154,9 @@ export class StatisticsController {
     //Todo: courseconfig wegwerken... te weinig nodig om een hele DB dependency te pakken
     async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        let groups = this.#getGroups(savedCourseConfig);
         let [coreStats, projectStats] = await Promise.all([
-            this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
+            this.#getRepoStats(groups, savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
         ]);
 
@@ -193,16 +195,16 @@ export class StatisticsController {
 
     async getRepoStatsByGroup(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTOPerGroup> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        let [coreStats, projectStats] = await Promise.all([
-            this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
-            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
-        ]);
         let groups = this.#getGroups(savedCourseConfig);
+        let [coreStats, projectStats] = await Promise.all([
+            this.#getRepoStats(groups, savedCourseConfig.githubStudentOrg, assignment, name),
+            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
+        ]);        
 
         let totals = coreStats.getLinesTotal();
         let prTotals = projectStats.getLinesTotal();
 
-        let groupsGrouped = coreStats.groupBy(groups).map(st => st.getLinesTotal());
+        let groupsGrouped = coreStats.groupBySubject().map(st => st.getLinesTotal());
         let prGroupsGrouped = projectStats.groupBySubject().map(st => st.getLinesTotal());
 
         let totalPerWeek = coreStats
@@ -213,7 +215,7 @@ export class StatisticsController {
             .map(st => st.getLinesTotal())
         
         let groupsPerWeek = coreStats
-            .groupBy(groups).map(st =>
+            .groupBySubject().map(st =>
                 st.groupByWeek(savedCourseConfig.startDate)
                     .map(st => st.getLinesTotal()))
         let prGroupsPerWeek = projectStats
@@ -258,8 +260,10 @@ export class StatisticsController {
 
     async getStatsByUser(courseId: number, assignment: string, name: string, filter: StudentFilter) {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        let groups = this.#getGroups(savedCourseConfig);
+
         let [coreStats, projectStats] = await Promise.all([
-            this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
+            this.#getRepoStats(groups, savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
         ]);
 
@@ -272,16 +276,14 @@ export class StatisticsController {
             prStudentStats = new ProjectStatistics("Communication", [], []);
         }
         if (!studentStats) {
-            studentStats = new RepositoryStatistics([]);
+            studentStats = new RepositoryStatistics(groups, []);
         }
 
-        let groups = this.#getGroups(savedCourseConfig);
-
-        let total = studentStats.groupBy(groups).map(g => g.getLinesTotal());
+        let total = studentStats.groupBySubject().map(g => g.getLinesTotal());
         let prTotal = prStudentStats.groupBySubject().map(g => g.getLinesTotal());
 
         let weekly = studentStats.groupByWeek(savedCourseConfig.startDate)
-            .map(w => w.groupBy(groups).map(g => g.getLinesTotal()));
+            .map(w => w.groupBySubject().map(g => g.getLinesTotal()));
         let prWeekly = prStudentStats.groupByWeek(savedCourseConfig.startDate)
             .map(w => w.groupBySubject().map(g => g.getLinesTotal()));
 
@@ -289,7 +291,7 @@ export class StatisticsController {
         prWeekly = prWeekly.pad(length,
             new ProjectStatistics("Communication", [], []).groupBySubject().map(g => g.getLinesTotal()));
         weekly = weekly.pad(length,
-            new RepositoryStatistics([]).groupBy(groups).map(g => g.getLinesTotal()));
+            new RepositoryStatistics(groups, []).groupBySubject().map(g => g.getLinesTotal()));
         
 
         let totalCombined = total.combine(prTotal, combineStats);
