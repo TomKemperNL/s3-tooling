@@ -3,9 +3,10 @@ import { LinesStatistics } from "../shared";
 export interface Statistics {
     getDistinctAuthors(): string[];
     getLinesTotal(): LinesStatistics;
+    getDateRange(): { start: Date, end: Date };
 
     groupByAuthor(): GroupedCollection<Statistics>    
-    groupByWeek(startDate: Date): ExportingArray<Statistics> 
+    groupByWeek(startDate: Date, endDate: Date): ExportingArray<Statistics>
     groupByAuthor(): GroupedCollection<Statistics>        
     groupBySubject(): GroupedCollection<Statistics>;
 }
@@ -32,6 +33,12 @@ export class CombinedStats implements Statistics {
         }, { added: 0, removed: 0 });
     }
 
+    getDateRange(): { start: Date; end: Date; } {
+        let start = new Date(Math.min(...this.stats.map(stat => stat.getDateRange().start.getTime())));
+        let end = new Date(Math.max(...this.stats.map(stat => stat.getDateRange().end.getTime())));
+        return { start, end };
+    }
+
     #group(grouper: (stat: Statistics) => GroupedCollection<Statistics>){
         let tempResults : { [name: string]: Statistics[] } = {};
         let groupedResult = this.stats.reduce((acc, stat) => {
@@ -56,10 +63,13 @@ export class CombinedStats implements Statistics {
         return this.#group(stat => stat.groupByAuthor());
     }
 
-    groupByWeek(startDate: Date): ExportingArray<Statistics> {
+    groupByWeek(startDate: Date, endDate: Date = null): ExportingArray<Statistics> {
+        if(!endDate) {
+            endDate = this.getDateRange().end;
+        }
         let tempResults: Statistics[][] = [];
         let groupedResult = this.stats.reduce((acc, stat) => {
-            let grouped = stat.groupByWeek(startDate);
+            let grouped = stat.groupByWeek(startDate, endDate);
             for (let ix = 0; ix < grouped.length; ix++) {
                 if (!acc[ix]) {
                     acc[ix] = [];

@@ -62,6 +62,24 @@ test('Can Group ProjectItems Per Week', {}, () => {
     expect(result[4]).toBe(undefined);
 });
 
+test('Can Group ProjectItems Per Week with an empty week after', {}, () => {
+    let someIssueOrPr: any = {
+        title: 'Some stuff is broken',
+        body: 'This is a test',
+        author: 'Bob',
+        comments: []
+    }
+
+    let stats = new ProjectStatistics("Communication", [
+        { createdAt: new Date('2023-10-01'), ...someIssueOrPr }
+    ].reverse(), [], []);
+
+    let result = stats.groupByWeek(new Date('2023-10-01'), new Date('2023-10-08')).map((w) => w.getLinesTotal()).export();
+    expect(result.length).toBe(2);
+    expect(result[0].added).toBe(2);
+    expect(result[1].added).toBe(0);
+})
+
 test('Can combine stat groups', () => {
     let someStuff = new GroupedCollection({
         'Bob': { added: 1, removed: 2 },

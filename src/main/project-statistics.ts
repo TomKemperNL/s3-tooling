@@ -30,6 +30,20 @@ export class ProjectStatistics implements Statistics {
         return Array.from(authors);
     }
 
+    getDateRange(): { start: Date; end: Date; } {
+        let start = new Date(Math.min(
+            ...this.issues.map(i => i.createdAt.getTime()),
+            ...this.prs.map(pr => pr.createdAt.getTime()),
+            ...this.comments.map(c => c.createdAt.getTime())
+        ));
+        let end = new Date(Math.max(
+            ...this.issues.map(i => i.createdAt.getTime()),
+            ...this.prs.map(pr => pr.createdAt.getTime()),
+            ...this.comments.map(c => c.createdAt.getTime())
+        ));
+        return { start, end };
+    }
+
     #asGrouped(groupName: string) {
         return new GroupedCollection({ [groupName]: this });
     }
@@ -129,21 +143,28 @@ export class ProjectStatistics implements Statistics {
         return new Date(newDate.valueOf() + weekMs);
     }
 
-    groupByWeek(beginDate?: Date): ExportingArray<ProjectStatistics> {
+    groupByWeek(beginDate?: Date, endDate?: Date): ExportingArray<ProjectStatistics> {
         let gathered = [];
 
         //Algoritmisch gaan we hiervan huilen...
-        let earliestDate = Math.min(
-            !!beginDate ? beginDate.valueOf() : new Date().valueOf(),
+        let earliestDate = Math.min(            
             Math.min(...this.issues.map(i => i.createdAt.valueOf())),
             Math.min(...this.prs.map(pr => pr.createdAt.valueOf())),
             Math.min(...this.comments.map(c => c.createdAt.valueOf()))
         );
-        let lastDate = Math.max(
+        if (beginDate) {
+            earliestDate = Math.max(earliestDate, beginDate.valueOf());
+        }        
+
+        let lastDate = Math.max(            
             Math.max(...this.issues.map(i => i.createdAt.valueOf())),
             Math.max(...this.prs.map(pr => pr.createdAt.valueOf())),
             Math.max(...this.comments.map(c => c.createdAt.valueOf()))
         );
+        if (endDate) {
+            lastDate = endDate.valueOf();
+        }
+
         let startDate = new Date(earliestDate);
         let nextDate = ProjectStatistics.#addWeek(startDate);
 

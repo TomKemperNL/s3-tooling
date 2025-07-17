@@ -175,10 +175,12 @@ export class StatisticsController {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
+        let lastDate = combinedStats.getDateRange().end;
+
         let byAuthor = combinedStats.groupByAuthor();
         let byWeek = combinedStats.groupByWeek(savedCourseConfig.startDate);
         let byAuthorByWeek = byAuthor.map(st =>
-            st.groupByWeek(savedCourseConfig.startDate));
+            st.groupByWeek(savedCourseConfig.startDate, lastDate));
         
         return {
             total: combinedStats.getLinesTotal(),
@@ -195,11 +197,12 @@ export class StatisticsController {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
+        let lastDate = combinedStats.getDateRange().end;
 
         let bySubject = combinedStats.groupBySubject();
         let byWeek = combinedStats.groupByWeek(savedCourseConfig.startDate);
         let bySubjectByWeek = bySubject.map(st =>
-            st.groupByWeek(savedCourseConfig.startDate));
+            st.groupByWeek(savedCourseConfig.startDate, lastDate));
 
         return {
             total: combinedStats.getLinesTotal(),
@@ -228,48 +231,23 @@ export class StatisticsController {
 
     async getStatsByUser(courseId: number, assignment: string, name: string, filter: StudentFilter) {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        let groups = this.#getGroups(savedCourseConfig);
+        let stats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
+        let endDate = stats.getDateRange().end;
+        let byAuthor = stats.groupByAuthor();
 
-        let [coreStats, projectStats] = await Promise.all([
-            this.#getRepoStats(groups, savedCourseConfig.githubStudentOrg, assignment, name),
-            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
-        ]);
-
-        let groupedByAuthor = coreStats.groupByAuthor();
-        let prGroupedByAuthor = projectStats.groupByAuthor();
-
-        let studentStats = groupedByAuthor.get(filter.authorName);
-        let prStudentStats = prGroupedByAuthor.get(filter.authorName);
-        if (!prStudentStats) {
-            prStudentStats = new ProjectStatistics("Communication", [], []);
-        }
-        if (!studentStats) {
-            studentStats = new RepositoryStatistics(groups, []);
+        let studentStats = byAuthor.get(filter.authorName);
+        if (!studentStats){
+            studentStats = new CombinedStats([]);
         }
 
-        let total = studentStats.groupBySubject().map(g => g.getLinesTotal());
-        let prTotal = prStudentStats.groupBySubject().map(g => g.getLinesTotal());
-
-        let weekly = studentStats.groupByWeek(savedCourseConfig.startDate)
-            .map(w => w.groupBySubject().map(g => g.getLinesTotal()));
-        let prWeekly = prStudentStats.groupByWeek(savedCourseConfig.startDate)
-            .map(w => w.groupBySubject().map(g => g.getLinesTotal()));
-
-        let length = Math.max(weekly.length, prWeekly.length);
-        prWeekly = prWeekly.pad(length,
-            new ProjectStatistics("Communication", [], []).groupBySubject().map(g => g.getLinesTotal()));
-        weekly = weekly.pad(length,
-            new RepositoryStatistics(groups, []).groupBySubject().map(g => g.getLinesTotal()));
-        
-
-        let totalCombined = total.combine(prTotal, combineStats);
-        let weeklyCombined = weekly.combine(prWeekly, (g1, g2) => {
-            return g1.combine(g2, combineStats)
-        });
+        let bySubject = studentStats.groupBySubject();
+        let byWeek = studentStats.groupByWeek(savedCourseConfig.startDate, endDate);
+        let byWeekBySubject = byWeek.map(st =>
+            st.groupBySubject());
 
         return {
-            total: totalCombined.export(),
-            weekly: weeklyCombined.export()
+            total: bySubject.map(st => st.getLinesTotal()).export(),
+            weekly: byWeekBySubject.map(s1 => s1.map(s2 => s2.getLinesTotal())).export(),
         }
     }
 }

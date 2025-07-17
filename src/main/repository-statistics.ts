@@ -90,12 +90,13 @@ export class RepositoryStatistics implements Statistics {
         }
     }
 
-    #privGetCommitsPerWeek(someData: LoggedCommit[], startDate: Date = null): LoggedCommit[][] {
+    #privGetCommitsPerWeek(someData: LoggedCommit[], startDate: Date = null, endDate: Date): LoggedCommit[][] {
         if (someData.length === 0) {
             return [];
         }
         let commits = someData.toSorted((a, b) => a.date.valueOf() - b.date.valueOf());
         let start = startDate || commits[0].date;
+        let end = endDate || commits[commits.length - 1].date;
 
         let result = []
         let currentCommits = [];
@@ -114,6 +115,10 @@ export class RepositoryStatistics implements Statistics {
         }
         if (currentCommits.length > 0) {
             result.push(currentCommits);
+        }
+        while(nextDate <= end) {
+            result.push([]);
+            nextDate = RepositoryStatistics.#addWeek(nextDate);
         }
         return result;
     }
@@ -134,8 +139,14 @@ export class RepositoryStatistics implements Statistics {
         return RepositoryStatistics.#getChanges(this.data).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
     }
 
-    groupByWeek(startDate: Date = null): ExportingArray<RepositoryStatistics> {
-        let stats: RepositoryStatistics[] = this.#privGetCommitsPerWeek(this.data, startDate)
+    getDateRange(): { start: Date; end: Date; } {
+        let start = new Date(Math.min(...this.data.map(stat => stat.date.getTime())));
+        let end = new Date(Math.max(...this.data.map(stat => stat.date.getTime())));
+        return { start, end };
+    }
+
+    groupByWeek(startDate: Date = null, endDate: Date = null): ExportingArray<RepositoryStatistics> {
+        let stats: RepositoryStatistics[] = this.#privGetCommitsPerWeek(this.data, startDate, endDate)
             .map(cs => new RepositoryStatistics(this.groups, cs, this.options))
         return new ExportingArray<RepositoryStatistics>(stats);
     }
