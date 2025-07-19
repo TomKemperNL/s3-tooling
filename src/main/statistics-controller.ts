@@ -6,7 +6,7 @@ import { GithubClient } from "./github-client";
 import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 import { ReposController } from "./repos-controller";
-import { CombinedStats, GroupDefinition } from "./statistics";
+import { CombinedStats, GroupDefinition, StatsBuilder } from "./statistics";
 
 function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: number }): { [name: string]: number } {
     let merged: { [name: string]: number } = {};
@@ -20,13 +20,13 @@ function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: num
 }
 
 export class StatisticsController {
-    constructor(private db: Db, private githubClient: GithubClient, private fileSystem: FileSystem, 
+    constructor(private db: Db, private githubClient: GithubClient, private fileSystem: FileSystem,
         private repoController: ReposController //TODO: deze willen we niet als dep, maar voor nu...
     ) {
 
     }
-    
-    #getGroups(savedCourseConfig: CourseConfig){
+
+    #getGroups(savedCourseConfig: CourseConfig) {
         //TODO: voor nu hardcoded, maar dit wil je per cursus kunnen instellen
         return [
             RepositoryStatistics.backend,
@@ -36,7 +36,7 @@ export class StatisticsController {
             { name: 'Communication', extensions: undefined }
         ];
     }
-    
+
     async #getCombinedStats(savedCourseConfig: CourseConfig, assignment: string, name: string) {
         let groups = this.#getGroups(savedCourseConfig);
         let [coreStats, projectStats] = await Promise.all([
@@ -46,7 +46,7 @@ export class StatisticsController {
         return new CombinedStats([coreStats, projectStats]);
     }
 
-    async #getRepoStats(org: string, assignment: string, name: string){        
+    async #getRepoStats(org: string, assignment: string, name: string) {
         let commits = await this.fileSystem.getRepoStats(org, assignment, name);
         return new RepositoryStatistics(commits);
     }
@@ -56,15 +56,15 @@ export class StatisticsController {
             this.githubClient.listIssues(org, name),
             this.githubClient.listPullRequests(org, name)
         ]);
-        return new ProjectStatistics(issues, prs);        
+        return new ProjectStatistics(issues, prs);
     }
 
-    async getCourseStats(courseId: number, assignment: string){
-        
+    async getCourseStats(courseId: number, assignment: string) {
+
         let savedCourse = await this.db.getCourse(courseId);
-        
-        let result : { [section: string]: any } = {};
-        
+
+        let result: { [section: string]: any } = {};
+
         let addSection = async (section: string) => {
             let repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
             if (repos.length === 0) {
@@ -77,7 +77,7 @@ export class StatisticsController {
             added: 0,
             removed: 0
         };
-        let groupedTotals : any = {
+        let groupedTotals: any = {
         }
 
         for (let section of Object.keys(savedCourse.sections)) {
@@ -103,13 +103,13 @@ export class StatisticsController {
         };
     }
 
-    async getClassStats(courseId: number, assignment: string, section: string) : Promise<any>{
+    async getClassStats(courseId: number, assignment: string, section: string): Promise<any> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         let groups = this.#getGroups(savedCourseConfig);
 
         let repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
 
-        let teamResults : { [repo: string]: any }= {};
+        let teamResults: { [repo: string]: any } = {};
         let addRepo = async (repo: RepoDTO) => {
             let [coreStats, projectStats] = await Promise.all([
                 this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, repo.name),
@@ -126,8 +126,8 @@ export class StatisticsController {
                 .map(st => st.getLinesTotal())
             let groupsGrouped = coreStats.groupBy(groups).map(st => st.getLinesTotal());
             let prGroupsGrouped = projectStats.groupBy(groups).map(st => st.getLinesTotal());
-        
-                
+
+
             teamResults[repo.name] = {
                 total: combineStats(totals, prTotals),
                 groups: groupsGrouped.combine(prGroupsGrouped, combineStats).export(),
@@ -136,16 +136,16 @@ export class StatisticsController {
         }
 
         await Promise.all(repos.map(addRepo));
-        
-        let totals = Object.keys(teamResults).reduce((acc : any, key) => {
+
+        let totals = Object.keys(teamResults).reduce((acc: any, key) => {
             acc[key] = teamResults[key].total;
             return acc;
         }, {});
-        let weeklies = Object.keys(teamResults).reduce((acc : any, key) => {
+        let weeklies = Object.keys(teamResults).reduce((acc: any, key) => {
             acc[key] = teamResults[key].weekly;
             return acc;
         }, {});
-        
+
         let grouped = Object.keys(teamResults).reduce((groupTotals: any, key) => {
             let teamGroups = teamResults[key].groups;
             for (let group of Object.keys(teamGroups)) {
@@ -172,46 +172,43 @@ export class StatisticsController {
         };
     }
 
-    //Todo: courseconfig wegwerken... te weinig nodig om een hele DB dependency te pakken
     async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        
+
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
         let lastDate = combinedStats.getDateRange().end;
 
-        let byAuthor = combinedStats.groupByAuthor(combinedStats.getDistinctAuthors());
-        let byWeek = combinedStats.groupByWeek(savedCourseConfig.startDate);
-        let byAuthorByWeek = byAuthor.map(st =>
-            st.groupByWeek(savedCourseConfig.startDate, lastDate));
-        
+        let builder = new StatsBuilder(combinedStats);
         return {
-            total: combinedStats.getLinesTotal(),
-            authors: byAuthor.map(st => st.getLinesTotal()).export(),
+            total: builder.build(),
+            authors: builder.groupByAuthor(combinedStats.getDistinctAuthors()).build(),
             weekly: {
-                total: byWeek.map(st => st.getLinesTotal()).export(),
-                authors: byAuthorByWeek.map(st =>
-                    st.map(g => g.getLinesTotal())).export()
+                total: builder.groupByWeek(savedCourseConfig.startDate, lastDate).build(),
+                authors: builder
+                    .groupByAuthor(combinedStats.getDistinctAuthors())
+                    .thenByWeek(savedCourseConfig.startDate, lastDate)
+                    .build()
             }
         };
     }
 
     async getRepoStatsByGroup(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTOPerGroup> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        
+
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
         let lastDate = combinedStats.getDateRange().end;
 
-        let bySubject = combinedStats.groupBy(this.#getGroups(savedCourseConfig));
-        let byWeek = combinedStats.groupByWeek(savedCourseConfig.startDate);
-        let bySubjectByWeek = bySubject.map(st =>
-            st.groupByWeek(savedCourseConfig.startDate, lastDate));
+        let builder = new StatsBuilder(combinedStats);
 
         return {
-            total: combinedStats.getLinesTotal(),
-            groups: bySubject.map(s => s.getLinesTotal()).export(),
+            total: builder.build(),
+            groups: builder.groupBy(this.#getGroups(savedCourseConfig)).build(),
             weekly: {
-                total: byWeek.map(s => s.getLinesTotal()).export(),
-                groups: bySubjectByWeek.map(s1 => s1.map(s2 => s2.getLinesTotal())).export()
+                total: builder.groupByWeek(savedCourseConfig.startDate, lastDate).build(),
+                groups: builder
+                    .groupBy(this.#getGroups(savedCourseConfig))
+                    .thenByWeek(savedCourseConfig.startDate, lastDate)
+                    .build()
             }
         };
     }
@@ -236,21 +233,17 @@ export class StatisticsController {
         let groups = this.#getGroups(savedCourseConfig);
         let stats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
         let endDate = stats.getDateRange().end;
-        let byAuthor = stats.groupByAuthor(stats.getDistinctAuthors());
+        let byAuthor = stats.groupByAuthor([filter.authorName]);
 
         let studentStats = byAuthor.get(filter.authorName);
-        if (!studentStats){
-            studentStats = new CombinedStats([]);
-        }
 
-        let bySubject = studentStats.groupBy(groups);
-        let byWeek = studentStats.groupByWeek(savedCourseConfig.startDate, endDate);
-        let byWeekBySubject = byWeek.map(st =>
-            st.groupBy(groups));
+        let builder = new StatsBuilder(studentStats);
 
         return {
-            total: bySubject.map(st => st.getLinesTotal()).export(),
-            weekly: byWeekBySubject.map(s1 => s1.map(s2 => s2.getLinesTotal())).export(),
+            total: builder.groupBy(groups).build(),
+            weekly: builder
+                .groupByWeek(savedCourseConfig.startDate, endDate)
+                .thenBy(groups).build(),
         }
     }
 }
