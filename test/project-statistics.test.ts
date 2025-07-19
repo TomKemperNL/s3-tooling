@@ -5,7 +5,7 @@ import { ExportingArray, GroupedCollection } from '../src/main/statistics';
 
 
 test('CanSumLinesPerAuthor', {}, () => {
-    let stats = new ProjectStatistics("Communication", [
+    let stats = new ProjectStatistics([
         {
             author: 'Bob@Home',
             title: 'Some stuff is broken',
@@ -33,7 +33,7 @@ test('CanSumLinesPerAuthor', {}, () => {
         'Bob2': 'Bob'       
     });
 
-    let results = stats.groupByAuthor().map(s => s.getLinesTotal()).export();
+    let results = stats.groupByAuthor(stats.getDistinctAuthors()).map(s => s.getLinesTotal()).export();
 
     expect(results["Fred"].added).toBe(3); //1 title, +2 body
     expect(results["Bob"].added).toBe(4); //1 title, +1 body + 2 comments
@@ -47,7 +47,7 @@ test('Can Group ProjectItems Per Week', {}, () => {
         comments: []
     }
 
-    let stats = new ProjectStatistics("Communication", [
+    let stats = new ProjectStatistics([
         { createdAt: new Date('2023-10-01'), ...someIssueOrPr },
         { createdAt: new Date('2023-10-02'), ...someIssueOrPr },
         { createdAt: new Date('2023-10-08'), ...someIssueOrPr },
@@ -70,7 +70,7 @@ test('Can Group ProjectItems Per Week with an empty week after', {}, () => {
         comments: []
     }
 
-    let stats = new ProjectStatistics("Communication", [
+    let stats = new ProjectStatistics([
         { createdAt: new Date('2023-10-01'), ...someIssueOrPr }
     ].reverse(), [], []);
 

@@ -5,9 +5,8 @@ export interface Statistics {
     getLinesTotal(): LinesStatistics;
     getDateRange(): { start: Date, end: Date };
 
-    groupByAuthor(): GroupedCollection<Statistics>    
     groupByWeek(startDate: Date, endDate: Date): ExportingArray<Statistics>
-    groupByAuthor(): GroupedCollection<Statistics>        
+    groupByAuthor(authors: string[]): GroupedCollection<Statistics>        
     groupBy(groups: GroupDefinition[]): GroupedCollection<Statistics>;
 }
 
@@ -59,8 +58,8 @@ export class CombinedStats implements Statistics {
         return new GroupedCollection<Statistics>(result);
     }
 
-    groupByAuthor(): GroupedCollection<Statistics> {
-        return this.#group(stat => stat.groupByAuthor());
+    groupByAuthor(authors: string[]): GroupedCollection<Statistics> {
+        return this.#group(stat => stat.groupByAuthor(authors));
     }
 
     groupByWeek(startDate: Date, endDate: Date = null): ExportingArray<Statistics> {
@@ -95,10 +94,18 @@ export class CombinedStats implements Statistics {
     }
 }
 
-export type GroupDefinition = {
+type RepoGroupDefinition = {
     name: string,
     extensions: string[]
 }
+
+type ProjectGroupDefinition = {
+    name: string
+    extensions: never
+}
+
+export type GroupDefinition = 
+    RepoGroupDefinition | ProjectGroupDefinition;
 
 function isExportable(obj: any): obj is Exportable {
     return obj && typeof obj.export === 'function';

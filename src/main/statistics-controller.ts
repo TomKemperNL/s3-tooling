@@ -32,7 +32,8 @@ export class StatisticsController {
             RepositoryStatistics.backend,
             RepositoryStatistics.frontend,
             RepositoryStatistics.markup,
-            RepositoryStatistics.docs
+            RepositoryStatistics.docs,
+            { name: 'Communication'}
         ];
     }
     
@@ -55,7 +56,7 @@ export class StatisticsController {
             this.githubClient.listIssues(org, name),
             this.githubClient.listPullRequests(org, name)
         ]);
-        return new ProjectStatistics("Communication", issues, prs);        
+        return new ProjectStatistics(issues, prs);        
     }
 
     async getCourseStats(courseId: number, assignment: string){
@@ -178,7 +179,7 @@ export class StatisticsController {
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
         let lastDate = combinedStats.getDateRange().end;
 
-        let byAuthor = combinedStats.groupByAuthor();
+        let byAuthor = combinedStats.groupByAuthor(combinedStats.getDistinctAuthors());
         let byWeek = combinedStats.groupByWeek(savedCourseConfig.startDate);
         let byAuthorByWeek = byAuthor.map(st =>
             st.groupByWeek(savedCourseConfig.startDate, lastDate));
@@ -223,7 +224,7 @@ export class StatisticsController {
             this.fileSystem.getBlame(savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
         ]);
-        let docsPie: { [name: string]: number } = projectStats.groupByAuthor().map(st => st.getLinesTotal().added).export();
+        let docsPie: { [name: string]: number } = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
 
         return {
             blamePie: mergePies(blamePie, docsPie)
@@ -235,7 +236,7 @@ export class StatisticsController {
         let groups = this.#getGroups(savedCourseConfig);
         let stats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
         let endDate = stats.getDateRange().end;
-        let byAuthor = stats.groupByAuthor();
+        let byAuthor = stats.groupByAuthor(stats.getDistinctAuthors());
 
         let studentStats = byAuthor.get(filter.authorName);
         if (!studentStats){

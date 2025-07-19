@@ -1,8 +1,8 @@
 import { Issue, PullRequest, Comment, LinesStatistics } from "../shared";
-import { ExportingArray, GroupDefinition, GroupedCollection, Statistics } from "./statistics";
+import { CombinedStats, ExportingArray, GroupDefinition, GroupedCollection, Statistics } from "./statistics";
 
 export class ProjectStatistics implements Statistics {
-    constructor(private groupName: string, private issues: Issue[], private prs: PullRequest[], private comments: Comment[] = []) {
+    constructor(private issues: Issue[], private prs: PullRequest[], private comments: Comment[] = []) {
         if (comments.length === 0) {
             this.comments = issues.reduce((acc, issue) => {
                 return acc.concat(issue.comments);
@@ -44,15 +44,21 @@ export class ProjectStatistics implements Statistics {
         return { start, end };
     }
 
-    #asGrouped(groupName: string) {
-        return new GroupedCollection({ [groupName]: this });
+
+    groupBy(groups: GroupDefinition[]): GroupedCollection<Statistics> {
+        let result: { [name: string]: Statistics } = {};
+        for (let group of groups) {
+            if(group. extensions){
+                result[group.name] = new CombinedStats([]);
+            }else{
+                result[group.name] = this;
+            }
+        }
+
+        return new GroupedCollection<Statistics>(result);
     }
 
-    groupBy(groups: GroupDefinition[]): GroupedCollection<ProjectStatistics> {
-        return this.#asGrouped(this.groupName)
-    }
-
-    groupByAuthor(): GroupedCollection<ProjectStatistics> {
+    groupByAuthor(authors: string[]): GroupedCollection<ProjectStatistics> {
         let results: { [name: string]: any } = {};
         function addOrAppend<T>(type: string, key: string, value: T) {
             if (!results[key]) {
@@ -79,12 +85,17 @@ export class ProjectStatistics implements Statistics {
         }
 
         for (let author of Object.keys(results)) {
-            results[author] = new ProjectStatistics(
-                "Communication",
+            results[author] = new ProjectStatistics(                
                 results[author].issues,
                 results[author].prs,
                 results[author].comments
             );
+        }
+
+        for(let requestedAuthor of authors){
+            if (!results[requestedAuthor]) {
+                results[requestedAuthor] = new ProjectStatistics([], [], []);
+            }
         }
 
         return new GroupedCollection<ProjectStatistics>(results);
@@ -173,7 +184,7 @@ export class ProjectStatistics implements Statistics {
             let weekPrs = this.prs.filter(pr => pr.createdAt >= startDate && pr.createdAt < nextDate);
             let weekComments = this.comments.filter(c => c.createdAt >= startDate && c.createdAt < nextDate);
 
-            gathered.push(new ProjectStatistics(this.groupName, weekIssues, weekPrs, weekComments));
+            gathered.push(new ProjectStatistics(weekIssues, weekPrs, weekComments));
             startDate = nextDate;
             nextDate = ProjectStatistics.#addWeek(startDate);
         }
@@ -182,7 +193,7 @@ export class ProjectStatistics implements Statistics {
         let weekComments = this.comments.filter(c => c.createdAt >= startDate && c.createdAt < nextDate);
 
 
-        gathered.push(new ProjectStatistics(this.groupName, weekIssues, weekPrs, weekComments));
+        gathered.push(new ProjectStatistics(weekIssues, weekPrs, weekComments));
         return new ExportingArray(gathered);
     }
 

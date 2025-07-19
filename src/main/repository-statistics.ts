@@ -1,6 +1,6 @@
 import { LinesStatistics } from "../shared";
 import { LoggedChange, LoggedCommit } from "./filesystem-client";
-import { ExportingArray, GroupDefinition, GroupedCollection, Statistics } from "./statistics";
+import { CombinedStats, ExportingArray, GroupDefinition, GroupedCollection, Statistics } from "./statistics";
 
 export let ignoredAuthors = [
     'github-classroom[bot]'
@@ -78,12 +78,12 @@ export class RepositoryStatistics implements Statistics {
         }, [])
     }
 
-    static #filterCommit(commit: LoggedCommit, group: GroupDefinition): LoggedCommit {
-        function getChangesForGroup(group: GroupDefinition, changes: LoggedChange[]): LoggedChange[] {
-            return changes.filter(c => group.extensions.some(ext => c.path.toLocaleLowerCase().endsWith(ext.toLocaleLowerCase())));
+    static #filterCommit(commit: LoggedCommit, extensions: string[]): LoggedCommit {
+        function getChangesForGroup(changes: LoggedChange[]): LoggedChange[] {
+            return changes.filter(c => extensions.some(ext => c.path.toLocaleLowerCase().endsWith(ext.toLocaleLowerCase())));
         }
 
-        let changes: LoggedChange[] = getChangesForGroup(group, commit.changes);
+        let changes: LoggedChange[] = getChangesForGroup(commit.changes);
         return {
             ...commit,
             changes
@@ -151,30 +151,40 @@ export class RepositoryStatistics implements Statistics {
         return new ExportingArray<RepositoryStatistics>(stats);
     }
 
-    groupByAuthor(): GroupedCollection<RepositoryStatistics> {
+    groupByAuthor(authors: string[]): GroupedCollection<RepositoryStatistics> {
         let result: { [name: string]: RepositoryStatistics } = {};
         for (let author of this.getDistinctAuthors()) {
             let authorCommits = this.data.filter(c => c.author === author);
             let authorResult = new RepositoryStatistics(authorCommits, this.options);
             result[author] = authorResult;
         }
+
+        for (let author of authors) {
+            if (!result[author]) {
+                result[author] = new RepositoryStatistics([], this.options);
+            }
+        }
         return new GroupedCollection(result);
     }
 
 
-    groupBy(groups: GroupDefinition[]): GroupedCollection<RepositoryStatistics> {
-        let result: { [name: string]: RepositoryStatistics } = {};
+    groupBy(groups: GroupDefinition[]): GroupedCollection<Statistics> {
+        let result: { [name: string]: Statistics } = {};
         for (let group of groups) {
-            let groupCommits = [];
-            for (let commit of this.data) {
-                let filteredCommit = RepositoryStatistics.#filterCommit(commit, group);
-                if (filteredCommit.changes.length > 0) {
-                    groupCommits.push(filteredCommit);
+            if(!group.extensions){
+                result[group.name] = new CombinedStats([]);
+            }else{
+                let groupCommits = [];
+                for (let commit of this.data) {
+                    let filteredCommit = RepositoryStatistics.#filterCommit(commit, group.extensions);
+                    if (filteredCommit.changes.length > 0) {
+                        groupCommits.push(filteredCommit);
+                    }
+    
                 }
-
-            }
-            let groupResult = new RepositoryStatistics(groupCommits, this.options);
-            result[group.name] = groupResult;
+                let groupResult = new RepositoryStatistics(groupCommits, this.options);
+                result[group.name] = groupResult;
+            }            
         }
 
         return new GroupedCollection(result);

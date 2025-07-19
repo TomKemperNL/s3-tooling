@@ -15,7 +15,7 @@ test('CanSumLinesPerAuthor', {}, () => {
             ]
         }
     ]);
-    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).export();
+    let result = stats.groupByAuthor(stats.getDistinctAuthors()).map((a) => a.getLinesTotal()).export();
 
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
@@ -48,7 +48,7 @@ test('Package-lock & github bot ignored hardcoded', {}, () => {
             ]
         }
     ]);
-    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).export();
+    let result = stats.groupByAuthor(stats.getDistinctAuthors()).map((a) => a.getLinesTotal()).export();
 
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
@@ -71,7 +71,7 @@ test('Can Ignore Filetypes', {}, () => {
             ]
         }
     ], { ignoredExtensions: ['.json'] });
-    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).export();
+    let result = stats.groupByAuthor(stats.getDistinctAuthors()).map((a) => a.getLinesTotal()).export();
 
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
@@ -158,7 +158,7 @@ test('Can Group Commits Per Week Per Author', {}, () => {
         { author: 'Bob', date: new Date('2023-10-25'), ...someCommit },
     ].reverse());
 
-    let perAuthorResult = stats.groupByAuthor()
+    let perAuthorResult = stats.groupByAuthor(stats.getDistinctAuthors())
         .map(as => as.groupByWeek(new Date('2023-10-01'))
             .map(w => w.getLinesTotal())).export();
 
@@ -275,7 +275,7 @@ test('Can mapAuthors', {}, () => {
         'Bob@Home': 'Bob'
     });
 
-    let perAuthorResult = stats.groupByAuthor()
+    let perAuthorResult = stats.groupByAuthor(stats.getDistinctAuthors())
         .map(as => as.groupByWeek(new Date('2023-10-01'))
             .map(w => w.getLinesTotal())).export();
 
