@@ -33,20 +33,20 @@ export class StatisticsController {
             RepositoryStatistics.frontend,
             RepositoryStatistics.markup,
             RepositoryStatistics.docs,
-            { name: 'Communication'}
+            { name: 'Communication', extensions: undefined }
         ];
     }
     
     async #getCombinedStats(savedCourseConfig: CourseConfig, assignment: string, name: string) {
         let groups = this.#getGroups(savedCourseConfig);
         let [coreStats, projectStats] = await Promise.all([
-            this.#getRepoStats(groups, savedCourseConfig.githubStudentOrg, assignment, name),
+            this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
         ]);
         return new CombinedStats([coreStats, projectStats]);
     }
 
-    async #getRepoStats(groups: GroupDefinition[], org: string, assignment: string, name: string){        
+    async #getRepoStats(org: string, assignment: string, name: string){        
         let commits = await this.fileSystem.getRepoStats(org, assignment, name);
         return new RepositoryStatistics(commits);
     }
@@ -112,7 +112,7 @@ export class StatisticsController {
         let teamResults : { [repo: string]: any }= {};
         let addRepo = async (repo: RepoDTO) => {
             let [coreStats, projectStats] = await Promise.all([
-                this.#getRepoStats(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment, repo.name),
+                this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, repo.name),
                 this.#getProjectStats(savedCourseConfig.githubStudentOrg, repo.name)
             ]);
 
