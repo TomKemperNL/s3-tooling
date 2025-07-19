@@ -44,17 +44,13 @@ create table githubAccounts(
     studentId integer not null references students (id)
 );
 
-create table githubCommitNames(
-    id integer primary key autoincrement,
+create table authorMapping(
+    organization text not null references repositories(organization),
+    repoName text not null references repositories(name),
     name text not null,
-    email text
-);
-
-create table
-    students_githubCommitNames (
-        studentId integer not null references students (id),
-        githubCommitNameId integer not null references githubCommitNames (id),
-        primary key (studentId, githubCommitNameId)
+    email text,
+    githubUsername text not null references githubAccounts(username),
+    primary key (organization, repoName, name)
 );
 
 create table 

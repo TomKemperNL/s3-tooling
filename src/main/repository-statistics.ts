@@ -47,6 +47,11 @@ export class RepositoryStatistics implements Statistics<RepositoryStatistics> {
         this.data = rawData.filter(c => !ignoredAuthors.includes(c.author));
     }
 
+    concat(other: RepositoryStatistics): RepositoryStatistics {
+        let combinedData = this.data.concat(other.data);
+        return new RepositoryStatistics(combinedData, this.options);
+    }
+
     #accumulateLines(acc: LinesStatistics, change: LoggedChange) {
         if (this.ignoredFiles.some(f => change.path.match(f))) {
             change.added = '-';

@@ -3,6 +3,11 @@ export type Member ={
     login: string;
 }
 
+export type Author = {
+    name: string,
+    email?: string,
+}
+
 export type Assignment = {
     githubAssignment: string,
     canvasId?: number,

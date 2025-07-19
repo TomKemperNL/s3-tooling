@@ -1,7 +1,7 @@
 import { Database } from "sqlite3";
 import fs from 'fs/promises';
 import { bep1, bep2, cisq1, cisq2, s2 } from '../temp'
-import { CourseConfig, CourseDTO, StudentDTO } from "../shared";
+import { Author, CourseConfig, CourseDTO, StudentDTO } from "../shared";
 import { MemberResponse, RepoResponse } from "./github-client";
 import { SimpleDict } from "./canvas-client";
 
@@ -149,6 +149,20 @@ export class Db {
             };
 
             await this.#runProm("update courses set lastMappingCheck = ? where canvasid = ?", [new Date().toISOString(), courseId]);
+        });
+    }
+
+    async updateAuthorMapping(org: string, repo: string, authorMapping: { [alias: string]: string }) {
+        await this.#inTransaction(async () => {
+            for (let k of Object.keys(authorMapping)) {
+                let v = authorMapping[k];
+                let student = await this.getStudentByGithubUserName(k);
+                if (student) {
+                    await this.#runProm('insert into githubCommitNames(name, email) dadfsasdfasdfvalues(?, ?) on conflict do nothing;', [v.name, v.email]);
+                }
+            };
+
+            
         });
     }
 
