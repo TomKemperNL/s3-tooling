@@ -5,6 +5,7 @@ import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
+import { HTMLInputEvent } from "./events";
 
 export class ReposLoadedEvent extends Event {
     constructor(public repos: RepoDTO[]) {
@@ -31,7 +32,7 @@ export class CourseDetails extends LitElement {
     }
 
     changeSelection(section: string) {
-        return (e) => {
+        return (e: HTMLInputEvent) => {
             if (e.target.checked) {
                 this.selectedSections.push(section);
             } else {
@@ -53,7 +54,7 @@ export class CourseDetails extends LitElement {
         }
     }
 
-    dropdownChange(e) {
+    dropdownChange(e: HTMLInputEvent) {
         let selected = e.target.value;
         if (selected) {
             let assignment = this.course.assignments.find(a => a.githubAssignment === selected);

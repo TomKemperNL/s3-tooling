@@ -5,6 +5,8 @@ import { readdir } from 'fs/promises'
 
 import { promisify } from 'util';
 import { ignoredAuthors } from './repository-statistics';
+import { Repo } from '../shared';
+import { GroupDefinition } from './statistics';
 
 const exec = promisify(proc.exec);
 const exists = promisify(fs.exists);
@@ -14,7 +16,7 @@ const changePattern = /([\d-]+)\s+([\d-]+)\s+(.+)/
 const blamePattern = /(\w+)\s+\((.+?)\d\d\d\d-\d\d-\d\d/
 const logFormat = '--format=%H,%aI,%an,%s --numstat'
 
-export function parseDate(date) {
+export function parseDate(date: string): Date {
     return new Date(Date.parse(date));
 }
 
@@ -66,8 +68,8 @@ export function parseLog(logLines: string[]): LoggedCommit[] {
     return commits;
 }
 
-export function parseBlame(blameLines: string[]) : { [author: string]: number } {
-    let report = {};
+export function parseBlame(blameLines: string[]): { [author: string]: number } {
+    let report: { [author: string]: number } = {};
     for (let line of blameLines) {
         let blameMatch = line.match(blamePattern);
         if (blameMatch && blameMatch[2]) {
@@ -82,9 +84,9 @@ export function parseBlame(blameLines: string[]) : { [author: string]: number } 
     return report;
 }
 
-function combineReports(rep1, rep2){
-    let result = {};
-    function addToReport(key, value) {
+function combineReports(rep1: {[author:string]: number} , rep2: {[author:string]: number} ) {
+    let result: {[author:string]: number} = {};
+    function addToReport(key: string, value: number) {
         if (!result[key]) {
             result[key] = 0;
         }
@@ -101,7 +103,7 @@ function combineReports(rep1, rep2){
 }
 
 export class FileSystem {
-    #basePath : string;
+    #basePath: string;
 
     constructor(basePath: string) {
         if (!basePath) {
@@ -110,7 +112,7 @@ export class FileSystem {
         this.#basePath = basePath;
     }
 
-    async cloneRepo(prefix: string[], repo) {
+    async cloneRepo(prefix: string[], repo: Repo) {
         let target = path.join(this.#basePath, ...prefix);
         let fullTarget = path.join(this.#basePath, ...prefix, repo.name);
 
@@ -136,21 +138,21 @@ export class FileSystem {
         return dirs.map(d => prefPath.concat([d]));
     }
 
-     //Dit is te sloom om altijd te doen    
+    //Dit is te sloom om altijd te doen    
     async refreshRepo(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         await exec(`git reset HEAD --hard`, { cwd: target });
         await exec(`git fetch --all`, { cwd: target });
-        try{
+        try {
             await exec(`git pull`, { cwd: target });
-        }catch (e) {
+        } catch (e) {
             //TODO: dit kan gebeuren als de remote branch is verwijderd,
             //moeten we nog beter kunnen detecteren 
             console.error('Error pulling repo', e);
         }
 
-        
-        delete this.repoCache[target];   
+
+        delete this.repoCache[target];
     }
 
     async getCurrentBranch(...repoPath: string[]) {
@@ -163,7 +165,7 @@ export class FileSystem {
         let target = path.join(this.#basePath, ...repoPath);
         let result = await exec(`git remote show origin`, { cwd: target, encoding: 'utf8' });
         let lines = result.stdout.split('\n');
-        
+
         let defaultBranchLine = lines.find(line => line.trim().startsWith('HEAD branch:'));
         if (defaultBranchLine) {
             return defaultBranchLine.replace('HEAD branch:', '').trim();
@@ -172,7 +174,7 @@ export class FileSystem {
         }
     }
 
-    async getBranches(defaultBranch, ...repoPath: string[]) {
+    async getBranches(defaultBranch: string, ...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         let result = await exec(`git branch --all --remote --no-merge "${defaultBranch}"`, { cwd: target, encoding: 'utf8' });
         let branches = result.stdout.split('\n').filter(b => b.length > 0).map(b => b.trim());
@@ -194,12 +196,12 @@ export class FileSystem {
 
     repoCache: { [repoPath: string]: LoggedCommit[] } = {};
 
-    async getRepoStats(...repoPath: string[]) {        
+    async getRepoStats(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         if (this.repoCache[target]) {
             return this.repoCache[target];
         }
-        let result = await exec(`git log ${logFormat}`, { cwd: target, encoding: 'utf8' });
+        let result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });
         let logLines = result.stdout.split('\n');
 
         let parsedLog = parseLog(logLines);
@@ -207,13 +209,22 @@ export class FileSystem {
         return parsedLog;
     }
 
+    async getGroupBlame(groups: GroupDefinition[], ...repoPath: string[]) {
+        let target = path.join(this.#basePath, ...repoPath);
+        let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
+        let report : {[groups:string]: number} = {};
+
+        return report;
+    }
+
+
     async getBlame(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
 
 
         let files = filesRaw.stdout.split('\n').filter(f => f.length > 0).map(f => f.trim());
-        let report = {};
+        let report : {[author:string]: number} = {};
 
         //Het is jammer, maar helaas dat git blame anders omgaat met binary files dan git log. Dus het zal nog even klooien zijn om er voor te zorgen
         //dat die 2 getallen met elkaar gaan matchen.
@@ -221,7 +232,7 @@ export class FileSystem {
             //git log filtert binaries er ook uit, maar cost een extra console call. Dus een lijstje opbouwen van files die we vaak tegenkomen en echt niet hoeven
             //te checken is handig qua performance
             let hardcodedBinaryExtensions = ['.pdf', '.png', '.jar', '.zip', '.jpeg', '.webp', '.pptx', '.docx', '.xslx'];
-            
+
             if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
                 return;
             }
@@ -236,23 +247,23 @@ export class FileSystem {
             }
 
             let soloLog = null;
-            try{
+            try {
                 soloLog = await exec(`git log -1 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' });
-            }catch (e) {
+            } catch (e) {
                 //Als er een casing-probleem (zelfde file bestaat/bestond onder meerdere spellingen) is, 
                 // dan geeft git log hier een hele vreemde error
                 console.error('Error in git log', e);
-                return; 
+                return;
             }
-            
+
             let logLines = soloLog.stdout.split('\n');
-            let [parsedLog] = parseLog(logLines);            
+            let [parsedLog] = parseLog(logLines);
 
             if (parsedLog.changes.length === 0) {
                 return; //Ignore merge commits without any other changes
             } else if (parsedLog.changes.some(c => c.added === '-' || c.removed === '-')) {
                 return; //Ignore binary files
-            }            
+            }
             else if (!ignoredAuthors.some(ia => ia === parsedLog.author)) {
                 try {
                     let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });

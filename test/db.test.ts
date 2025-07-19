@@ -19,7 +19,7 @@ afterAll(async () => {
 });
 
 const someCourse : CourseConfig = {    
-    canvasCourseId: 123,
+    canvasId: 123,
     canvasGroupsName: 'bla',    
     startDate: null,
     githubStudentOrg: 'bla-org',

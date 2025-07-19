@@ -3,9 +3,10 @@ import { customElement, property } from "lit/decorators.js";
 
 import { map } from "lit/directives/map.js";
 import { ElectronIPC } from "./ipc";
-import { CourseDTO } from "../shared";
+import { CourseConfig, CourseDTO } from "../shared";
 import { consume } from "@lit/context";
 import { ipcContext } from "./contexts";
+import { HTMLInputEvent } from "./events";
 
 export class CourseLoadedEvent extends Event {
     constructor(public course: CourseDTO) {
@@ -25,7 +26,7 @@ export class CoursesList extends LitElement {
     ipc: ElectronIPC
 
     @property({ type: Array, state: true })
-    courses: any[];
+    courses: CourseConfig[];
 
     @property({ type: Boolean, state: true })
     loading: boolean = false;
@@ -36,10 +37,10 @@ export class CoursesList extends LitElement {
         });
     }
 
-    async loadCourse(c) {
+    async loadCourse(c: CourseConfig) {
         this.loading = true;
         try {
-            let result = await this.ipc.loadCourse(c.canvasCourseId);
+            let result = await this.ipc.loadCourse(c.canvasId);
             if (result) {
                 this.dispatchEvent(new CourseLoadedEvent(result));
             }
@@ -47,7 +48,7 @@ export class CoursesList extends LitElement {
         finally { this.loading = false; }
     };
 
-    dropdownChange(e) {
+    dropdownChange(e: HTMLInputEvent) {
         let selected = e.target.value;
         if (selected) {
             let course = this.courses.find(c => c.name === selected);

@@ -142,7 +142,7 @@ export class AppElement extends LitElement {
         this.showSettings = false;
     }
 
-    async onSettingsChanged(e) {  
+    async onSettingsChanged(e: Event) {  
         let startup = await this.ipc.startup();
         this.reload(startup);
     }

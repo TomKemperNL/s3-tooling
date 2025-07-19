@@ -1,14 +1,10 @@
 import { LinesStatistics } from "../shared";
 import { LoggedChange, LoggedCommit } from "./filesystem-client";
+import { CombinedStats, ExportingArray, GroupDefinition, GroupedCollection, Statistics } from "./statistics";
 
 export let ignoredAuthors = [
     'github-classroom[bot]'
 ]
-
-export type GroupDefinition = {
-    name: string,
-    extensions: string[]
-}
 
 let ignoredAuthorsEnv = process.env.IGNORE_AUTHORS;
 if (ignoredAuthorsEnv) {
@@ -17,12 +13,12 @@ if (ignoredAuthorsEnv) {
 
 console.log('Ignored authors:', ignoredAuthors);
 
-export class RepositoryStatistics {
+export class RepositoryStatistics implements Statistics {
     ignoredFiles = ['package-lock.json'];
     ignoredFolders = ['node_modules'];
 
     data: LoggedCommit[];
-    
+
     static backend: GroupDefinition = {
         name: 'Backend',
         extensions: ['.java', '.py', '.kt', '.cs', '.rb']
@@ -51,7 +47,7 @@ export class RepositoryStatistics {
         this.data = rawData.filter(c => !ignoredAuthors.includes(c.author));
     }
 
-    #accumulateLines(acc, change: LoggedChange) {
+    #accumulateLines(acc: LinesStatistics, change: LoggedChange) {
         if (this.ignoredFiles.some(f => change.path.match(f))) {
             change.added = '-';
             change.removed = '-';
@@ -82,24 +78,25 @@ export class RepositoryStatistics {
         }, [])
     }
 
-    static #filterCommit(commit: LoggedCommit, group: GroupDefinition): LoggedCommit {
-        function getChangesForGroup(group: GroupDefinition, changes: LoggedChange[]): LoggedChange[] {
-            return changes.filter(c => group.extensions.some(ext => c.path.toLocaleLowerCase().endsWith(ext.toLocaleLowerCase())));
+    static #filterCommit(commit: LoggedCommit, extensions: string[]): LoggedCommit {
+        function getChangesForGroup(changes: LoggedChange[]): LoggedChange[] {
+            return changes.filter(c => extensions.some(ext => c.path.toLocaleLowerCase().endsWith(ext.toLocaleLowerCase())));
         }
 
-        let changes: LoggedChange[] = getChangesForGroup(group, commit.changes);
+        let changes: LoggedChange[] = getChangesForGroup(commit.changes);
         return {
             ...commit,
             changes
         }
     }
 
-    #privGetCommitsPerWeek(someData: LoggedCommit[], startDate: Date = null): LoggedCommit[][] {
+    #privGetCommitsPerWeek(someData: LoggedCommit[], startDate: Date = null, endDate: Date): LoggedCommit[][] {
         if (someData.length === 0) {
             return [];
         }
         let commits = someData.toSorted((a, b) => a.date.valueOf() - b.date.valueOf());
         let start = startDate || commits[0].date;
+        let end = endDate || commits[commits.length - 1].date;
 
         let result = []
         let currentCommits = [];
@@ -110,177 +107,86 @@ export class RepositoryStatistics {
             if (c.date < nextDate) {
                 currentCommits.push(c);
                 index++;
-            } else {                
+            } else {
                 result.push(currentCommits);
                 currentCommits = [];
                 nextDate = RepositoryStatistics.#addWeek(nextDate);
             }
         }
-        if (currentCommits.length > 0) {            
+        if (currentCommits.length > 0) {
             result.push(currentCommits);
+        }
+        while(nextDate <= end) {
+            result.push([]);
+            nextDate = RepositoryStatistics.#addWeek(nextDate);
         }
         return result;
     }
-    
+
+    mapAuthors(authorMapping: {[alias: string]: string}){
+        this.data.forEach(commit => {
+            if (authorMapping[commit.author]) {
+                commit.author = authorMapping[commit.author];
+            }
+        });
+    }
+
     getDistinctAuthors() {
         return [...new Set(this.data.map(c => c.author))];
     }
-
+    
     getLinesTotal(): LinesStatistics {
         return RepositoryStatistics.#getChanges(this.data).reduce(this.#accumulateLines.bind(this), { added: 0, removed: 0 });
     }
 
-    groupByWeek(startDate: Date = null): ExportingArray<RepositoryStatistics> {
-        let stats : RepositoryStatistics[] = this.#privGetCommitsPerWeek(this.data, startDate).map(cs => new RepositoryStatistics(cs, this.options))
+    getDateRange(): { start: Date; end: Date; } {
+        let start = new Date(Math.min(...this.data.map(stat => stat.date.getTime())));
+        let end = new Date(Math.max(...this.data.map(stat => stat.date.getTime())));
+        return { start, end };
+    }
+
+    groupByWeek(startDate: Date = null, endDate: Date = null): ExportingArray<RepositoryStatistics> {
+        let stats: RepositoryStatistics[] = this.#privGetCommitsPerWeek(this.data, startDate, endDate)
+            .map(cs => new RepositoryStatistics(cs, this.options))
         return new ExportingArray<RepositoryStatistics>(stats);
     }
 
-    groupByAuthor(): GroupedCollection<RepositoryStatistics> {
-        let result = {};
+    groupByAuthor(authors: string[]): GroupedCollection<RepositoryStatistics> {
+        let result: { [name: string]: RepositoryStatistics } = {};
         for (let author of this.getDistinctAuthors()) {
             let authorCommits = this.data.filter(c => c.author === author);
             let authorResult = new RepositoryStatistics(authorCommits, this.options);
-            result[author] = authorResult;            
-        }        
+            result[author] = authorResult;
+        }
+
+        for (let author of authors) {
+            if (!result[author]) {
+                result[author] = new RepositoryStatistics([], this.options);
+            }
+        }
         return new GroupedCollection(result);
     }
 
-    groupBy(groups: GroupDefinition[]) : GroupedCollection<RepositoryStatistics>  {       
-        let result = {};
+
+    groupBy(groups: GroupDefinition[]): GroupedCollection<Statistics> {
+        let result: { [name: string]: Statistics } = {};
         for (let group of groups) {
-            let groupCommits = [];
-            for (let commit of this.data) {
-                let filteredCommit = RepositoryStatistics.#filterCommit(commit, group);
-                if (filteredCommit.changes.length > 0) {
-                    groupCommits.push(filteredCommit);
+            if(!group.extensions){
+                result[group.name] = new CombinedStats([]);
+            }else{
+                let groupCommits = [];
+                for (let commit of this.data) {
+                    let filteredCommit = RepositoryStatistics.#filterCommit(commit, group.extensions);
+                    if (filteredCommit.changes.length > 0) {
+                        groupCommits.push(filteredCommit);
+                    }
+    
                 }
-
-            }
-            let groupResult = new RepositoryStatistics(groupCommits, this.options);
-            result[group.name] = groupResult;
+                let groupResult = new RepositoryStatistics(groupCommits, this.options);
+                result[group.name] = groupResult;
+            }            
         }
 
         return new GroupedCollection(result);
     }
-}
-
-function isExportable(obj: any): obj is Exportable {
-    return obj && typeof obj.export === 'function';
-}
-interface Exportable{
-    export(): any;
-}
-
-//Dit moet vast handiger kunnen (want nu moet je elke array functie opnieuw implementeren)
-export class GroupedCollection<T> {
-    
-    constructor(private content: { [name: string]: T }){
-    }
-
-    get(name: string) : T {
-        return this.content[name];
-    }
-
-    map<Y>(fn: (r: T) => Y) : GroupedCollection<Y> {
-        let result = {};
-        for(let key of Object.keys(this.content)){
-            result[key] = fn(this.content[key]);
-        }
-       
-        return new GroupedCollection(result);        
-    }
-
-    filter(fn: (groupName: string, r: T) => boolean) : GroupedCollection<T> {
-        let result = {};
-        for(let key of Object.keys(this.content)){
-            if (fn(key, this.content[key])) {
-                result[key] = this.content[key];
-            }
-        }
-        return new GroupedCollection(result);
-    }
-    combine(other: GroupedCollection<T>, merger: (t1: T, t2: T) => T): GroupedCollection<T> {
-        let result = {};
-        for(let key of Object.keys(this.content)){
-            if(other.content[key]){
-                result[key] = merger(this.content[key], other.content[key]);
-            }else{
-                result[key] = this.content[key];
-            }
-        }
-        for(let key of Object.keys(other.content)){
-            if(!this.content[key]){
-                result[key] = other.content[key];
-            }
-        }
-        return new GroupedCollection(result);
-    }
-
-    export(){
-        let result = {};
-        for(let key of Object.keys(this.content)){
-            if(isExportable(this.content[key])){
-                result[key] = this.content[key].export();
-            }else{
-                result[key] = this.content[key];    
-            }
-        }
-        return result;
-    }
-}
-
-export class ExportingArray<T> {
-    constructor(private items: T[]) {
-        
-        // Object.setPrototypeOf(this, ExportingArray.prototype);
-    }
-
-    map<Y>(fn: (r: T) => Y) : ExportingArray<Y> {
-        let result = this.items.map(fn);
-        return new ExportingArray(result);
-    }
-
-    filter(fn: (r: T) => boolean) : ExportingArray<T> {
-        let result = this.items.filter(fn);
-        return new ExportingArray(result);
-    }
-    
-    combine(other: ExportingArray<T>, merger: (t1: T, t2: T) => T): ExportingArray<T> {
-        let result = [];
-        for(let ix = 0; ix < Math.max(this.items.length, other.items.length); ix++){
-            if(this.items[ix] && other.items[ix]){
-                result.push(merger(this.items[ix], other.items[ix]));
-            }else if(this.items[ix]){
-                result.push(this.items[ix]);
-            }else if(other.items[ix]){
-                result.push(other.items[ix]);
-            }
-        }
-        return new ExportingArray(result);
-    }
-
-    pad(length: number, value: T): ExportingArray<T> {
-        let result = this.items.slice();
-        while(result.length < length){
-            result.push(value);
-        }
-        return new ExportingArray(result);
-    }
-
-    get length() {
-        return this.items.length;
-    }
-
-    export(){
-        let result = [];
-        for(let item of this.items){
-            if(isExportable(item)){
-                result.push(item.export());
-            }else{
-                result.push(item);    
-            }
-        }
-        return result;
-    }
-
 }

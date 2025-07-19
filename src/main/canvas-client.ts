@@ -33,9 +33,10 @@ type PageResponse<T> = {
 }
 
 export type SimpleDict = { [key: string]: string | number };
+export type StringDict = { [key: string]: string };
 
 function parseLinkHeader(header: string): SimpleDict {
-    const links = {};
+    const links : {[key: string]: string} = {};
     const parts = header.split(',');
     for (const part of parts) {
         const section = part.split(';');
@@ -164,7 +165,7 @@ export class CanvasClient {
     }
 
     async getGroups(course: { course_id: number }, category_name: string): Promise<GroupResponse[]> {
-        let categories : any = await this.getPages(`courses/${course.course_id}/group_categories`);
+        let categories : any[] = await this.getPages(`courses/${course.course_id}/group_categories`);
         let category = categories.find(c => c.name === category_name);
         if (!category) {
             throw new Error(`Category ${category_name} not found`);
@@ -177,8 +178,8 @@ export class CanvasClient {
     }
 
 
-    async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string): Promise<SimpleDict> {
-        let mapping = {};
+    async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string): Promise<StringDict> {
+        let mapping : {[key: string]: string} = {};
         let result: any = await this.getPages(`courses/${course.course_id}/assignments/${assignment.assignment_id}/submissions`, { 'include[]': 'user' });
         for (let r of result) {
             let user = r.user;

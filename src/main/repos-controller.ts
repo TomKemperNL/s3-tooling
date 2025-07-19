@@ -1,5 +1,5 @@
 import { Assignment, BlameStatisticsDTO, BranchInfo, combineStats, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
-import { CanvasClient, getUsernameFromName, SimpleDict } from "./canvas-client";
+import { CanvasClient, getUsernameFromName, SimpleDict, StringDict } from "./canvas-client";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient, MemberResponse, RepoResponse, toRepo } from "./github-client";
@@ -20,24 +20,24 @@ function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: num
 }
 
 export class ReposController {
-   
+
     constructor(private db: Db, private canvasClient: CanvasClient, private githubClient: GithubClient, private fileSystem: FileSystem) {
 
     }
 
     async #getUserMapping(savedCourseConfig: CourseConfig): Promise<SimpleDict> {
-        let usermapping: SimpleDict = null;
+        let usermapping: StringDict = null;
 
         if (savedCourseConfig.lastMappingCheck && (savedCourseConfig.lastMappingCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
-            usermapping = await this.db.getUserMapping(savedCourseConfig.canvasCourseId);
+            usermapping = await this.db.getUserMapping(savedCourseConfig.canvasId);
         } else {
             for (let a of savedCourseConfig.assignments) {
                 if (!a.groupAssignment) {
                     usermapping = await this.canvasClient.getGithubMapping(
-                        { course_id: savedCourseConfig.canvasCourseId },
+                        { course_id: savedCourseConfig.canvasId },
                         { assignment_id: a.canvasId }
                         , a.githubAssignment);
-                    await this.db.updateUserMapping(savedCourseConfig.canvasCourseId, usermapping);
+                    await this.db.updateUserMapping(savedCourseConfig.canvasId, usermapping);
                 }
             }
         }
@@ -47,10 +47,10 @@ export class ReposController {
     async #getRepos(savedCourseConfig: CourseConfig): Promise<Repo[]> {
         let repoResponses: RepoResponse[]
         if (savedCourseConfig.lastRepoCheck && (savedCourseConfig.lastRepoCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
-            repoResponses = await this.db.selectReposByCourse(savedCourseConfig.canvasCourseId)
+            repoResponses = await this.db.selectReposByCourse(savedCourseConfig.canvasId)
         } else {
             repoResponses = await this.githubClient.listRepos(savedCourseConfig.githubStudentOrg);
-            await this.db.updateRepoMapping(savedCourseConfig.canvasCourseId, repoResponses);
+            await this.db.updateRepoMapping(savedCourseConfig.canvasId, repoResponses);
         }
         let repos = repoResponses.map(r => toRepo(r));
         return repos;
@@ -80,8 +80,7 @@ export class ReposController {
         }
     }
 
-
-    async loadRepos(courseId, assignmentName, filter: RepoFilter): Promise<RepoDTO[]> {
+    async loadRepos(courseId: number, assignmentName: string, filter: RepoFilter): Promise<RepoDTO[]> {
         let savedCourse = await this.db.getCourse(courseId);
         let assignment = savedCourse.assignments.find(a => a.githubAssignment === assignmentName);
         if (!assignment) {
@@ -128,7 +127,7 @@ export class ReposController {
             this.fileSystem.getCurrentBranch(savedCourseConfig.githubStudentOrg, assignment, name),
             this.fileSystem.getBranches(defaultBranch, savedCourseConfig.githubStudentOrg, assignment, name)]);
 
-        if(branches.indexOf(currentBranch) === -1) {
+        if (branches.indexOf(currentBranch) === -1) {
             branches.push(currentBranch);
         }
         if (branches.indexOf(defaultBranch) === -1) {
@@ -153,124 +152,45 @@ export class ReposController {
         await this.fileSystem.switchBranch(newBranch, savedCourseConfig.githubStudentOrg, assignment, name)
     }
 
-    async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
+
+
+
+    async getCurrentUserMappingFromCourse(courseId: number, assignment: string): Promise<any> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        let savedCourse = await this.db.getCourse(courseId);
 
-        let [stats, issues, prs] = await Promise.all([
-            await this.fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
-            await this.githubClient.listIssues(savedCourseConfig.githubStudentOrg, name),
-            await this.githubClient.listPullRequests(savedCourseConfig.githubStudentOrg, name)
-        ]);
+        let sectionsResults: any = {};
 
-        let coreStats = new RepositoryStatistics(stats);
-        let projectStats = new ProjectStatistics(issues, prs);
-        let authorsGrouped = coreStats.groupByAuthor().map(st => st.getLinesTotal());
-        let prAuthorsGrouped = projectStats.groupByAuthor().map(st => st.getLines());
-        let totals = coreStats.getLinesTotal();
-        let prTotals = projectStats.getLines();
-
-
-        let totalPerWeek = coreStats
-            .groupByWeek(savedCourseConfig.startDate)
-            .map(st => st.getLinesTotal())
-        let prTotalPerWeek = projectStats
-            .groupByWeek(savedCourseConfig.startDate)
-            .map(st => st.getLines())
-        let authorPerWeek = coreStats
-            .groupByAuthor().map(st =>
-                st.groupByWeek(savedCourseConfig.startDate)
-                    .map(st => st.getLinesTotal()))
-        let prAuthorPerWeek = projectStats
-            .groupByAuthor().map(st =>
-                st.groupByWeek(savedCourseConfig.startDate)
-                    .map(st => st.getLines()))
-
-        return {
-            total: {
-                added: totals.added + prTotals.added,
-                removed: totals.removed + prTotals.removed
-            },
-            authors: authorsGrouped.combine(prAuthorsGrouped, combineStats).export(),
-            weekly: {
-                total: totalPerWeek.combine(prTotalPerWeek, combineStats).export(),
-                authors: authorPerWeek
-                    .combine(prAuthorPerWeek, (ea1, ea2) => ea1.combine(ea2, combineStats)).export()
-            }
-        };
-    }
-
-
-
-    async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<BlameStatisticsDTO> {
-        let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        let [blamePie, issues, prs] = await Promise.all([
-            this.fileSystem.getBlame(savedCourseConfig.githubStudentOrg, assignment, name),
-            this.githubClient.listIssues(savedCourseConfig.githubStudentOrg, name),
-            this.githubClient.listPullRequests(savedCourseConfig.githubStudentOrg, name)
-        ]);
-        let projectStats = new ProjectStatistics(issues, prs);
-        let docsPie: { [name: string]: number } = projectStats.groupByAuthor().map(st => st.getLines().added).export();
-
-        return {
-            blamePie: mergePies(blamePie, docsPie)
-        };
-    }
-
-    async getStatsByUser(courseId: number, assignment: string, name: string, filter: StudentFilter) {
-        let savedCourseConfig = await this.db.getCourseConfig(courseId);
-
-        let [stats, issues, prs] = await Promise.all([
-            this.fileSystem.getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
-            this.githubClient.listIssues(savedCourseConfig.githubStudentOrg, name),
-            this.githubClient.listPullRequests(savedCourseConfig.githubStudentOrg, name)
-        ]);
-
-        let coreStats = new RepositoryStatistics(stats);
-        let projectStats = new ProjectStatistics(issues, prs);
-
-        let groupedByAuthor = coreStats.groupByAuthor();
-        let prGroupedByAuthor = projectStats.groupByAuthor();
-
-        let studentStats = groupedByAuthor.get(filter.authorName);
-        let prStudentStats = prGroupedByAuthor.get(filter.authorName);
-        if (!prStudentStats) {
-            prStudentStats = new ProjectStatistics([], []);
-        }
-        if (!studentStats) {
-            studentStats = new RepositoryStatistics([]);
+        let loadRepo = async (repo: RepoDTO): Promise<any> => {
+            let users = (await this.githubClient.getMembers(savedCourseConfig.githubStudentOrg, repo.name)).map(m => m.login);
+            let commits = await this.fileSystem.getRepoStats(
+                savedCourseConfig.githubStudentOrg, assignment, repo.name);
+            let stats = new RepositoryStatistics(commits);
+            let authors = stats.getDistinctAuthors();
+            return { authors, users };
         }
 
-        let groups = [
-            RepositoryStatistics.backend,
-            RepositoryStatistics.frontend,
-            RepositoryStatistics.markup,
-            RepositoryStatistics.docs
-        ]
+        let loadSection = async (section: string): Promise<any> => {
+            let currentSectionResult: any = {}
+            let reposForSection = await this.loadRepos(courseId, assignment, {
+                sections: [section]
+            });
 
-        let total = studentStats.groupBy(groups).map(g => g.getLinesTotal());
-        let prTotal = prStudentStats.asGrouped("Communication").map(g => g.getLines());
+            await Promise.all(
+                reposForSection.map(async repo => {
+                    let result = await loadRepo(repo);
+                    currentSectionResult[repo.name] = result;
+                }));
 
-        let weekly = studentStats.groupByWeek(savedCourseConfig.startDate)
-            .map(w => w.groupBy(groups).map(g => g.getLinesTotal()));
-        let prWeekly = prStudentStats.groupByWeek(savedCourseConfig.startDate)
-            .map(w => w.asGrouped("Communication").map(g => g.getLines()));
-
-
-        let length = Math.max(weekly.length, prWeekly.length);
-        prWeekly = prWeekly.pad(length,
-            new ProjectStatistics([], []).asGrouped("Communication").map(g => g.getLines()));
-        weekly = weekly.pad(length,
-            new RepositoryStatistics([]).groupBy(groups).map(g => g.getLinesTotal()));
-        
-
-        let totalCombined = total.combine(prTotal, combineStats);
-        let weeklyCombined = weekly.combine(prWeekly, (g1, g2) => {
-            return g1.combine(g2, combineStats)
-        });
-
-        return {
-            total: totalCombined.export(),
-            weekly: weeklyCombined.export()
+            return currentSectionResult;
         }
+
+        for(let section of Object.keys(savedCourse.sections)) {
+            let currentSectionResult = await loadSection(section);
+                sectionsResults[section] = currentSectionResult;
+        }
+
+        return sectionsResults;
     }
 }
+

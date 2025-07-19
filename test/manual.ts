@@ -1,23 +1,43 @@
+import { createApp } from "../src/main/index";
 import { FileSystem } from "../src/main/filesystem-client";
+import { Settings } from "../src/shared";
+import { importUserMappingTemp } from "../src/temp";
 
-let fs = new FileSystem('C:/s3-tooling-data');
+require('@dotenvx/dotenvx').config({path: ['.dev.env', '.env']})
+
+import { writeFile } from "fs/promises";
+
+let settings : Settings = {
+    githubToken: process.env.ACCES_TOKEN,
+    canvasToken: process.env.CANVAS_TOKEN,
+    dataPath: 'C:/s3-tooling-data',
+    keepDB: true,
+    ignoreAuthors: []
+}
+
 async function main(){
-    console.time("blame")
-    
+
+    let app = await createApp(settings);
+    console.time("start")
+
+    const id = 44633; 
     const repo = ['HU-SD-S2-studenten-2425', 'sd-s2-project','sd-s2-project-samensterk'];
-    // await fs.switchBranch('main', ...repo);
-    let result = await fs.getBlame(...repo);
-    console.log(result);
-    // let branches = await fs.getBranches(...repo);
-    // console.log(branches);
-    // await fs.refreshRepo(...repo);
-    // for(let b of branches){
-    //     console.log(b);
-    //     await fs.switchBranch(b, ...repo);
-    //     result = await fs.getBlame(...repo);
-    //     console.log(result);
-    // }
-    console.timeEnd("blame")
+    const section = "TICT-SD-V1A";
+    const assignment = "sd-s2-project";
+
+    await app.coursesController.loadCourse(44633);
+    // let result = await app.statisticsController.getClassStats(44633, assignment, section)
+    // let result = await app.statisticsController.getCourseStats(id, assignment)
+    // let result = await app.repoController.getCurrentUserMappingFromCourse(id, assignment);
+    let result = await importUserMappingTemp();
+
+
+
+    console.log("result", result);
+
+    console.timeEnd("start")
+    // await writeFile('result.json', JSON.stringify(result), { encoding: 'utf-8' })
+    
 }
 
 main();

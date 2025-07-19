@@ -1,5 +1,5 @@
 import { Chart } from "chart.js";
-import { html, LitElement } from "lit";
+import { html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ref, createRef } from 'lit/directives/ref.js';
 
@@ -13,10 +13,6 @@ export class PieChart extends LitElement {
     colors: string[] = [];
 
     canvasRef = createRef();
-
-    static styles = [
-        // Add your CSS styles here
-    ];
 
     constructor() {
         super();
@@ -32,7 +28,7 @@ export class PieChart extends LitElement {
         }
     }
 
-    updated(changedProperties) {
+    updated(changedProperties: PropertyValues) {
         if (changedProperties.has('labels') || changedProperties.has('values') || changedProperties.has('colors')) {
             if (this.chart) {
                 this.chart.destroy();

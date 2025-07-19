@@ -7,7 +7,8 @@
         "target": "ESNext",
         "module": "NodeNext",
         "moduleResolution": "nodenext",
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "noImplicitAny": true,
     },    
     "include": [
         "src",

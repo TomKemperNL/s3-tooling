@@ -1,4 +1,3 @@
-import { RepoResponse } from "./main/github-client";
 
 export type Member ={
     login: string;
@@ -35,7 +34,7 @@ export class Repo {
 
 export type CourseConfig = {
     name: string;
-    canvasCourseId: number;    
+    canvasId: number;    
     canvasGroupsName: string;
     startDate: Date,
     githubStudentOrg: string;    
@@ -96,6 +95,12 @@ export type RepoStatisticsDTO = {
     weekly: RepoStatisticsPerWeekDTO,
 }
 
+export type RepoStatisticsDTOPerGroup = {
+    total: LinesStatistics,
+    groups: { [name: string] : LinesStatistics}
+    weekly: RepoStatisticsPerWeekDTOPerGroup,
+}
+
 export type AuthorStatisticsDTO = {
     total: { [group: string]: LinesStatistics },    
     weekly: { [group: string]: LinesStatistics }[],
@@ -108,6 +113,10 @@ export type BlameStatisticsDTO = {
 export type RepoStatisticsPerWeekDTO = {
     total: LinesStatistics[],
     authors: { [name: string] : LinesStatistics[]}
+}
+export type RepoStatisticsPerWeekDTOPerGroup = {
+    total: LinesStatistics[],
+    groups: { [name: string] : LinesStatistics[]}
 }
 
 export type Settings = {

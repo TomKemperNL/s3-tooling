@@ -1,5 +1,5 @@
 import { Chart } from "chart.js";
-import { html, LitElement } from "lit";
+import { html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ref, createRef } from 'lit/directives/ref.js';
 
@@ -12,13 +12,8 @@ export class BarChart extends LitElement {
 
     canvasRef = createRef();
 
-    static styles = [
-        // Add your CSS styles here
-    ];
-
     constructor() {
-        super();
-      
+        super();      
     }
 
     chart: Chart;
@@ -30,7 +25,7 @@ export class BarChart extends LitElement {
         }
     }
 
-    updated(changedProperties) {
+    updated(changedProperties: PropertyValues) {        
         if (changedProperties.has('data')) {
             if (this.chart) {
                 this.chart.destroy();
