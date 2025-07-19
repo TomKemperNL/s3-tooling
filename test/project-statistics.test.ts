@@ -1,7 +1,5 @@
 import { test, expect } from 'vitest';
 import { ProjectStatistics } from '../src/main/project-statistics';
-import { extensions } from 'sequelize/lib/utils/validator-extras';
-import { a } from 'vitest/dist/chunks/suite.d.FvehnV49.js';
 import { Issue, PullRequest } from '../src/shared';
 import { ExportingArray, GroupedCollection } from '../src/main/statistics';
 
@@ -35,7 +33,7 @@ test('CanSumLinesPerAuthor', {}, () => {
         'Bob2': 'Bob'       
     });
 
-    let results = stats.groupByAuthor().map(s => s.getLinesTotal()).export();
+    let results = stats.groupByAuthor(stats.getDistinctAuthors()).map(s => s.getLinesTotal()).export();
 
     expect(results["Fred"].added).toBe(3); //1 title, +2 body
     expect(results["Bob"].added).toBe(4); //1 title, +1 body + 2 comments
@@ -63,6 +61,24 @@ test('Can Group ProjectItems Per Week', {}, () => {
     expect(result[3].added).toBe(2);
     expect(result[4]).toBe(undefined);
 });
+
+test('Can Group ProjectItems Per Week with an empty week after', {}, () => {
+    let someIssueOrPr: any = {
+        title: 'Some stuff is broken',
+        body: 'This is a test',
+        author: 'Bob',
+        comments: []
+    }
+
+    let stats = new ProjectStatistics([
+        { createdAt: new Date('2023-10-01'), ...someIssueOrPr }
+    ].reverse(), [], []);
+
+    let result = stats.groupByWeek(new Date('2023-10-01'), new Date('2023-10-08')).map((w) => w.getLinesTotal()).export();
+    expect(result.length).toBe(2);
+    expect(result[0].added).toBe(2);
+    expect(result[1].added).toBe(0);
+})
 
 test('Can combine stat groups', () => {
     let someStuff = new GroupedCollection({

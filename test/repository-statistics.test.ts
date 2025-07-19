@@ -1,7 +1,5 @@
 import { test, expect } from 'vitest';
 import { RepositoryStatistics } from '../src/main/repository-statistics';
-import { extensions } from 'sequelize/lib/utils/validator-extras';
-
 
 test('CanSumLinesPerAuthor', {}, () => {
     let stats = new RepositoryStatistics([
@@ -17,7 +15,7 @@ test('CanSumLinesPerAuthor', {}, () => {
             ]
         }
     ]);
-    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).export();
+    let result = stats.groupByAuthor(stats.getDistinctAuthors()).map((a) => a.getLinesTotal()).export();
 
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
@@ -50,7 +48,7 @@ test('Package-lock & github bot ignored hardcoded', {}, () => {
             ]
         }
     ]);
-    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).export();
+    let result = stats.groupByAuthor(stats.getDistinctAuthors()).map((a) => a.getLinesTotal()).export();
 
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
@@ -73,7 +71,7 @@ test('Can Ignore Filetypes', {}, () => {
             ]
         }
     ], { ignoredExtensions: ['.json'] });
-    let result = stats.groupByAuthor().map((a) => a.getLinesTotal()).export();
+    let result = stats.groupByAuthor(stats.getDistinctAuthors()).map((a) => a.getLinesTotal()).export();
 
     expect(result['Bob'].added).toBe(4);
     expect(result['Bob'].removed).toBe(6);
@@ -104,6 +102,45 @@ test('Can Group Commits Per Week', {}, () => {
     expect(result[4]).toBe(undefined);
 });
 
+test('Can Group Commits Per Week with empty week before', {}, () => {
+    let someCommit = {
+        author: 'Bob',
+        subject: 'Enter Commit Message Here',
+        hash: '1234567890abcdef',
+        changes: [
+            { added: 1, removed: 0, path: 'test.txt' }
+        ]
+    }
+
+    let stats = new RepositoryStatistics([
+        { date: new Date('2023-10-08'), ...someCommit },
+    ].reverse());
+
+    let result = stats.groupByWeek(new Date('2023-10-01')).map((w) => w.getLinesTotal()).export();
+    expect(result.length).toBe(2);
+    expect(result[0].added).toBe(0);
+    expect(result[1].added, 'Can go to next week').toBe(1);
+});
+
+test('Can Group Commits Per Week with empty week after', {}, () => {
+    let someCommit = {
+        author: 'Bob',
+        subject: 'Enter Commit Message Here',
+        hash: '1234567890abcdef',
+        changes: [
+            { added: 1, removed: 0, path: 'test.txt' }
+        ]
+    }
+
+    let stats = new RepositoryStatistics([
+        { date: new Date('2023-10-08'), ...someCommit },
+    ].reverse());
+
+    let result = stats.groupByWeek(new Date('2023-10-08'), new Date('2023-10-15')).map((w) => w.getLinesTotal()).export();
+    expect(result.length).toBe(2);
+    expect(result[0].added).toBe(1);
+    expect(result[1].added).toBe(0);
+});
 
 test('Can Group Commits Per Week Per Author', {}, () => {
     let someCommit = {
@@ -121,7 +158,7 @@ test('Can Group Commits Per Week Per Author', {}, () => {
         { author: 'Bob', date: new Date('2023-10-25'), ...someCommit },
     ].reverse());
 
-    let perAuthorResult = stats.groupByAuthor()
+    let perAuthorResult = stats.groupByAuthor(stats.getDistinctAuthors())
         .map(as => as.groupByWeek(new Date('2023-10-01'))
             .map(w => w.getLinesTotal())).export();
 
@@ -139,6 +176,11 @@ test('Can Group Commits Per Week Per Author', {}, () => {
 });
 
 test('Can Group Commits By Backend/Frontend/Docs/Other', {}, () => {
+    
+    let groups = [
+        RepositoryStatistics.backend,
+        RepositoryStatistics.frontendIncludingMarkup        
+    ]
     let stats = new RepositoryStatistics([
         {
             author: 'Bob',
@@ -165,11 +207,6 @@ test('Can Group Commits By Backend/Frontend/Docs/Other', {}, () => {
         }
     ]);
 
-    let groups = [
-        RepositoryStatistics.backend,
-        RepositoryStatistics.frontendIncludingMarkup        
-    ]
-
     let result = stats.groupBy(groups).map(g => g.getLinesTotal()).export();
     expect(result["Backend"]).toStrictEqual({ added: 4, removed: 4});
     expect(result["Frontend"]).toStrictEqual({ added: 4, removed: 8});
@@ -177,6 +214,10 @@ test('Can Group Commits By Backend/Frontend/Docs/Other', {}, () => {
 });
 
 test('Can Group Commits By Week, and then by Backend/Frontend/Docs/Other', {}, () => {
+    let groups = [
+        RepositoryStatistics.backend,
+        RepositoryStatistics.frontendIncludingMarkup        
+    ]
     let stats = new RepositoryStatistics([
         {
             author: 'Bob',
@@ -202,10 +243,7 @@ test('Can Group Commits By Week, and then by Backend/Frontend/Docs/Other', {}, (
             ]
         }
     ]);
-    let groups = [
-        RepositoryStatistics.backend,
-        RepositoryStatistics.frontendIncludingMarkup        
-    ]
+    
     let result = stats.groupByWeek(new Date('2023-10-01'))
         .map(w => w.groupBy(groups).map(g => g.getLinesTotal())).export();
 
@@ -237,7 +275,7 @@ test('Can mapAuthors', {}, () => {
         'Bob@Home': 'Bob'
     });
 
-    let perAuthorResult = stats.groupByAuthor()
+    let perAuthorResult = stats.groupByAuthor(stats.getDistinctAuthors())
         .map(as => as.groupByWeek(new Date('2023-10-01'))
             .map(w => w.getLinesTotal())).export();
 

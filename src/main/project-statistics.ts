@@ -1,7 +1,7 @@
 import { Issue, PullRequest, Comment, LinesStatistics } from "../shared";
-import { ExportingArray, GroupedCollection, Statistics } from "./statistics";
+import { CombinedStats, ExportingArray, GroupDefinition, GroupedCollection, Statistics } from "./statistics";
 
-export class ProjectStatistics implements Statistics<ProjectStatistics> {
+export class ProjectStatistics implements Statistics {
     constructor(private issues: Issue[], private prs: PullRequest[], private comments: Comment[] = []) {
         if (comments.length === 0) {
             this.comments = issues.reduce((acc, issue) => {
@@ -30,11 +30,35 @@ export class ProjectStatistics implements Statistics<ProjectStatistics> {
         return Array.from(authors);
     }
 
-    asGrouped(groupName: string) {
-        return new GroupedCollection({ [groupName]: this });
+    getDateRange(): { start: Date; end: Date; } {
+        let start = new Date(Math.min(
+            ...this.issues.map(i => i.createdAt.getTime()),
+            ...this.prs.map(pr => pr.createdAt.getTime()),
+            ...this.comments.map(c => c.createdAt.getTime())
+        ));
+        let end = new Date(Math.max(
+            ...this.issues.map(i => i.createdAt.getTime()),
+            ...this.prs.map(pr => pr.createdAt.getTime()),
+            ...this.comments.map(c => c.createdAt.getTime())
+        ));
+        return { start, end };
     }
 
-    groupByAuthor(): GroupedCollection<ProjectStatistics> {
+
+    groupBy(groups: GroupDefinition[]): GroupedCollection<Statistics> {
+        let result: { [name: string]: Statistics } = {};
+        for (let group of groups) {
+            if(group. extensions){
+                result[group.name] = new CombinedStats([]);
+            }else{
+                result[group.name] = this;
+            }
+        }
+
+        return new GroupedCollection<Statistics>(result);
+    }
+
+    groupByAuthor(authors: string[]): GroupedCollection<ProjectStatistics> {
         let results: { [name: string]: any } = {};
         function addOrAppend<T>(type: string, key: string, value: T) {
             if (!results[key]) {
@@ -61,11 +85,17 @@ export class ProjectStatistics implements Statistics<ProjectStatistics> {
         }
 
         for (let author of Object.keys(results)) {
-            results[author] = new ProjectStatistics(
+            results[author] = new ProjectStatistics(                
                 results[author].issues,
                 results[author].prs,
                 results[author].comments
             );
+        }
+
+        for(let requestedAuthor of authors){
+            if (!results[requestedAuthor]) {
+                results[requestedAuthor] = new ProjectStatistics([], [], []);
+            }
         }
 
         return new GroupedCollection<ProjectStatistics>(results);
@@ -124,21 +154,28 @@ export class ProjectStatistics implements Statistics<ProjectStatistics> {
         return new Date(newDate.valueOf() + weekMs);
     }
 
-    groupByWeek(beginDate?: Date): ExportingArray<ProjectStatistics> {
+    groupByWeek(beginDate?: Date, endDate?: Date): ExportingArray<ProjectStatistics> {
         let gathered = [];
 
         //Algoritmisch gaan we hiervan huilen...
-        let earliestDate = Math.min(
-            !!beginDate ? beginDate.valueOf() : new Date().valueOf(),
+        let earliestDate = Math.min(            
             Math.min(...this.issues.map(i => i.createdAt.valueOf())),
             Math.min(...this.prs.map(pr => pr.createdAt.valueOf())),
             Math.min(...this.comments.map(c => c.createdAt.valueOf()))
         );
-        let lastDate = Math.max(
+        if (beginDate) {
+            earliestDate = Math.max(earliestDate, beginDate.valueOf());
+        }        
+
+        let lastDate = Math.max(            
             Math.max(...this.issues.map(i => i.createdAt.valueOf())),
             Math.max(...this.prs.map(pr => pr.createdAt.valueOf())),
             Math.max(...this.comments.map(c => c.createdAt.valueOf()))
         );
+        if (endDate) {
+            lastDate = endDate.valueOf();
+        }
+
         let startDate = new Date(earliestDate);
         let nextDate = ProjectStatistics.#addWeek(startDate);
 

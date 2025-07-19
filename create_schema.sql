@@ -41,20 +41,21 @@ create table
 
 create table githubAccounts(
     username text primary key,
-    studentId integer not null references students (id)
+    studentId integer references students (id)
 );
 
-create table authorMapping(
+create table githubCommitNames(
     organization text not null references repositories(organization),
-    repoName text not null references repositories(name),
+    repository text not null references repositories(name),
     name text not null,
     email text,
     githubUsername text not null references githubAccounts(username),
-    primary key (organization, repoName, name)
+    primary key (organization, repository, name)
+    foreign key(organization, repository) references repositories(organization, name)
 );
 
 create table 
-    repositories (        
+    repositories (
         courseId integer not null references courses (canvasId),        
         organization text,
         name text,
@@ -70,8 +71,9 @@ create table
     );
 
 create table repository_members(
-    organization text not null references repositories(organization),
-    name text not null references repositories(name),
+    organization text not null,
+    name text not null,
     username text not null references githubAccounts(username),
     primary key(organization, name, username)
+    foreign key(organization, name) references repositories(organization, name)
 );

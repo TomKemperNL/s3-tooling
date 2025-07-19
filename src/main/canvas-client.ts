@@ -33,6 +33,7 @@ type PageResponse<T> = {
 }
 
 export type SimpleDict = { [key: string]: string | number };
+export type StringDict = { [key: string]: string };
 
 function parseLinkHeader(header: string): SimpleDict {
     const links : {[key: string]: string} = {};
@@ -177,7 +178,7 @@ export class CanvasClient {
     }
 
 
-    async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string): Promise<SimpleDict> {
+    async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string): Promise<StringDict> {
         let mapping : {[key: string]: string} = {};
         let result: any = await this.getPages(`courses/${course.course_id}/assignments/${assignment.assignment_id}/submissions`, { 'include[]': 'user' });
         for (let r of result) {

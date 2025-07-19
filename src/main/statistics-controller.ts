@@ -6,6 +6,7 @@ import { GithubClient } from "./github-client";
 import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 import { ReposController } from "./repos-controller";
+import { CombinedStats, GroupDefinition, StatsBuilder } from "./statistics";
 
 function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: number }): { [name: string]: number } {
     let merged: { [name: string]: number } = {};
@@ -19,13 +20,33 @@ function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: num
 }
 
 export class StatisticsController {
-    constructor(private db: Db, private githubClient: GithubClient, private fileSystem: FileSystem, 
+    constructor(private db: Db, private githubClient: GithubClient, private fileSystem: FileSystem,
         private repoController: ReposController //TODO: deze willen we niet als dep, maar voor nu...
     ) {
 
     }
-    
-    async #getRepoStats(org: string, assignment: string, name: string){
+
+    #getGroups(savedCourseConfig: CourseConfig) {
+        //TODO: voor nu hardcoded, maar dit wil je per cursus kunnen instellen
+        return [
+            RepositoryStatistics.backend,
+            RepositoryStatistics.frontend,
+            RepositoryStatistics.markup,
+            RepositoryStatistics.docs,
+            { name: 'Communication', extensions: undefined }
+        ];
+    }
+
+    async #getCombinedStats(savedCourseConfig: CourseConfig, assignment: string, name: string) {
+        let groups = this.#getGroups(savedCourseConfig);
+        let [coreStats, projectStats] = await Promise.all([
+            this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
+            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
+        ]);
+        return new CombinedStats([coreStats, projectStats]);
+    }
+
+    async #getRepoStats(org: string, assignment: string, name: string) {
         let commits = await this.fileSystem.getRepoStats(org, assignment, name);
         return new RepositoryStatistics(commits);
     }
@@ -35,15 +56,15 @@ export class StatisticsController {
             this.githubClient.listIssues(org, name),
             this.githubClient.listPullRequests(org, name)
         ]);
-        return new ProjectStatistics(issues, prs);        
+        return new ProjectStatistics(issues, prs);
     }
 
-    async getCourseStats(courseId: number, assignment: string){
-        
+    async getCourseStats(courseId: number, assignment: string) {
+
         let savedCourse = await this.db.getCourse(courseId);
-        
-        let result : { [section: string]: any } = {};
-        
+
+        let result: { [section: string]: any } = {};
+
         let addSection = async (section: string) => {
             let repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
             if (repos.length === 0) {
@@ -56,7 +77,7 @@ export class StatisticsController {
             added: 0,
             removed: 0
         };
-        let groupedTotals : any = {
+        let groupedTotals: any = {
         }
 
         for (let section of Object.keys(savedCourse.sections)) {
@@ -82,12 +103,13 @@ export class StatisticsController {
         };
     }
 
-    async getClassStats(courseId: number, assignment: string, section: string) : Promise<any>{
+    async getClassStats(courseId: number, assignment: string, section: string): Promise<any> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         let groups = this.#getGroups(savedCourseConfig);
+
         let repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
 
-        let teamResults : { [repo: string]: any }= {};
+        let teamResults: { [repo: string]: any } = {};
         let addRepo = async (repo: RepoDTO) => {
             let [coreStats, projectStats] = await Promise.all([
                 this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, repo.name),
@@ -103,9 +125,9 @@ export class StatisticsController {
                 .groupByWeek(savedCourseConfig.startDate)
                 .map(st => st.getLinesTotal())
             let groupsGrouped = coreStats.groupBy(groups).map(st => st.getLinesTotal());
-            let prGroupsGrouped = projectStats.asGrouped("Communication").map(st => st.getLinesTotal());
-        
-                
+            let prGroupsGrouped = projectStats.groupBy(groups).map(st => st.getLinesTotal());
+
+
             teamResults[repo.name] = {
                 total: combineStats(totals, prTotals),
                 groups: groupsGrouped.combine(prGroupsGrouped, combineStats).export(),
@@ -114,16 +136,16 @@ export class StatisticsController {
         }
 
         await Promise.all(repos.map(addRepo));
-        
-        let totals = Object.keys(teamResults).reduce((acc : any, key) => {
+
+        let totals = Object.keys(teamResults).reduce((acc: any, key) => {
             acc[key] = teamResults[key].total;
             return acc;
         }, {});
-        let weeklies = Object.keys(teamResults).reduce((acc : any, key) => {
+        let weeklies = Object.keys(teamResults).reduce((acc: any, key) => {
             acc[key] = teamResults[key].weekly;
             return acc;
         }, {});
-        
+
         let grouped = Object.keys(teamResults).reduce((groupTotals: any, key) => {
             let teamGroups = teamResults[key].groups;
             for (let group of Object.keys(teamGroups)) {
@@ -150,84 +172,43 @@ export class StatisticsController {
         };
     }
 
-    //Todo: courseconfig wegwerken... te weinig nodig om een hele DB dependency te pakken
     async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        let [coreStats, projectStats] = await Promise.all([
-            this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
-            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
-        ]);
 
-        let totals = coreStats.getLinesTotal();
-        let prTotals = projectStats.getLinesTotal();
+        let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
+        let lastDate = combinedStats.getDateRange().end;
 
-        let authorsGrouped = coreStats.groupByAuthor().map(st => st.getLinesTotal());
-        let prAuthorsGrouped = projectStats.groupByAuthor().map(st => st.getLinesTotal());
-
-        let totalPerWeek = coreStats
-            .groupByWeek(savedCourseConfig.startDate)
-            .map(st => st.getLinesTotal())
-        let prTotalPerWeek = projectStats
-            .groupByWeek(savedCourseConfig.startDate)
-            .map(st => st.getLinesTotal())
-        
-        let authorPerWeek = coreStats
-            .groupByAuthor().map(st =>
-                st.groupByWeek(savedCourseConfig.startDate)
-                    .map(st => st.getLinesTotal()))
-        let prAuthorPerWeek = projectStats
-            .groupByAuthor().map(st =>
-                st.groupByWeek(savedCourseConfig.startDate)
-                    .map(st => st.getLinesTotal()))
-
+        let builder = new StatsBuilder(combinedStats);
         return {
-            total: combineStats(totals, prTotals),
-            authors: authorsGrouped.combine(prAuthorsGrouped, combineStats).export(),
+            total: builder.build(),
+            authors: builder.groupByAuthor(combinedStats.getDistinctAuthors()).build(),
             weekly: {
-                total: totalPerWeek.combine(prTotalPerWeek, combineStats).export(),
-                authors: <any>authorPerWeek //TODO: deze any is een bug denk ik...
-                    .combine(prAuthorPerWeek, (ea1, ea2) => ea1.combine(ea2, combineStats)).export()
+                total: builder.groupByWeek(savedCourseConfig.startDate, lastDate).build(),
+                authors: builder
+                    .groupByAuthor(combinedStats.getDistinctAuthors())
+                    .thenByWeek(savedCourseConfig.startDate, lastDate)
+                    .build()
             }
         };
     }
 
     async getRepoStatsByGroup(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTOPerGroup> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        let [coreStats, projectStats] = await Promise.all([
-            this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
-            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
-        ]);
-        let groups = this.#getGroups(savedCourseConfig);
 
-        let totals = coreStats.getLinesTotal();
-        let prTotals = projectStats.getLinesTotal();
+        let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
+        let lastDate = combinedStats.getDateRange().end;
 
-        let groupsGrouped = coreStats.groupBy(groups).map(st => st.getLinesTotal());
-        let prGroupsGrouped = projectStats.asGrouped("Communication").map(st => st.getLinesTotal());
-
-        let totalPerWeek = coreStats
-            .groupByWeek(savedCourseConfig.startDate)
-            .map(st => st.getLinesTotal())
-        let prTotalPerWeek = projectStats
-            .groupByWeek(savedCourseConfig.startDate)
-            .map(st => st.getLinesTotal())
-        
-        let groupsPerWeek = coreStats
-            .groupBy(groups).map(st =>
-                st.groupByWeek(savedCourseConfig.startDate)
-                    .map(st => st.getLinesTotal()))
-        let prGroupsPerWeek = projectStats
-            .asGrouped("Communication").map(st =>
-                st.groupByWeek(savedCourseConfig.startDate)
-                    .map(st => st.getLinesTotal()))
+        let builder = new StatsBuilder(combinedStats);
 
         return {
-            total: combineStats(totals, prTotals),
-            groups: groupsGrouped.combine(prGroupsGrouped, combineStats).export(),
+            total: builder.build(),
+            groups: builder.groupBy(this.#getGroups(savedCourseConfig)).build(),
             weekly: {
-                total: totalPerWeek.combine(prTotalPerWeek, combineStats).export(),
-                groups: <any>groupsPerWeek //TODO: deze any is een bug denk ik...
-                    .combine(prGroupsPerWeek, (ea1, ea2) => ea1.combine(ea2, combineStats)).export()
+                total: builder.groupByWeek(savedCourseConfig.startDate, lastDate).build(),
+                groups: builder
+                    .groupBy(this.#getGroups(savedCourseConfig))
+                    .thenByWeek(savedCourseConfig.startDate, lastDate)
+                    .build()
             }
         };
     }
@@ -240,66 +221,29 @@ export class StatisticsController {
             this.fileSystem.getBlame(savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
         ]);
-        let docsPie: { [name: string]: number } = projectStats.groupByAuthor().map(st => st.getLinesTotal().added).export();
+        let docsPie: { [name: string]: number } = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
 
         return {
             blamePie: mergePies(blamePie, docsPie)
         };
     }
 
-    #getGroups(savedCourseConfig: CourseConfig){
-        return [
-            RepositoryStatistics.backend,
-            RepositoryStatistics.frontend,
-            RepositoryStatistics.markup,
-            RepositoryStatistics.docs
-        ];
-    }
-
     async getStatsByUser(courseId: number, assignment: string, name: string, filter: StudentFilter) {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        let [coreStats, projectStats] = await Promise.all([
-            this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
-            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
-        ]);
-
-        let groupedByAuthor = coreStats.groupByAuthor();
-        let prGroupedByAuthor = projectStats.groupByAuthor();
-
-        let studentStats = groupedByAuthor.get(filter.authorName);
-        let prStudentStats = prGroupedByAuthor.get(filter.authorName);
-        if (!prStudentStats) {
-            prStudentStats = new ProjectStatistics([], []);
-        }
-        if (!studentStats) {
-            studentStats = new RepositoryStatistics([]);
-        }
-
         let groups = this.#getGroups(savedCourseConfig);
+        let stats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
+        let endDate = stats.getDateRange().end;
+        let byAuthor = stats.groupByAuthor([filter.authorName]);
 
-        let total = studentStats.groupBy(groups).map(g => g.getLinesTotal());
-        let prTotal = prStudentStats.asGrouped("Communication").map(g => g.getLinesTotal());
+        let studentStats = byAuthor.get(filter.authorName);
 
-        let weekly = studentStats.groupByWeek(savedCourseConfig.startDate)
-            .map(w => w.groupBy(groups).map(g => g.getLinesTotal()));
-        let prWeekly = prStudentStats.groupByWeek(savedCourseConfig.startDate)
-            .map(w => w.asGrouped("Communication").map(g => g.getLinesTotal()));
-
-        let length = Math.max(weekly.length, prWeekly.length);
-        prWeekly = prWeekly.pad(length,
-            new ProjectStatistics([], []).asGrouped("Communication").map(g => g.getLinesTotal()));
-        weekly = weekly.pad(length,
-            new RepositoryStatistics([]).groupBy(groups).map(g => g.getLinesTotal()));
-        
-
-        let totalCombined = total.combine(prTotal, combineStats);
-        let weeklyCombined = weekly.combine(prWeekly, (g1, g2) => {
-            return g1.combine(g2, combineStats)
-        });
+        let builder = new StatsBuilder(studentStats);
 
         return {
-            total: totalCombined.export(),
-            weekly: weeklyCombined.export()
+            total: builder.groupBy(groups).build(),
+            weekly: builder
+                .groupByWeek(savedCourseConfig.startDate, endDate)
+                .thenBy(groups).build(),
         }
     }
 }
