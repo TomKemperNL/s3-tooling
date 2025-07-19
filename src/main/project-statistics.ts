@@ -1,5 +1,5 @@
 import { Issue, PullRequest, Comment, LinesStatistics } from "../shared";
-import { ExportingArray, GroupedCollection, Statistics } from "./statistics";
+import { ExportingArray, GroupDefinition, GroupedCollection, Statistics } from "./statistics";
 
 export class ProjectStatistics implements Statistics {
     constructor(private groupName: string, private issues: Issue[], private prs: PullRequest[], private comments: Comment[] = []) {
@@ -48,7 +48,7 @@ export class ProjectStatistics implements Statistics {
         return new GroupedCollection({ [groupName]: this });
     }
 
-    groupBySubject(): GroupedCollection<ProjectStatistics> {
+    groupBy(groups: GroupDefinition[]): GroupedCollection<ProjectStatistics> {
         return this.#asGrouped(this.groupName)
     }
 

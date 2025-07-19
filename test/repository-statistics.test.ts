@@ -2,7 +2,7 @@ import { test, expect } from 'vitest';
 import { RepositoryStatistics } from '../src/main/repository-statistics';
 
 test('CanSumLinesPerAuthor', {}, () => {
-    let stats = new RepositoryStatistics([], [
+    let stats = new RepositoryStatistics([
         {
             author: 'Bob',
             subject: 'Added some stuff',
@@ -23,7 +23,7 @@ test('CanSumLinesPerAuthor', {}, () => {
 
 
 test('Package-lock & github bot ignored hardcoded', {}, () => {
-    let stats = new RepositoryStatistics([], [
+    let stats = new RepositoryStatistics([
         {
             author: 'Bob',
             subject: 'Added some stuff',
@@ -56,7 +56,7 @@ test('Package-lock & github bot ignored hardcoded', {}, () => {
 });
 
 test('Can Ignore Filetypes', {}, () => {
-    let stats = new RepositoryStatistics([], [
+    let stats = new RepositoryStatistics([
         {
             author: 'Bob',
             subject: 'Added some stuff',
@@ -87,7 +87,7 @@ test('Can Group Commits Per Week', {}, () => {
         ]
     }
 
-    let stats = new RepositoryStatistics([], [
+    let stats = new RepositoryStatistics([
         { date: new Date('2023-10-01'), ...someCommit },
         { date: new Date('2023-10-02'), ...someCommit },
         { date: new Date('2023-10-08'), ...someCommit },
@@ -112,7 +112,7 @@ test('Can Group Commits Per Week with empty week before', {}, () => {
         ]
     }
 
-    let stats = new RepositoryStatistics([], [
+    let stats = new RepositoryStatistics([
         { date: new Date('2023-10-08'), ...someCommit },
     ].reverse());
 
@@ -132,7 +132,7 @@ test('Can Group Commits Per Week with empty week after', {}, () => {
         ]
     }
 
-    let stats = new RepositoryStatistics([], [
+    let stats = new RepositoryStatistics([
         { date: new Date('2023-10-08'), ...someCommit },
     ].reverse());
 
@@ -151,7 +151,7 @@ test('Can Group Commits Per Week Per Author', {}, () => {
         ]
     }
 
-    let stats = new RepositoryStatistics([], [
+    let stats = new RepositoryStatistics([
         { author: 'Bob', date: new Date('2023-10-01'), ...someCommit },
         { author: 'Bob', date: new Date('2023-10-02'), ...someCommit },
         { author: 'Job', date: new Date('2023-10-08'), ...someCommit },
@@ -181,7 +181,7 @@ test('Can Group Commits By Backend/Frontend/Docs/Other', {}, () => {
         RepositoryStatistics.backend,
         RepositoryStatistics.frontendIncludingMarkup        
     ]
-    let stats = new RepositoryStatistics(groups, [
+    let stats = new RepositoryStatistics([
         {
             author: 'Bob',
             subject: 'Added some stuff',
@@ -207,7 +207,7 @@ test('Can Group Commits By Backend/Frontend/Docs/Other', {}, () => {
         }
     ]);
 
-    let result = stats.groupBySubject().map(g => g.getLinesTotal()).export();
+    let result = stats.groupBy(groups).map(g => g.getLinesTotal()).export();
     expect(result["Backend"]).toStrictEqual({ added: 4, removed: 4});
     expect(result["Frontend"]).toStrictEqual({ added: 4, removed: 8});
     // expect(result["Other"]).toBe({ added: 2, removed: 1}); TODO
@@ -218,7 +218,7 @@ test('Can Group Commits By Week, and then by Backend/Frontend/Docs/Other', {}, (
         RepositoryStatistics.backend,
         RepositoryStatistics.frontendIncludingMarkup        
     ]
-    let stats = new RepositoryStatistics(groups, [
+    let stats = new RepositoryStatistics([
         {
             author: 'Bob',
             subject: 'Added some stuff',
@@ -245,7 +245,7 @@ test('Can Group Commits By Week, and then by Backend/Frontend/Docs/Other', {}, (
     ]);
     
     let result = stats.groupByWeek(new Date('2023-10-01'))
-        .map(w => w.groupBySubject().map(g => g.getLinesTotal())).export();
+        .map(w => w.groupBy(groups).map(g => g.getLinesTotal())).export();
 
     expect(result[0]["Backend"]).toStrictEqual({ added: 4, removed: 4});
     expect(result[0]["Frontend"]).toStrictEqual({ added: 4, removed: 8});
@@ -261,7 +261,7 @@ test('Can mapAuthors', {}, () => {
         ]
     }
 
-    let stats = new RepositoryStatistics([], [
+    let stats = new RepositoryStatistics([
         { author: 'Bob', date: new Date('2023-10-01'), ...someCommit },
         { author: 'Bob2', date: new Date('2023-10-02'), ...someCommit },
         { author: 'Job', date: new Date('2023-10-08'), ...someCommit },

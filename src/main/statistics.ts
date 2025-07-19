@@ -8,7 +8,7 @@ export interface Statistics {
     groupByAuthor(): GroupedCollection<Statistics>    
     groupByWeek(startDate: Date, endDate: Date): ExportingArray<Statistics>
     groupByAuthor(): GroupedCollection<Statistics>        
-    groupBySubject(): GroupedCollection<Statistics>;
+    groupBy(groups: GroupDefinition[]): GroupedCollection<Statistics>;
 }
 
 export class CombinedStats implements Statistics {
@@ -90,8 +90,8 @@ export class CombinedStats implements Statistics {
         return new ExportingArray(tempResults.map(mapper));
     }
     
-    groupBySubject(): GroupedCollection<Statistics> {
-        return this.#group(stat => stat.groupBySubject());
+    groupBy(groups: GroupDefinition[]): GroupedCollection<Statistics> {
+        return this.#group(stat => stat.groupBy(groups));
     }
 }
 

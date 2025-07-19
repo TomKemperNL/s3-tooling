@@ -3,17 +3,17 @@ import { CombinedStats } from '../src/main/statistics';
 import { RepositoryStatistics } from '../src/main/repository-statistics';
 
 test('Combined Statistics show both groups when exported even when no commits', () => {
-    let repo1 = new RepositoryStatistics([{
-        name: 'Frontend',
-        extensions: ['.js'],
-    }], []);
-    let repo2 = new RepositoryStatistics([{
-        name: 'Backend',
-        extensions: ['.java'],
-    }], []);
+    let repo1 = new RepositoryStatistics([]);
+    let repo2 = new RepositoryStatistics([]);
     let combined = new CombinedStats([repo1, repo2]);
 
-    let result = combined.groupBySubject().map(g => g.getLinesTotal()).export();
+    let result = combined.groupBy([{
+        name: 'Frontend',
+        extensions: ['.js'],
+    }, {
+        name: 'Backend',
+        extensions: ['.java'],
+    }]).map(g => g.getLinesTotal()).export();
     expect(result).toStrictEqual({
         "Frontend": {
             "added": 0,
@@ -27,20 +27,14 @@ test('Combined Statistics show both groups when exported even when no commits', 
 });
 
 test('Combined Statistics show both groups when exported even when no commits per week', () => {
-    let repo1 = new RepositoryStatistics([{
-        name: 'Frontend',
-        extensions: ['.js'],
-    }], [
+    let repo1 = new RepositoryStatistics([
         {
             author: 'Alice', subject: 'Initial commit', date: new Date('2023-10-01'), hash: '1234567890abcdef', changes: [
                 { added: 5, removed: 0, path: 'test.js' }
             ]
         }
     ]);
-    let repo2 = new RepositoryStatistics([{
-        name: 'Backend',
-        extensions: ['.java'],
-    }], [
+    let repo2 = new RepositoryStatistics([
         {
             author: 'Bob', subject: 'Initial commit', date: new Date('2023-10-08'), hash: 'abcdef1234567890', changes: [
                 { added: 3, removed: 1, path: 'test.java' }
@@ -51,7 +45,13 @@ test('Combined Statistics show both groups when exported even when no commits pe
 
     let result = combined
         .groupByWeek(new Date('2023-10-01'))
-        .map(g => g.groupBySubject().map(g => g.getLinesTotal())).export();
+        .map(g => g.groupBy([{
+            name: 'Frontend',
+            extensions: ['.js'],
+        }, {
+            name: 'Backend',
+            extensions: ['.java'],
+        }]).map(g => g.getLinesTotal())).export();
     expect(result).toStrictEqual([{
         "Frontend": {
             "added": 5,

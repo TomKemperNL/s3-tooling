@@ -47,7 +47,7 @@ export class StatisticsController {
 
     async #getRepoStats(groups: GroupDefinition[], org: string, assignment: string, name: string){        
         let commits = await this.fileSystem.getRepoStats(org, assignment, name);
-        return new RepositoryStatistics(groups, commits);
+        return new RepositoryStatistics(commits);
     }
 
     async #getProjectStats(org: string, name: string) {
@@ -104,7 +104,8 @@ export class StatisticsController {
 
     async getClassStats(courseId: number, assignment: string, section: string) : Promise<any>{
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        
+        let groups = this.#getGroups(savedCourseConfig);
+
         let repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
 
         let teamResults : { [repo: string]: any }= {};
@@ -122,8 +123,8 @@ export class StatisticsController {
             let prTotalPerWeek = projectStats
                 .groupByWeek(savedCourseConfig.startDate)
                 .map(st => st.getLinesTotal())
-            let groupsGrouped = coreStats.groupBySubject().map(st => st.getLinesTotal());
-            let prGroupsGrouped = projectStats.groupBySubject().map(st => st.getLinesTotal());
+            let groupsGrouped = coreStats.groupBy(groups).map(st => st.getLinesTotal());
+            let prGroupsGrouped = projectStats.groupBy(groups).map(st => st.getLinesTotal());
         
                 
             teamResults[repo.name] = {
@@ -199,7 +200,7 @@ export class StatisticsController {
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
         let lastDate = combinedStats.getDateRange().end;
 
-        let bySubject = combinedStats.groupBySubject();
+        let bySubject = combinedStats.groupBy(this.#getGroups(savedCourseConfig));
         let byWeek = combinedStats.groupByWeek(savedCourseConfig.startDate);
         let bySubjectByWeek = bySubject.map(st =>
             st.groupByWeek(savedCourseConfig.startDate, lastDate));
@@ -231,6 +232,7 @@ export class StatisticsController {
 
     async getStatsByUser(courseId: number, assignment: string, name: string, filter: StudentFilter) {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        let groups = this.#getGroups(savedCourseConfig);
         let stats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
         let endDate = stats.getDateRange().end;
         let byAuthor = stats.groupByAuthor();
@@ -240,10 +242,10 @@ export class StatisticsController {
             studentStats = new CombinedStats([]);
         }
 
-        let bySubject = studentStats.groupBySubject();
+        let bySubject = studentStats.groupBy(groups);
         let byWeek = studentStats.groupByWeek(savedCourseConfig.startDate, endDate);
         let byWeekBySubject = byWeek.map(st =>
-            st.groupBySubject());
+            st.groupBy(groups));
 
         return {
             total: bySubject.map(st => st.getLinesTotal()).export(),

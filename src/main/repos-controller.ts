@@ -165,7 +165,7 @@ export class ReposController {
             let users = (await this.githubClient.getMembers(savedCourseConfig.githubStudentOrg, repo.name)).map(m => m.login);
             let commits = await this.fileSystem.getRepoStats(
                 savedCourseConfig.githubStudentOrg, assignment, repo.name);
-            let stats = new RepositoryStatistics([], commits);
+            let stats = new RepositoryStatistics(commits);
             let authors = stats.getDistinctAuthors();
             return { authors, users };
         }
