@@ -1,4 +1,4 @@
 import {createContext} from '@lit/context';
-import { ElectronIPC } from './ipc';
+import { BackendApi } from './backend';
 
-export const ipcContext = createContext<ElectronIPC>('ipc');
+export const ipcContext = createContext<BackendApi>('ipc');

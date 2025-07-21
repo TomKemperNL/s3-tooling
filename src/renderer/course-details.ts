@@ -2,7 +2,7 @@ import { html, LitElement } from "lit";
 import { Assignment, CourseDTO, RepoDTO } from "../shared";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { ElectronIPC } from "./ipc";
+import { BackendApi } from "./backend";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
 import { HTMLInputEvent } from "./events";
@@ -25,7 +25,7 @@ export class CourseDetails extends LitElement {
     selectedSections: string[] = [];
 
     @consume({context: ipcContext})
-    ipc: ElectronIPC
+    ipc: BackendApi
 
     constructor() {
         super();

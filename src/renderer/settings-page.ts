@@ -1,6 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { ElectronIPC } from "./ipc";
+import { BackendApi } from "./backend";
 import { Settings } from "../shared";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
@@ -19,7 +19,7 @@ export class SettingsChanged extends Event {
 @customElement("settings-page")
 export class SettingsPage extends LitElement {
     @consume({ context: ipcContext })
-    ipc: ElectronIPC;
+    ipc: BackendApi;
 
     constructor() {
         super();

@@ -1,13 +1,8 @@
 import { BlameStatisticsDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "../shared";
 import { Settings } from "../shared"
 
-declare global {
-    interface Window {
-        electron: ElectronIPC;
-    }
-}
 
-export interface ElectronIPC {
+export interface BackendApi {
     test: string,
     startup: () => Promise<Startup>
     openDirectory: (currentPath?: string) => Promise<string>

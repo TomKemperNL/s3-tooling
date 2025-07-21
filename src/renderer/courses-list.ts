@@ -2,7 +2,7 @@ import { LitElement, PropertyValues, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
 import { map } from "lit/directives/map.js";
-import { ElectronIPC } from "./ipc";
+import { BackendApi } from "./backend";
 import { CourseConfig, CourseDTO } from "../shared";
 import { consume } from "@lit/context";
 import { ipcContext } from "./contexts";
@@ -23,7 +23,7 @@ export class CoursesList extends LitElement {
     }
 
     @consume({context: ipcContext})
-    ipc: ElectronIPC
+    ipc: BackendApi
 
     @property({ type: Array, state: true })
     courses: CourseConfig[];
