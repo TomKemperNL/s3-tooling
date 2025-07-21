@@ -1,0 +1,94 @@
+import { ipcMain, dialog, app as electronApp } from 'electron';
+import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from '../shared';
+import { S3App } from '.';
+import { saveSettings, loadSettings } from "./settings";
+
+import { existsSync } from "fs";
+
+
+export function setupIpcHandlers(app: S3App ) {
+    
+
+    ipcMain.handle("startup", async (e) => {
+        let settings = app.settings;
+
+        let allSettings = !!settings.canvasToken && !!settings.githubToken && !!settings.dataPath;
+        if(allSettings){
+            return {
+                validSettings: existsSync(settings.dataPath),
+                githubUser: (await app.githubClient.getSelf()).login,
+                canvasUser: (await app.canvasClient.getSelf()).name                
+            }
+        }else{
+            return {
+                validSettings: false,
+                githubUser: '',
+                canvasUser: '',
+                dirExists: false,                
+            }
+        }
+        
+    });
+
+    ipcMain.handle("dialog:openDirectory", async (e, existingValue) => {
+        let suggestedPath = electronApp.getAppPath();
+        if(existingValue){
+            suggestedPath = existingValue;
+        }
+        let dialogResult = await dialog.showOpenDialog({
+            title: "Select Data Directory",
+            properties: ["openDirectory", "createDirectory", "dontAddToRecent", "promptToCreate"],
+            defaultPath: suggestedPath,
+        })
+
+        return dialogResult.filePaths[0];
+    });
+
+    ipcMain.handle("settings:save", async (e, newSettings) => {
+        saveSettings(newSettings);
+        await app.reload(newSettings);
+    });
+
+    ipcMain.handle("settings:load", async (e) => {
+        return loadSettings();
+    });
+
+    ipcMain.handle("courses:get", () => {
+        return app.coursesController.getConfigs();
+    });
+
+    ipcMain.handle("course:load", async (e, id) => {
+        return app.coursesController.loadCourse(id);
+    });
+
+    ipcMain.handle("repos:getBranchInfo", async (e, courseId: number, assignment: string, name: string) => {
+        return app.repoController.getBranchInfo(courseId, assignment, name);
+    });
+
+    ipcMain.handle("repos:refresh", async (e, courseId: number, assignment: string, name: string) => {
+        return app.repoController.refresh(courseId, assignment, name);
+    });
+
+    ipcMain.handle("repos:switchBranch", async (e, courseId: number, assignment: string, name: string, newBranch: string) => {
+        return app.repoController.switchBranch(courseId, assignment, name, newBranch);
+    });
+
+    
+
+    ipcMain.handle("repos:load", async (e, courseId: number, assignment: string, filter: RepoFilter) => {
+        return app.repoController.loadRepos(courseId, assignment, filter);
+    });
+
+    ipcMain.handle("repostats:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> => {
+        let mainResult = app.statisticsController.getRepoStats(courseId, assignment, name, filter);
+        return mainResult;
+    });
+
+    ipcMain.handle("repostats-blame:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) => {
+        return app.statisticsController.getBlameStats(courseId, assignment, name, filter);
+    });
+
+    ipcMain.handle("repostats-student:get", async (e, courseId: number, assignment: string, name: string, filter: StudentFilter) => {
+        return app.statisticsController.getStatsByUser(courseId, assignment, name, filter);
+    });
+}
