@@ -1,16 +1,9 @@
-import { ipcRenderer } from "electron";
 import { RepoFilter, Settings, StatsFilter } from "./shared";
-console.log('wuuut')
-import { setupIpcPreloadHandlers, decoratorRegistry } from "./electron-setup";
-const { contextBridge } = require('electron')
 
+const { setupIpcPreloadHandlers } = require('./electron-setup');
+const { contextBridge, ipcRenderer } = require('electron')
 
-
-let registry = decoratorRegistry;
-console.log('wuuuut', registry)
-
-let generated = setupIpcPreloadHandlers();
-let hardCoded = {
+contextBridge.exposeInMainWorld('electron', Object.assign(setupIpcPreloadHandlers(), {
     startup: async () => {
         return ipcRenderer.invoke('startup');
     },
@@ -48,8 +41,4 @@ let hardCoded = {
     switchBranch: async (courseId: number, assignment: string, name: string, newBranch: string) => {
         return ipcRenderer.invoke('repos:switchBranch', courseId, assignment, name, newBranch);
     }
-};
-
-console.log('generated', generated)
-
-contextBridge.exposeInMainWorld('electron', Object.assign(generated, hardCoded, { decoratorRegistry}));
+}));

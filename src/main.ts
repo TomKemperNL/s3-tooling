@@ -15,9 +15,7 @@ async function main() {
             width: 800,
             height: 600,
             webPreferences: {
-                devTools: true,
-
-                sandbox: false,
+                sandbox: false, //We gebruiken nu imports & requires in de reload, (vanwege de decorators)... voorlopig een goede deal, maar misschien kan dit beter?
                 preload: path.join(__dirname, 'preload.js')
               }
         });
@@ -29,7 +27,7 @@ async function main() {
                 event.preventDefault();
             }
         });
-        win.webContents.openDevTools();
+        // win.webContents.openDevTools();
 
 
         win.loadFile('./dist/src/renderer/index.html');        

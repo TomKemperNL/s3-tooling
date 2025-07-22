@@ -1,43 +1,31 @@
-export const decoratorRegistry : {[channel: string]: any} = {};
+const decoratorRegistry : {[channel: string]: any} = {}; //Electron Preload lijkt een custom require implementatie te hebben, dus andere regels over hoe imports werken, en daarom moet deze regel bovenaan staan.
 
 import { ipcMain, dialog, ipcRenderer, app as electronApp } from 'electron';
 import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from './shared';
-import { S3App } from './main/index';
 import { saveSettings, loadSettings } from "./main/settings";
 
 import { existsSync } from "fs";
+import { S3App } from './main/index';
 
 export function ipc(channel: string){
-    return function(target:any, propertyKey: string, descriptor: PropertyDescriptor){
-        console.log('registering ipc handler for channel:', channel, 'on', target.constructor.name, propertyKey);
+    return function(target:any, propertyKey: string, descriptor: PropertyDescriptor){        
         decoratorRegistry[channel] = {
             propertyKey,
             handler: descriptor.value,
             target
         };
-        console.log('after ' + propertyKey, Object.keys(decoratorRegistry))
     }
 }
 
 export function setupIpcPreloadHandlers(){
-    let app = new S3App(null);    
+    require('./main/index')  //De Electron-preload require doet aan 'tree-shaking' (deeeenk ik? Who knows, het is niet gedocumenteerd), en anders ziet ie de @ipc-decorators niet, daarom staat deze bullshit regel hier.
     let result : {[funcName: string]: any} = {};
-
-    console.log('in preload', Object.keys(decoratorRegistry));
     for(let channel of Object.keys(decoratorRegistry)){ 
         let entry = decoratorRegistry[channel];
         result[entry.propertyKey] = (...args: any[]) => {
             return ipcRenderer.invoke(channel, ...args);
         };
     }
-
-    // getCourses: async () => {
-    //     return ipcRenderer.invoke('courses:get');
-    // },
-    // loadCourse: async (id: number) => {
-    //     return ipcRenderer.invoke('course:load', id);
-    // },
-
     return result;
 }
 
