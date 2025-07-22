@@ -1,23 +1,47 @@
-import { ipcMain, dialog, app as electronApp } from 'electron';
-import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from '../shared';
-import { S3App } from '.';
-import { saveSettings, loadSettings } from "./settings";
+export const decoratorRegistry : {[channel: string]: any} = {};
+
+import { ipcMain, dialog, ipcRenderer, app as electronApp } from 'electron';
+import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from './shared';
+import { S3App } from './main/index';
+import { saveSettings, loadSettings } from "./main/settings";
 
 import { existsSync } from "fs";
-
-let decoratorRegistry : {[channel: string]: any}= {};
 
 export function ipc(channel: string){
     return function(target:any, propertyKey: string, descriptor: PropertyDescriptor){
         console.log('registering ipc handler for channel:', channel, 'on', target.constructor.name, propertyKey);
         decoratorRegistry[channel] = {
+            propertyKey,
             handler: descriptor.value,
             target
         };
+        console.log('after ' + propertyKey, Object.keys(decoratorRegistry))
     }
 }
 
-export function setupIpcHandlers(app: S3App ) {
+export function setupIpcPreloadHandlers(){
+    let app = new S3App(null);    
+    let result : {[funcName: string]: any} = {};
+
+    console.log('in preload', Object.keys(decoratorRegistry));
+    for(let channel of Object.keys(decoratorRegistry)){ 
+        let entry = decoratorRegistry[channel];
+        result[entry.propertyKey] = (...args: any[]) => {
+            return ipcRenderer.invoke(channel, ...args);
+        };
+    }
+
+    // getCourses: async () => {
+    //     return ipcRenderer.invoke('courses:get');
+    // },
+    // loadCourse: async (id: number) => {
+    //     return ipcRenderer.invoke('course:load', id);
+    // },
+
+    return result;
+}
+
+export function setupIpcMainHandlers(app: S3App ) {
     let appAsAny = <any> app;
 
     for(let channel of Object.keys(decoratorRegistry)){        

@@ -1,7 +1,7 @@
 import { CourseConfig, CourseDTO } from "../shared";
 import { CanvasClient } from "./canvas-client";
 import { Db } from "./db";
-import { ipc } from "./electron-startup";
+import { ipc } from "../electron-setup";
 
 function get(path: string = ''){
     return function(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
@@ -17,7 +17,7 @@ export class CoursesController{
 
     @get('/courses')
     @ipc('courses:get')
-    async getConfigs(): Promise<CourseConfig[]> {
+    async getCourses(): Promise<CourseConfig[]> {
         return this.db.getCourseConfigs();
     }
 

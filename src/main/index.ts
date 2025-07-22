@@ -8,7 +8,7 @@ import { CoursesController } from "./courses-controller";
 
 import { saveSettings, loadSettings } from "./settings";
 import { StatisticsController } from "./statistics-controller";
-import { setupIpcHandlers } from "./electron-startup";
+import { setupIpcMainHandlers } from "../electron-setup";
 import { Settings } from "../shared";
 
 export class S3App{
@@ -54,7 +54,7 @@ export async function main() {
     let app = new S3App(settings);
     await app.init();
 
-    setupIpcHandlers(app);
+    setupIpcMainHandlers(app);
 
 
 }
