@@ -10,6 +10,7 @@ import { saveSettings, loadSettings } from "./settings";
 import { StatisticsController } from "./statistics-controller";
 import { setupIpcMainHandlers } from "../electron-setup";
 import { Settings } from "../shared";
+import { setupWebHandlers } from "../web-setup";
 
 export class S3App{
     githubClient: GithubClient;
@@ -55,6 +56,5 @@ export async function main() {
     await app.init();
 
     setupIpcMainHandlers(app);
-
-
+    setupWebHandlers(app);
 }

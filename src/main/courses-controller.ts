@@ -3,13 +3,7 @@ import { CanvasClient } from "./canvas-client";
 import { Db } from "./db";
 import { ipc } from "../electron-setup";
 import { CourseApi } from "../backend-api";
-
-function get(path: string = ''){
-    return function(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-        
-    };
-}
-
+import { get } from "../web-setup";
 
 export class CoursesController implements CourseApi {
     constructor(private db: Db, private canvasClient: CanvasClient){
