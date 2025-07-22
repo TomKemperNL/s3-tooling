@@ -4,7 +4,6 @@ const { contextBridge } = require('electron')
 
 
 contextBridge.exposeInMainWorld('electron', {
-    test: 'Hello World',
     startup: async () => {
         return ipcRenderer.invoke('startup');
     },

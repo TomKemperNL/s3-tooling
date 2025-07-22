@@ -5,9 +5,28 @@ import { saveSettings, loadSettings } from "./settings";
 
 import { existsSync } from "fs";
 
+let decoratorRegistry : {[channel: string]: any}= {};
+
+export function ipc(channel: string, toOwner: (owningApp : S3App) =>any){
+    return function(target:any, propertyKey: string, descriptor: PropertyDescriptor){
+        console.log('registering ipc handler for channel:', channel, 'on', target.constructor.name, propertyKey);
+        decoratorRegistry[channel] = {
+            handler: descriptor.value,
+            toOwner
+        };
+    }
+}
 
 export function setupIpcHandlers(app: S3App ) {
-    
+
+    for(let channel of Object.keys(decoratorRegistry)){
+        console.log('Setting up IPC handler for channel:', channel);
+        ipcMain.handle(channel, function(e, ...args){            
+            console.log('args:', args);
+            let entry = decoratorRegistry[channel];
+            return entry.handler.apply(entry.toOwner(app), args);
+        });
+    }
 
     ipcMain.handle("startup", async (e) => {
         let settings = app.settings;
@@ -53,13 +72,6 @@ export function setupIpcHandlers(app: S3App ) {
         return loadSettings();
     });
 
-    ipcMain.handle("courses:get", () => {
-        return app.coursesController.getConfigs();
-    });
-
-    ipcMain.handle("course:load", async (e, id) => {
-        return app.coursesController.loadCourse(id);
-    });
 
     ipcMain.handle("repos:getBranchInfo", async (e, courseId: number, assignment: string, name: string) => {
         return app.repoController.getBranchInfo(courseId, assignment, name);

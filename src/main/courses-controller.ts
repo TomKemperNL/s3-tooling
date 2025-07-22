@@ -1,16 +1,27 @@
 import { CourseConfig, CourseDTO } from "../shared";
 import { CanvasClient } from "./canvas-client";
 import { Db } from "./db";
+import { ipc } from "./electron-startup";
+
+function get(path: string = ''){
+    return function(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+        
+    };
+}
+
 
 export class CoursesController{
     constructor(private db: Db, private canvasClient: CanvasClient){
         
     }
 
+    @get('/courses')
+    @ipc('courses:get', app => app.coursesController)
     async getConfigs(): Promise<CourseConfig[]> {
         return this.db.getCourseConfigs();
     }
 
+    @ipc('course:load', app => app.coursesController)
     async loadCourse(id: number): Promise<CourseDTO> {
         let savedCourse = await this.db.getCourse(id);
         if (Object.keys(savedCourse.sections).length === 0) {
