@@ -7,6 +7,7 @@ import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 import { ReposController } from "./repos-controller";
 import { CombinedStats, GroupDefinition, StatsBuilder } from "./statistics";
+import { ipc } from "../electron-setup";
 
 function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: number }): { [name: string]: number } {
     let merged: { [name: string]: number } = {};
@@ -172,6 +173,7 @@ export class StatisticsController {
         };
     }
 
+    @ipc("repostats:get")
     async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
 
@@ -214,7 +216,7 @@ export class StatisticsController {
     }
 
 
-
+    @ipc("repostats-blame:get")
     async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<BlameStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         let [blamePie, projectStats] = await Promise.all([
@@ -228,7 +230,8 @@ export class StatisticsController {
         };
     }
 
-    async getStatsByUser(courseId: number, assignment: string, name: string, filter: StudentFilter) {
+    @ipc("repostats-student:get")
+    async getStudentStats(courseId: number, assignment: string, name: string, filter: StudentFilter) {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         let groups = this.#getGroups(savedCourseConfig);
         let stats = await this.#getCombinedStats(savedCourseConfig, assignment, name);

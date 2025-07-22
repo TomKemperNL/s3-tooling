@@ -90,36 +90,4 @@ export function setupIpcMainHandlers(app: S3App ) {
     ipcMain.handle("settings:load", async (e) => {
         return loadSettings();
     });
-
-
-    ipcMain.handle("repos:getBranchInfo", async (e, courseId: number, assignment: string, name: string) => {
-        return app.repoController.getBranchInfo(courseId, assignment, name);
-    });
-
-    ipcMain.handle("repos:refresh", async (e, courseId: number, assignment: string, name: string) => {
-        return app.repoController.refresh(courseId, assignment, name);
-    });
-
-    ipcMain.handle("repos:switchBranch", async (e, courseId: number, assignment: string, name: string, newBranch: string) => {
-        return app.repoController.switchBranch(courseId, assignment, name, newBranch);
-    });
-
-    
-
-    ipcMain.handle("repos:load", async (e, courseId: number, assignment: string, filter: RepoFilter) => {
-        return app.repoController.loadRepos(courseId, assignment, filter);
-    });
-
-    ipcMain.handle("repostats:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> => {
-        let mainResult = app.statisticsController.getRepoStats(courseId, assignment, name, filter);
-        return mainResult;
-    });
-
-    ipcMain.handle("repostats-blame:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) => {
-        return app.statisticsController.getBlameStats(courseId, assignment, name, filter);
-    });
-
-    ipcMain.handle("repostats-student:get", async (e, courseId: number, assignment: string, name: string, filter: StudentFilter) => {
-        return app.statisticsController.getStatsByUser(courseId, assignment, name, filter);
-    });
 }

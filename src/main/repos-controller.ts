@@ -1,3 +1,4 @@
+import { ipc } from "../electron-setup";
 import { Assignment, BlameStatisticsDTO, BranchInfo, combineStats, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
 import { CanvasClient, getUsernameFromName, SimpleDict, StringDict } from "./canvas-client";
 import { Db } from "./db";
@@ -80,6 +81,7 @@ export class ReposController {
         }
     }
 
+    @ipc('repos:load')
     async loadRepos(courseId: number, assignmentName: string, filter: RepoFilter): Promise<RepoDTO[]> {
         let savedCourse = await this.db.getCourse(courseId);
         let assignment = savedCourse.assignments.find(a => a.githubAssignment === assignmentName);
@@ -116,6 +118,7 @@ export class ReposController {
         }));
     }
 
+    @ipc("repos:getBranchInfo")
     async getBranchInfo(courseId: number, assignment: string, name: string): Promise<BranchInfo> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         let defaultBranch = await this.fileSystem.getDefaultBranch(savedCourseConfig.githubStudentOrg, assignment, name);
@@ -141,12 +144,14 @@ export class ReposController {
         };
     }
 
-    async refresh(courseId: number, assignment: string, name: string): Promise<void> {
+    @ipc("repos:refresh")
+    async refreshRepo(courseId: number, assignment: string, name: string): Promise<void> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         this.githubClient.clearCache(savedCourseConfig.githubStudentOrg, name);
         await this.fileSystem.refreshRepo(savedCourseConfig.githubStudentOrg, assignment, name);
     }
 
+    @ipc("repos:switchBranch")
     async switchBranch(courseId: number, assignment: string, name: string, newBranch: string): Promise<void> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         await this.fileSystem.switchBranch(newBranch, savedCourseConfig.githubStudentOrg, assignment, name)
