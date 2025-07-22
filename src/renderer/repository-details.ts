@@ -3,7 +3,7 @@ import { customElement, property } from "lit/decorators.js";
 import { AuthorStatisticsDTO, BlameStatisticsDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO } from "../shared";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
-import { BackendApi } from "./backend";
+import { BackendApi } from "../backend-api";
 import { classMap } from "lit/directives/class-map.js";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";

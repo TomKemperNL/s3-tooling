@@ -2,7 +2,7 @@ import { html, LitElement } from "lit";
 import { Assignment, CourseDTO, RepoDTO } from "../shared";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { BackendApi } from "./backend";
+import { BackendApi } from "../backend-api";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
 import { HTMLInputEvent } from "./events";

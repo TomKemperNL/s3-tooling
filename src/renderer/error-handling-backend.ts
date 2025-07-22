@@ -1,6 +1,6 @@
 import { BlameStatisticsDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "../shared";
 import { Settings } from "../shared";
-import { BackendApi } from "./backend";
+import { BackendApi } from "../backend-api";
 
 //Allemaal CoPilot z'n schuld ;)
 export class ErrorHandlingBackendApi implements BackendApi {

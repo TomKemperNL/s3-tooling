@@ -1,4 +1,4 @@
-import { BackendApi } from "./backend";
+import { BackendApi } from "../backend-api";
 
 declare global {
     interface Window {

@@ -1,3 +1,4 @@
+import { RepoApi } from "../backend-api";
 import { ipc } from "../electron-setup";
 import { Assignment, BlameStatisticsDTO, BranchInfo, combineStats, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
 import { CanvasClient, getUsernameFromName, SimpleDict, StringDict } from "./canvas-client";
@@ -20,7 +21,7 @@ function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: num
     return merged;
 }
 
-export class ReposController {
+export class ReposController implements RepoApi{
 
     constructor(private db: Db, private canvasClient: CanvasClient, private githubClient: GithubClient, private fileSystem: FileSystem) {
 

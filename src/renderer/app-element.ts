@@ -5,7 +5,7 @@ import { when } from "lit/directives/when.js";
 import { CourseLoadedEvent } from "./courses-list";
 import { RepoSelectedEvent } from "./repositories-list";
 import { ReposLoadedEvent } from "./course-details";
-import { BackendApi } from "./backend";
+import { BackendApi } from "../backend-api";
 import { ipcContext } from "./contexts";
 import { provide } from "@lit/context";
 import { ErrorHandlingBackendApi } from "./error-handling-backend";

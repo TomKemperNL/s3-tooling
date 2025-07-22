@@ -2,6 +2,7 @@ import { CourseConfig, CourseDTO } from "../shared";
 import { CanvasClient } from "./canvas-client";
 import { Db } from "./db";
 import { ipc } from "../electron-setup";
+import { CourseApi } from "../backend-api";
 
 function get(path: string = ''){
     return function(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
@@ -10,7 +11,7 @@ function get(path: string = ''){
 }
 
 
-export class CoursesController{
+export class CoursesController implements CourseApi {
     constructor(private db: Db, private canvasClient: CanvasClient){
         
     }

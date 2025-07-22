@@ -1,6 +1,6 @@
 import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { BackendApi } from "./backend";
+import { BackendApi } from "../backend-api";
 import { Settings } from "../shared";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";

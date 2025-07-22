@@ -8,6 +8,7 @@ import { RepositoryStatistics } from "./repository-statistics";
 import { ReposController } from "./repos-controller";
 import { CombinedStats, GroupDefinition, StatsBuilder } from "./statistics";
 import { ipc } from "../electron-setup";
+import { StatsApi } from "../backend-api";
 
 function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: number }): { [name: string]: number } {
     let merged: { [name: string]: number } = {};
@@ -20,7 +21,7 @@ function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: num
     return merged;
 }
 
-export class StatisticsController {
+export class StatisticsController implements StatsApi {
     constructor(private db: Db, private githubClient: GithubClient, private fileSystem: FileSystem,
         private repoController: ReposController //TODO: deze willen we niet als dep, maar voor nu...
     ) {
