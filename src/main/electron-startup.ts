@@ -7,24 +7,31 @@ import { existsSync } from "fs";
 
 let decoratorRegistry : {[channel: string]: any}= {};
 
-export function ipc(channel: string, toOwner: (owningApp : S3App) =>any){
+export function ipc(channel: string){
     return function(target:any, propertyKey: string, descriptor: PropertyDescriptor){
         console.log('registering ipc handler for channel:', channel, 'on', target.constructor.name, propertyKey);
         decoratorRegistry[channel] = {
             handler: descriptor.value,
-            toOwner
+            target
         };
     }
 }
 
 export function setupIpcHandlers(app: S3App ) {
+    let appAsAny = <any> app;
 
-    for(let channel of Object.keys(decoratorRegistry)){
-        console.log('Setting up IPC handler for channel:', channel);
+    for(let channel of Object.keys(decoratorRegistry)){        
         ipcMain.handle(channel, function(e, ...args){            
             console.log('args:', args);
             let entry = decoratorRegistry[channel];
-            return entry.handler.apply(entry.toOwner(app), args);
+            let owningObject = app;
+            for(let key of Object.keys(app)){
+                if(entry.target.constructor === appAsAny[key].constructor){
+                    owningObject = appAsAny[key];
+                    break;
+                }
+            }
+            return entry.handler.apply(owningObject, args);
         });
     }
 

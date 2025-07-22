@@ -16,12 +16,12 @@ export class CoursesController{
     }
 
     @get('/courses')
-    @ipc('courses:get', app => app.coursesController)
+    @ipc('courses:get')
     async getConfigs(): Promise<CourseConfig[]> {
         return this.db.getCourseConfigs();
     }
 
-    @ipc('course:load', app => app.coursesController)
+    @ipc('course:load')
     async loadCourse(id: number): Promise<CourseDTO> {
         let savedCourse = await this.db.getCourse(id);
         if (Object.keys(savedCourse.sections).length === 0) {
