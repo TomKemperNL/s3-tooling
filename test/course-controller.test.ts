@@ -71,7 +71,7 @@ const someSections = [
 
 test("canReceiveConfigs", async () => {
     await db.addCourse(someCourse);
-    let result = await coursesController.getConfigs();
+    let result = await coursesController.getCourses();
     expect(result.length).toStrictEqual(1);
 });
 

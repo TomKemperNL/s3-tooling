@@ -2,129 +2,59 @@ import { GithubClient } from "./github-client";
 import { FileSystem } from "./filesystem-client";
 import { CanvasClient } from "./canvas-client";
 
-import { RepoFilter, RepoStatisticsDTO, Settings, StatsFilter, StudentFilter } from "../shared";
-import { ipcMain, dialog, app as electronApp } from 'electron';
-import { existsSync } from "fs";
-
 import { db } from "./db";
 import { ReposController } from "./repos-controller";
 import { CoursesController } from "./courses-controller";
 
 import { saveSettings, loadSettings } from "./settings";
 import { StatisticsController } from "./statistics-controller";
+import { setupIpcMainHandlers } from "../electron-setup";
+import { Settings } from "../shared";
 
+export class S3App{
+    githubClient: GithubClient;
+    fileSystem: FileSystem;
+    canvasClient: CanvasClient;
+    repoController: ReposController;
+    coursesController: CoursesController;
+    statisticsController: StatisticsController;
+    #settings: Settings;
 
-export async function createApp(settings: Settings) {
-    try{
-        let githubClient = new GithubClient(settings.githubToken);
-        let fileSystem = new FileSystem(settings.dataPath);
-        let canvasClient = new CanvasClient(settings.canvasToken);
-    
+    constructor(settings: Settings){
+        this.#settings = settings;
+    }
 
-        if (!settings.keepDB) {
+    get settings(){
+        return this.#settings;
+    }
+
+    async init(){        
+        await this.reload(this.settings);
+        if (!this.settings.keepDB) {
             await db.reset().then(() => db.test());
         } else {
             console.log('keeping db');
-        }
+        }       
+    }
 
-        let reposController = new ReposController(db, canvasClient, githubClient, fileSystem);
-    
-        return {
-            githubClient, fileSystem, canvasClient,
-            repoController: reposController,
-            coursesController: new CoursesController(db, canvasClient),
-            statisticsController: new StatisticsController(db, githubClient, fileSystem, reposController),
-        };
-    }catch (error) {
-        console.error("Error creating app:", error);
-        return {}
-    }    
+    async reload(settings: Settings){ //Nog niet async, maar ik vermoed dat dit wel ooit nodig gaat zijn... (en dan is retroactief async maken vaak vrij ingrijpend)
+        this.#settings = settings;
+        this.githubClient = new GithubClient(this.settings.githubToken);
+        this.fileSystem = new FileSystem(this.settings.dataPath);
+        this.canvasClient = new CanvasClient(this.settings.canvasToken);
+        
+        this.repoController = new ReposController(db, this.canvasClient, this.githubClient, this.fileSystem);    
+        this.coursesController = new CoursesController(db, this.canvasClient),
+        this.statisticsController = new StatisticsController(db, this.githubClient, this.fileSystem, this.repoController);
+    }
 }
 
 export async function main() {
     let settings = await loadSettings();
-    let app = await createApp(settings);
+    let app = new S3App(settings);
+    await app.init();
 
-    ipcMain.handle("startup", async (e) => {
-        let allSettings = !!settings.canvasToken && !!settings.githubToken && !!settings.dataPath;
-        if(allSettings){
-            return {
-                validSettings: true && existsSync(settings.dataPath),
-                githubUser: (await app.githubClient.getSelf()).login,
-                canvasUser: (await app.canvasClient.getSelf()).name                
-            }
-        }else{
-            return {
-                validSettings: false,
-                githubUser: '',
-                canvasUser: '',
-                dirExists: false,                
-            }
-        }
-        
-    });
+    setupIpcMainHandlers(app);
 
-    ipcMain.handle("dialog:openDirectory", async (e, existingValue) => {
-        let suggestedPath = electronApp.getAppPath();
-        if(existingValue){
-            suggestedPath = existingValue;
-        }
-        let dialogResult = await dialog.showOpenDialog({
-            title: "Select Data Directory",
-            properties: ["openDirectory", "createDirectory", "dontAddToRecent", "promptToCreate"],
-            defaultPath: suggestedPath,
-        })
-
-        return dialogResult.filePaths[0];
-    });
-
-    ipcMain.handle("settings:save", async (e, newSettings) => {
-        saveSettings(newSettings);
-        settings = newSettings;
-        app = await createApp(settings);
-    });
-
-    ipcMain.handle("settings:load", async (e) => {
-        return loadSettings();
-    });
-
-    ipcMain.handle("courses:get", () => {
-        return app.coursesController.getConfigs();
-    });
-
-    ipcMain.handle("course:load", async (e, id) => {
-        return app.coursesController.loadCourse(id);
-    });
-
-    ipcMain.handle("repos:getBranchInfo", async (e, courseId: number, assignment: string, name: string) => {
-        return app.repoController.getBranchInfo(courseId, assignment, name);
-    });
-
-    ipcMain.handle("repos:refresh", async (e, courseId: number, assignment: string, name: string) => {
-        return app.repoController.refresh(courseId, assignment, name);
-    });
-
-    ipcMain.handle("repos:switchBranch", async (e, courseId: number, assignment: string, name: string, newBranch: string) => {
-        return app.repoController.switchBranch(courseId, assignment, name, newBranch);
-    });
-
-    
-
-    ipcMain.handle("repos:load", async (e, courseId: number, assignment: string, filter: RepoFilter) => {
-        return app.repoController.loadRepos(courseId, assignment, filter);
-    });
-
-    ipcMain.handle("repostats:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> => {
-        let mainResult = app.statisticsController.getRepoStats(courseId, assignment, name, filter);
-        return mainResult;
-    });
-
-    ipcMain.handle("repostats-blame:get", async (e, courseId: number, assignment: string, name: string, filter: StatsFilter) => {
-        return app.statisticsController.getBlameStats(courseId, assignment, name, filter);
-    });
-
-    ipcMain.handle("repostats-student:get", async (e, courseId: number, assignment: string, name: string, filter: StudentFilter) => {
-        return app.statisticsController.getStatsByUser(courseId, assignment, name, filter);
-    });
 
 }

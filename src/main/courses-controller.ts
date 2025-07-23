@@ -1,16 +1,28 @@
 import { CourseConfig, CourseDTO } from "../shared";
 import { CanvasClient } from "./canvas-client";
 import { Db } from "./db";
+import { ipc } from "../electron-setup";
+import { CourseApi } from "../backend-api";
 
-export class CoursesController{
+function get(path: string = ''){
+    return function(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+        
+    };
+}
+
+
+export class CoursesController implements CourseApi {
     constructor(private db: Db, private canvasClient: CanvasClient){
         
     }
 
-    async getConfigs(): Promise<CourseConfig[]> {
+    @get('/courses')
+    @ipc('courses:get')
+    async getCourses(): Promise<CourseConfig[]> {
         return this.db.getCourseConfigs();
     }
 
+    @ipc('course:load')
     async loadCourse(id: number): Promise<CourseDTO> {
         let savedCourse = await this.db.getCourse(id);
         if (Object.keys(savedCourse.sections).length === 0) {

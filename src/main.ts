@@ -2,6 +2,7 @@ import { config } from "@dotenvx/dotenvx";
 import { main as nodeMain } from "./main/index"
 import * as path from "path";
 import { app, BrowserWindow, shell } from 'electron'
+import "./electron-setup";
 
 config();
 
@@ -14,6 +15,7 @@ async function main() {
             width: 800,
             height: 600,
             webPreferences: {
+                sandbox: false, //We gebruiken nu imports & requires in de reload, (vanwege de decorators)... voorlopig een goede deal, maar misschien kan dit beter?
                 preload: path.join(__dirname, 'preload.js')
               }
         });
@@ -25,6 +27,8 @@ async function main() {
                 event.preventDefault();
             }
         });
+        // win.webContents.openDevTools();
+
 
         win.loadFile('./dist/src/renderer/index.html');        
     }

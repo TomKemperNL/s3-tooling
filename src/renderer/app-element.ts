@@ -5,21 +5,20 @@ import { when } from "lit/directives/when.js";
 import { CourseLoadedEvent } from "./courses-list";
 import { RepoSelectedEvent } from "./repositories-list";
 import { ReposLoadedEvent } from "./course-details";
-import { ElectronIPC } from "./ipc";
+import { BackendApi } from "../backend-api";
 import { ipcContext } from "./contexts";
 import { provide } from "@lit/context";
-import { ErrorHandlingIPC } from "./errorHandlingIPC";
-import { start } from "repl";
+import { ErrorHandlingBackendApi } from "./error-handling-backend";
 
 @customElement("app-element")
 export class AppElement extends LitElement {
 
     @provide({ context: ipcContext})
-    ipc: ElectronIPC;
+    ipc: BackendApi;
     
     constructor() {
         super();
-        this.ipc = new ErrorHandlingIPC(window.electron);
+        this.ipc = new ErrorHandlingBackendApi(window.electron);
     }
 
     @property({ type: Object })

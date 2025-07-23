@@ -1,12 +1,12 @@
 import { BlameStatisticsDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "../shared";
 import { Settings } from "../shared";
-import { ElectronIPC } from "./ipc";
+import { BackendApi } from "../backend-api";
 
 //Allemaal CoPilot z'n schuld ;)
-export class ErrorHandlingIPC implements ElectronIPC {
-    private ipc: ElectronIPC;
+export class ErrorHandlingBackendApi implements BackendApi {
+    private ipc: BackendApi;
 
-    constructor(ipc: ElectronIPC) {
+    constructor(ipc: BackendApi) {
         this.ipc = ipc;
     }
     async getBranchInfo(courseId: number, assignment: string, name: string) : Promise<BranchInfo>{

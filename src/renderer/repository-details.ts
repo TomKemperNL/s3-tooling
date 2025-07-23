@@ -3,7 +3,7 @@ import { customElement, property } from "lit/decorators.js";
 import { AuthorStatisticsDTO, BlameStatisticsDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO } from "../shared";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
-import { ElectronIPC } from "./ipc";
+import { BackendApi } from "../backend-api";
 import { classMap } from "lit/directives/class-map.js";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
@@ -22,7 +22,7 @@ export class AuthorSelectedEvent extends Event {
 @customElement('repository-details')
 export class RepositoryDetails extends LitElement {
     @consume({context: ipcContext})
-    ipc: ElectronIPC;
+    ipc: BackendApi;
     
     constructor() {
         super();

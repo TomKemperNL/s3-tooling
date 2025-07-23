@@ -1,5 +1,4 @@
-import { createApp } from "../src/main/index";
-import { FileSystem } from "../src/main/filesystem-client";
+import { S3App } from "../src/main/index";
 import { Settings } from "../src/shared";
 import { importUserMappingTemp } from "../src/temp";
 
@@ -17,7 +16,8 @@ let settings : Settings = {
 
 async function main(){
 
-    let app = await createApp(settings);
+    let app = new S3App(settings);
+    await app.init();
     console.time("start")
 
     const id = 44633; 

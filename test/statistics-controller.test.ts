@@ -135,7 +135,7 @@ test("Can Get User Stats with only Commits", async () => {
     }
   ];
 
-  let result = await statisticsController.getStatsByUser(
+  let result = await statisticsController.getStudentStats(
   someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
   
   expect(result).toStrictEqual(
@@ -201,7 +201,7 @@ test("Can Get User Stats with only Project-stuff", async () => {
     { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
   ];
 
-  let result = await statisticsController.getStatsByUser(
+  let result = await statisticsController.getStudentStats(
   someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
   expect(result).toStrictEqual(
     {
