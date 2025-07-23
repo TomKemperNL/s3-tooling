@@ -3,7 +3,7 @@ import { CanvasClient } from "./canvas-client";
 import { Db } from "./db";
 import { ipc } from "../electron-setup";
 import { CourseApi } from "../backend-api";
-import { get } from "../web-setup";
+import { get, path } from "../web-setup";
 
 export class CoursesController implements CourseApi {
     constructor(private db: Db, private canvasClient: CanvasClient){
@@ -17,7 +17,9 @@ export class CoursesController implements CourseApi {
     }
 
     @ipc('course:load')
-    async loadCourse(id: number): Promise<CourseDTO> {
+    @get('/courses/:id')
+    async loadCourse(@path(":id") id: number): Promise<CourseDTO> {
+        console.log('Loading course with id', id);
         let savedCourse = await this.db.getCourse(id);
         if (Object.keys(savedCourse.sections).length === 0) {
             let sections = await this.canvasClient.getSections({ course_id: id });
