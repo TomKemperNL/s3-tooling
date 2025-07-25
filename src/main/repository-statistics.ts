@@ -1,4 +1,5 @@
 import { LinesStatistics } from "../shared";
+import { StringDict } from "./canvas-client";
 import { LoggedChange, LoggedCommit } from "./filesystem-client";
 import { CombinedStats, ExportingArray, GroupDefinition, GroupedCollection, Statistics } from "./statistics";
 
@@ -128,7 +129,7 @@ export class RepositoryStatistics implements Statistics {
         return result;
     }
 
-    mapAuthors(authorMapping: {[alias: string]: string}){
+    mapAuthors(authorMapping: StringDict){
         this.data.forEach(commit => {
             if (authorMapping[commit.author]) {
                 commit.author = authorMapping[commit.author];

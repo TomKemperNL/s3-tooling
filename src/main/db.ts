@@ -151,7 +151,7 @@ export class Db {
 
     async getAuthorMapping(org: string, repo: string): Promise<StringDict> {
         let rows = await this.#allProm<{ name: string, username: string }>(`
-            select name, username from githubCommitNames 
+            select name, githubUsername from githubCommitNames 
             where organization = ? and repository = ?`, [org, repo]);
         let result: { [key: string]: string } = {};
         for (let r of rows) {

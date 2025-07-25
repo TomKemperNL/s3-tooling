@@ -70,7 +70,8 @@ export type RepoDTO = {
     courseId: number,
     assignment: string,
     name: string,
-    groupRepo: boolean
+    groupRepo: boolean,
+    members: string[]
 }
 
 export type StatsFilter = {

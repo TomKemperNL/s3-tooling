@@ -39,13 +39,15 @@ export class StatisticsController implements StatsApi {
         ];
     }
 
-    async #getCombinedStats(savedCourseConfig: CourseConfig, assignment: string, name: string) {
-        let groups = this.#getGroups(savedCourseConfig);
-        let [coreStats, projectStats] = await Promise.all([
+    async #getCombinedStats(savedCourseConfig: CourseConfig, assignment: string, name: string) {        
+        let [coreStats, projectStats, userMapping] = await Promise.all([
             this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
-            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
+            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name),
+            this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name)
         ]);
-        return new CombinedStats([coreStats, projectStats]);
+        let stats = new CombinedStats([coreStats, projectStats]);
+        stats.mapAuthors(userMapping);
+        return stats;
     }
 
     async #getRepoStats(org: string, assignment: string, name: string) {
@@ -62,9 +64,7 @@ export class StatisticsController implements StatsApi {
     }
 
     async getCourseStats(courseId: number, assignment: string) {
-
         let savedCourse = await this.db.getCourse(courseId);
-
         let result: { [section: string]: any } = {};
 
         let addSection = async (section: string) => {
@@ -176,7 +176,7 @@ export class StatisticsController implements StatsApi {
 
     @ipc("repostats:get")
     async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
-        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);        
 
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
         let lastDate = combinedStats.getDateRange().end;

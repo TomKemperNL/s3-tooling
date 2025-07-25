@@ -1,4 +1,5 @@
 import { LinesStatistics } from "../shared";
+import { StringDict } from "./canvas-client";
 import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 
@@ -92,6 +93,8 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
 }
 
 export interface Statistics {
+    mapAuthors(authorMapping: StringDict) : void;
+
     getDistinctAuthors(): string[];
     getLinesTotal(): LinesStatistics;
     getDateRange(): { start: Date, end: Date };
@@ -112,6 +115,10 @@ export class CombinedStats implements Statistics {
             }
         }
         return [...authors];
+    }
+
+    mapAuthors(authorMapping: StringDict): void {
+        this.stats.forEach(stat => stat.mapAuthors(authorMapping));
     }
 
     getLinesTotal(): LinesStatistics {
