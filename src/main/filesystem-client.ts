@@ -102,8 +102,11 @@ function combineReports(rep1: {[author:string]: number} , rep2: {[author:string]
     return result;
 }
 
+export type CloneStyle = 'https' | 'ssh'
+
 export class FileSystem {
     #basePath: string;
+    cloneStyle : CloneStyle = 'ssh'
 
     constructor(basePath: string) {
         if (!basePath) {
@@ -125,7 +128,12 @@ export class FileSystem {
             await mkdir(target, options);
         }
 
-        await exec(`git clone "${repo.http_url}"`, { cwd: target });
+        if(this.cloneStyle === 'https'){
+            await exec(`git clone "${repo.http_url}"`, { cwd: target });
+        }else if(this.cloneStyle === 'ssh'){
+            await exec(`git clone "${repo.ssh_url}"`, { cwd: target });
+        }
+        
         return fullTarget;
     }
 
