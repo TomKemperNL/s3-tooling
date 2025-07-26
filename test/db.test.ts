@@ -62,3 +62,20 @@ test("can add sections to course", async () => {
     expect(foundCourse2.sections['abc']).not.toBeUndefined();
     expect(foundCourse2.sections['abc']).toEqual(someStudents);
 });
+
+test("can update authormapping", async () => {
+    await db.addCourse(someCourse);
+    // await db.updateRepoMapping(someCourse.canvasId, [ //eeeeuh waarom is dit niet nodig? Ik dacht dat ik een foreign key had gespecificeerd?
+    //     { organization: { login: someCourse.githubStudentOrg}, name: "bla", lastMemberCheck: null, full_name: 'bla', html_url: '', ssh_url: '', url: '', private: false, created_at: '', updated_at: '' }
+    // ])
+    await db.updateAuthorMapping(someCourse.githubStudentOrg, "bla", {
+        "Bob": "Bobster",
+        "Frob": "Frobbie"
+    });
+
+    let foundMappings = await db.getAuthorMapping(someCourse.githubStudentOrg, "bla");
+    console.log(foundMappings)
+    expect(foundMappings["Bob"]).toBe("Bobster");
+    expect(foundMappings["Frob"]).toBe("Frobbie");
+
+})

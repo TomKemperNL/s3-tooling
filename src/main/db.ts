@@ -142,7 +142,7 @@ export class Db {
             for (let authorName of Object.keys(mapping)) {
                 let username = mapping[authorName];
                 await this.#runProm(
-                    `insert into githubCommitNames(name, username, organization, repository)
+                    `insert into githubCommitNames(name, githubUsername, organization, repository)
                      values(?,?,?,?);`,
                      [authorName, username, org, repo]);
             };
@@ -150,12 +150,12 @@ export class Db {
     }
 
     async getAuthorMapping(org: string, repo: string): Promise<StringDict> {
-        let rows = await this.#allProm<{ name: string, username: string }>(`
+        let rows = await this.#allProm<{ name: string, githubUsername: string }>(`
             select name, githubUsername from githubCommitNames 
             where organization = ? and repository = ?`, [org, repo]);
         let result: { [key: string]: string } = {};
         for (let r of rows) {
-            result[r.name] = r.username;
+            result[r.name] = r.githubUsername;
         }
         return result;
     }

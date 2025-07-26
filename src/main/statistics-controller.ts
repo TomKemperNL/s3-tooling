@@ -21,6 +21,15 @@ function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: num
     return merged;
 }
 
+function mergeAuthors(pie: { [name: string]: number }, mapping: { [name: string]: string}){
+    let merged: { [name: string]: number } = {};
+    for (let key in pie) {
+        let mapped = mapping[key] || key; // Als er geen mapping is, gebruik de originele naam
+        merged[mapped] = (merged[mapped] || 0) + pie[key];
+    }
+    return merged;
+}
+
 export class StatisticsController implements StatsApi {
     constructor(private db: Db, private githubClient: GithubClient, private fileSystem: FileSystem,
         private repoController: ReposController //TODO: deze willen we niet als dep, maar voor nu...
@@ -180,15 +189,20 @@ export class StatisticsController implements StatsApi {
 
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
         let lastDate = combinedStats.getDateRange().end;
+        let repoMembers = await this.db.getCollaborators(savedCourseConfig.githubStudentOrg, name);
+
+        // TODO: docenten er uit filteren... dat maakt het nu slechter dan accounts die niets hebben gedaan er uit filteren
+        // let allAuthors : string[] = [...new Set(combinedStats.getDistinctAuthors().concat(repoMembers.map(m => m.login)))];
+        let allAuthors = combinedStats.getDistinctAuthors();
 
         let builder = new StatsBuilder(combinedStats);
         return {
             total: builder.build(),
-            authors: builder.groupByAuthor(combinedStats.getDistinctAuthors()).build(),
+            authors: builder.groupByAuthor(allAuthors).build(),
             weekly: {
                 total: builder.groupByWeek(savedCourseConfig.startDate, lastDate).build(),
                 authors: builder
-                    .groupByAuthor(combinedStats.getDistinctAuthors())
+                    .groupByAuthor(allAuthors)
                     .thenByWeek(savedCourseConfig.startDate, lastDate)
                     .build()
             }
@@ -226,10 +240,16 @@ export class StatisticsController implements StatsApi {
     @ipc("repostats-blame:get")
     async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<BlameStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        
         let [blamePie, projectStats] = await Promise.all([
             this.fileSystem.getBlame(savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
         ]);
+        
+        let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name)
+        projectStats.mapAuthors(authorMapping);        
+        blamePie = mergeAuthors(blamePie, authorMapping);
+
         let docsPie: { [name: string]: number } = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
 
         return {

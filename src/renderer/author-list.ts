@@ -2,6 +2,9 @@ import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { styleMap } from "lit/directives/style-map.js";
+import { BackendApi } from "../backend-api";
+import { consume } from "@lit/context";
+import { ipcContext } from "./contexts";
 
 
 export type AuthorItem = {
@@ -31,18 +34,38 @@ export class EnabledAuthorsChanged extends Event {
     }
 }
 
+export class AuthorMappedEvent extends Event {
+    static eventName = 'author-mapped';
+    constructor(public mapping: Record<string, string>) {
+        super(AuthorMappedEvent.eventName, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 @customElement('author-list')
 export class AuthorList extends LitElement {
 
+    @consume({context: ipcContext})
+    ipc: BackendApi;
+
     @property({ type: Array })
     authors: AuthorItem[] = [];
+    @property({ type: Boolean, state: true })
+    dragging: boolean;
 
 
     constructor() {
         super();
     }
 
-    static styles = css``;
+    static styles = css`
+    li {
+        font-size: 1.2em;
+        margin: 0.3em 0;
+    }
+    `;
 
     toggleAuthor(author: AuthorItem) {
         return (e: Event) => {
@@ -57,15 +80,66 @@ export class AuthorList extends LitElement {
         };
     }
 
+    startDrag(author: AuthorItem) {
+        return (e: DragEvent) => {
+            this.dragging = true;
+            e.dataTransfer!.setData('text/plain', author.name);
+            e.dataTransfer!.effectAllowed = 'move';
+        };
+    }
+    endDrag(author: AuthorItem) {
+        return (e: DragEvent) => {
+            this.dragging = false;
+            e.dataTransfer!.clearData();
+        };
+    }
+
+    dropAuthor(author: AuthorItem) {
+        return (e: DragEvent) => {
+            e.preventDefault();
+            const draggedAuthorName = e.dataTransfer!.getData('text/plain');
+            console.log('dragging ', draggedAuthorName, ' onto ', author.name);
+            let mapping : Record<string,string>= {};
+            mapping[draggedAuthorName] = author.name;
+
+            this.dispatchEvent(new AuthorMappedEvent(mapping));
+        };
+    }
+
+    dragover(author: AuthorItem) {
+        return (e: DragEvent) => {
+            e.preventDefault(); // Necessary to allow dropping
+            if (author.member) {
+                e.dataTransfer!.dropEffect = 'move'; // Show move cursor
+            } else {
+                e.dataTransfer!.dropEffect = 'none'; // Show no-drop cursor
+            }
+        };
+    }
+
     render() {
         return html`
     
                 <ul>
                     ${map(this.authors, (a: AuthorItem) => html`
 
-                        <li draggable=${a.member ? 'false' : 'true'} ><input type="checkbox" ?checked=${a.enabled} @change=${this.toggleAuthor(a)}>
+                        <li><input type="checkbox" ?checked=${a.enabled} @change=${this.toggleAuthor(a)}>
                             <button @click=${this.selectAuthor(a)} type="button">Select</button>
-                            <span style=${styleMap({color: a.color, "font-style": a.member ? 'normal' : 'italic'})} >${a.name}</span>                                 
+                            <span 
+                                draggable=${a.member ? 'false' : 'true'} 
+                                style=${styleMap(
+            {
+                color: a.color,
+                "font-style": a.member ? 'normal' : 'italic',
+                "cursor": a.member ? 'default' : 'grab',
+                "border": this.dragging && a.member ? '1px dashed black' : 'none'
+            })}
+                                @dragstart=${this.startDrag(a)}
+                                @dragend=${this.endDrag(a)}
+                                @drop=${this.dropAuthor(a)}
+                                @dragover=${this.dragover(a)}
+                                >
+                                ${a.name}</span>                                 
                        </li>
                     `)}
                 </ul>

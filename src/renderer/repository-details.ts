@@ -9,7 +9,7 @@ import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
 import { HTMLInputEvent } from "./events";
 import { a } from "vitest/dist/chunks/suite.d.FvehnV49.js";
-import { EnabledAuthorsChanged } from "./author-list";
+import { AuthorMappedEvent, EnabledAuthorsChanged } from "./author-list";
 
 export class AuthorSelectedEvent extends Event {
     static eventName = 'author-selected';
@@ -61,6 +61,16 @@ export class RepositoryDetails extends LitElement {
         if (_changedProperties.has('repo')) {
             this.loading = true;
 
+            this.currentBranch = '';
+            this.branches = [];
+            this.repoStats = undefined;
+            this.blameStats = undefined;
+            this.selectedAuthorName = '';
+            this.selectedAuthor = undefined;
+            this.allAuthors = [];
+            this.enabledAuthors = [];
+
+
             let gettingBranchInfo = this.ipc.getBranchInfo(this.repo.courseId, this.repo.assignment, this.repo.name);
             let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
             let gettingBlameStats = this.ipc.getBlameStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
@@ -75,8 +85,10 @@ export class RepositoryDetails extends LitElement {
         }
         if (_changedProperties.has('repoStats')) {
             console.log('setting authors');
-            this.allAuthors = Object.keys(this.repoStats!.authors);
-            this.enabledAuthors = Object.keys(this.repoStats!.authors);
+            if(this.repoStats){
+                this.allAuthors = Object.keys(this.repoStats.authors);
+                this.enabledAuthors = Object.keys(this.repoStats.authors);
+            }            
         }
     }
 
@@ -96,6 +108,11 @@ export class RepositoryDetails extends LitElement {
                 });
 
     };
+
+    async mapAuthors(e: AuthorMappedEvent) {
+        await this.ipc.updateAuthorMapping(this.repo.courseId, this.repo.name, e.mapping);
+        await this.refresh(null);
+    }
     
 
     colors = [//Heb CoPilot maar de kleuren laten kiezen...
@@ -162,7 +179,7 @@ export class RepositoryDetails extends LitElement {
         if (selected && selected !== this.currentBranch) {
             this.currentBranch = selected;            
             await this.ipc.switchBranch(this.repo.courseId, this.repo.assignment, this.repo.name, selected);
-            await this.refresh(null);            
+            await this.refresh(null);
         }
     }
 
@@ -235,7 +252,7 @@ export class RepositoryDetails extends LitElement {
                 ${when(this.repoStats, () => html`
                     <li>Added: ${this.repoStats!.total.added} / Removed: ${this.repoStats!.total.removed}</li>
                     <li>Authors:
-                        <author-list .authors=${authorList} @author-selected=${this.selectAuthor} @enabled-authors-changed=${this.toggleAuthors}></author-list>
+                        <author-list .authors=${authorList} @author-selected=${this.selectAuthor} @enabled-authors-changed=${this.toggleAuthors} @author-mapped=${this.mapAuthors}></author-list>
                     </li>
                     `)}                
             </ul>
