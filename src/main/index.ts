@@ -52,7 +52,11 @@ export class S3App{
 export async function main() {
     let settings = await loadSettings();
     let app = new S3App(settings);
-    await app.init();
+    try{
+        await app.init();
+    }catch(e){
+        console.error(e);
+    }
 
     setupIpcMainHandlers(app);
 
