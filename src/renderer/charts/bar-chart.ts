@@ -1,5 +1,5 @@
 import { Chart } from "chart.js";
-import { html, LitElement, PropertyValues } from "lit";
+import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ref, createRef } from 'lit/directives/ref.js';
 
@@ -57,4 +57,10 @@ export class BarChart extends LitElement {
             <canvas ${ref(this.canvasRef)}></canvas>
         `;
     }
+
+    static styles = css`
+        :host {
+            display: block;
+        }
+    `
 }

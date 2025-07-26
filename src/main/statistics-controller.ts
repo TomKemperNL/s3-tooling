@@ -216,6 +216,12 @@ export class StatisticsController implements StatsApi {
         };
     }
 
+    @ipc("repostats-mapping:update")
+    async updateAuthorMapping(courseId: number, name: string, mapping: { [author: string]: string }) {
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        await this.db.updateAuthorMapping(savedCourseConfig.githubStudentOrg, name, mapping);
+    }
+
 
     @ipc("repostats-blame:get")
     async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<BlameStatisticsDTO> {

@@ -23,6 +23,7 @@ export function setupIpcPreloadHandlers(){
     for(let channel of Object.keys(decoratorRegistry)){ 
         let entry = decoratorRegistry[channel];
         result[entry.propertyKey] = (...args: any[]) => {
+            console.log('calling channel:', channel, 'with args:', args);
             return ipcRenderer.invoke(channel, ...args);
         };
     }
@@ -34,7 +35,7 @@ export function setupIpcMainHandlers(app: S3App ) {
 
     for(let channel of Object.keys(decoratorRegistry)){        
         ipcMain.handle(channel, function(e, ...args){            
-            console.log('args:', args);
+            console.log('handling channel:', channel, 'with args:', args);
             let entry = decoratorRegistry[channel];
             let owningObject = app;
             for(let key of Object.keys(app)){

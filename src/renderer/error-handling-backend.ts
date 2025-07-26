@@ -9,6 +9,16 @@ export class ErrorHandlingBackendApi implements BackendApi {
     constructor(ipc: BackendApi) {
         this.ipc = ipc;
     }
+    async updateAuthorMapping(courseId: number, name: string, mapping: { [author: string]: string; }){
+        try {
+            await this.ipc.updateAuthorMapping(courseId, name, mapping);
+        } catch (error) {
+            console.error("Error updating author mapping:", error);
+            alert("Failed to update author mapping:" + error.message);
+            throw error; // Rethrow the error to be handled by the caller
+        }
+    }
+    
     async getBranchInfo(courseId: number, assignment: string, name: string) : Promise<BranchInfo>{
         try{
             return await this.ipc.getBranchInfo(courseId, assignment, name);

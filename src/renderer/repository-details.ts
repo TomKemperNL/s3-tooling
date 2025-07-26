@@ -8,6 +8,8 @@ import { classMap } from "lit/directives/class-map.js";
 import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
 import { HTMLInputEvent } from "./events";
+import { a } from "vitest/dist/chunks/suite.d.FvehnV49.js";
+import { EnabledAuthorsChanged } from "./author-list";
 
 export class AuthorSelectedEvent extends Event {
     static eventName = 'author-selected';
@@ -43,9 +45,16 @@ export class RepositoryDetails extends LitElement {
     @property({ type: Boolean, state: true })
     loading: boolean = false;
     @property({ type: String, state: true })
-    activeAuthorName: string = '';
+    selectedAuthorName: string = '';
     @property({ type: Object, state: true })
-    activeAuthor: AuthorStatisticsDTO;
+    selectedAuthor: AuthorStatisticsDTO;
+
+    @property({ type: Array, state: true })
+    allAuthors: string[] = [];
+
+    @property({ type: Array, state: true })
+    enabledAuthors: string[] = [];
+
 
     
     protected updated(_changedProperties: PropertyValues): void {
@@ -56,6 +65,7 @@ export class RepositoryDetails extends LitElement {
             let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
             let gettingBlameStats = this.ipc.getBlameStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
             Promise.all([gettingBranchInfo, gettingRepos, gettingBlameStats]).then(([branchInfo, repoStats, blamestats]) => {
+
                 this.currentBranch = branchInfo.currentBranch;
                 this.branches = branchInfo.availableBranches;
                 this.repoStats = repoStats;
@@ -63,39 +73,30 @@ export class RepositoryDetails extends LitElement {
                 this.loading = false;
             });
         }
-    }
-
-    authors: { [name: string]: boolean } = {};
-    protected willUpdate(_changedProperties: PropertyValues): void {
         if (_changedProperties.has('repoStats')) {
-            this.authors = {};
-            for (let a of Object.keys(this.repoStats!.authors)) {
-                this.authors[a] = true;
-            }
+            console.log('setting authors');
+            this.allAuthors = Object.keys(this.repoStats!.authors);
+            this.enabledAuthors = Object.keys(this.repoStats!.authors);
         }
     }
 
-    toggleAuthor(authorName: string) {
-        return (e: HTMLInputEvent) => {
-            this.authors[authorName] = e.target.checked;
-            this.requestUpdate();
-        }
+    toggleAuthors(e: EnabledAuthorsChanged){
+        this.enabledAuthors = e.enabledAuthors;
     }
+        
+    selectAuthor(e: AuthorSelectedEvent) {
+        this.selectedAuthorName = e.authorName;
+        this.ipc.getStudentStats(
+            this.repo.courseId,
+            this.repo.assignment,
+            this.repo.name,
+            { authorName: e.authorName }).then(
+                authorStats => {
+                    this.selectedAuthor = authorStats;
+                });
 
-    selectStudent(authorName: string) {
-        return (e: Event) => {
-            this.activeAuthorName = authorName;
-            this.ipc.getStudentStats(
-                this.repo.courseId,
-                this.repo.assignment,
-                this.repo.name,
-                { authorName: authorName }).then(
-                    authorStats => {
-                        this.activeAuthor = authorStats;
-                    });
-
-        };
-    }
+    };
+    
 
     colors = [//Heb CoPilot maar de kleuren laten kiezen...
         "rgba(223,159,159,1)",
@@ -113,22 +114,18 @@ export class RepositoryDetails extends LitElement {
     ]
 
     authorToColor(author: string): string {
-        let authors = Object.keys(this.authors);
+        let authors = this.allAuthors;
         if (authors.indexOf(author) === -1) {
             return 'rgba(0,0,0,1)';
         } else {
             return this.colors[authors.indexOf(author) % this.colors.length];
         }
-
     }
 
     toDatasets(statsByWeek: RepoStatisticsPerWeekDTO): any[] {
         let datasets: any[] = [];
 
-        for (let a of Object.keys(this.authors)) {
-            if (!this.authors[a]) {
-                continue;
-            }
+        for (let a of this.enabledAuthors) {            
             let addedNumbers = statsByWeek.authors[a].map(w => w.added);
             let removedNumbers = statsByWeek.authors[a].map(w => w.removed * -1);
             let options = {
@@ -207,7 +204,7 @@ export class RepositoryDetails extends LitElement {
 
         if (this.blameStats) {
             for (let a of Object.keys(this.blameStats?.blamePie)) {
-                if (!this.authors[a]) {
+                if (this.enabledAuthors.indexOf(a) === -1) {
                     continue;
                 }
                 blameLabels.push(a);
@@ -215,6 +212,13 @@ export class RepositoryDetails extends LitElement {
                 blameColors.push(this.authorToColor(a));
             }
         }
+
+        let authorList = this.allAuthors.map(a => ({
+            name: a,
+            member: this.repo.members.indexOf(a) !== -1,
+            color: this.authorToColor(a),
+            enabled: this.enabledAuthors.indexOf(a) !== -1
+        }));
 
         return html`
         <div style="grid-area: title">
@@ -231,18 +235,9 @@ export class RepositoryDetails extends LitElement {
                 ${when(this.repoStats, () => html`
                     <li>Added: ${this.repoStats!.total.added} / Removed: ${this.repoStats!.total.removed}</li>
                     <li>Authors:
-                        <ul>
-                            ${map(Object.keys(this.repoStats!.authors), a => html`
-                                <li><input type="checkbox" ?checked=${this.authors[a]} @change=${this.toggleAuthor(a)}>
-                                    <button @click=${this.selectStudent(a)} type="button">Select</button>
-                                    <span style="color: ${this.authorToColor(a)}">${a}</span>, 
-                                    Added: ${this.repoStats!.authors[a].added} / Removed: ${this.repoStats!.authors[a].removed}</li>
-                            `)}
-                        </ul>
-
+                        <author-list .authors=${authorList} @author-selected=${this.selectAuthor} @enabled-authors-changed=${this.toggleAuthors}></author-list>
                     </li>
-                    `)}
-                
+                    `)}                
             </ul>
             
         </div>
@@ -266,8 +261,8 @@ export class RepositoryDetails extends LitElement {
         `)}
         </div>
         <div style="grid-area: student">
-        ${when(this.activeAuthor, () => html`
-                <student-details  .authorName=${this.activeAuthorName} .authorStats=${this.activeAuthor}></student-details>
+        ${when(this.selectedAuthor, () => html`
+                <student-details  .authorName=${this.selectedAuthorName} .authorStats=${this.selectedAuthor}></student-details>
             `)}    
         </div>
         `;
