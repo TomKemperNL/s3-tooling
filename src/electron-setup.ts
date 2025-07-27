@@ -48,6 +48,10 @@ export function setupIpcMainHandlers(app: S3App ) {
         });
     }
 
+    ipcMain.handle("request:screenshot", async (e, fileName: string) => {
+        await app.screenshotController.requestScreenshot(e.sender, fileName);
+    });
+
     ipcMain.handle("startup", async (e) => {
         let settings = app.settings;
 

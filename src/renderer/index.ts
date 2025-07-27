@@ -12,3 +12,7 @@ import './charts/pie-chart'
 import './charts/stacked-bar-chart'
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
+
+
+
+import './screenshot-element'

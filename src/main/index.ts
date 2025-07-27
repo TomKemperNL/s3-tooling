@@ -10,6 +10,9 @@ import { saveSettings, loadSettings } from "./settings";
 import { StatisticsController } from "./statistics-controller";
 import { setupIpcMainHandlers } from "../electron-setup";
 import { Settings } from "../shared";
+import { ScreenshotController } from "./screenshot-controller";
+
+console.log('cwd:', process.cwd());
 
 export class S3App {
     githubClient: GithubClient;
@@ -18,6 +21,7 @@ export class S3App {
     repoController: ReposController;
     coursesController: CoursesController;
     statisticsController: StatisticsController;
+    screenshotController: ScreenshotController;
     #settings: Settings;
 
     constructor(settings: Settings) {
@@ -44,6 +48,7 @@ export class S3App {
 
     async reload(settings: Settings) { //Nog niet async, maar ik vermoed dat dit wel ooit nodig gaat zijn... (en dan is retroactief async maken vaak vrij ingrijpend)
         this.#settings = settings;
+        this.screenshotController = new ScreenshotController();
         this.githubClient = new GithubClient(this.settings.githubToken);
         this.fileSystem = new FileSystem(this.settings.dataPath);
         this.canvasClient = new CanvasClient(this.settings.canvasToken);
