@@ -30,6 +30,7 @@ export class S3App{
 
     async init(){        
         await this.reload(this.settings);
+        console.log(this.settings)
         if (!this.settings.keepDB) {
             await db.reset().then(() => db.test());
         } else {

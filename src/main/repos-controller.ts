@@ -112,6 +112,7 @@ export class ReposController implements RepoApi{
                     [savedCourseConfig.githubStudentOrg, assignment.githubAssignment], r).catch(console.error)));
 
         return repos.map(r => ({
+            members: r.members.map(m => m.login),
             courseId: savedCourse.canvasId,
             assignment: assignment.githubAssignment,
             groupRepo: assignment.groupAssignment,

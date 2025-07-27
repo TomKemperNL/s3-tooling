@@ -161,6 +161,7 @@ export class FileSystem {
 
 
         delete this.repoCache[target];
+        delete this.blameCache[target];
     }
 
     async getCurrentBranch(...repoPath: string[]) {
@@ -207,6 +208,7 @@ export class FileSystem {
     async getRepoStats(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         if (this.repoCache[target]) {
+            console.log('cache-hit: repo for', target);
             return this.repoCache[target];
         }
         let result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });
@@ -225,9 +227,14 @@ export class FileSystem {
         return report;
     }
 
+    blameCache: { [repoPath: string]: any } = {};
 
     async getBlame(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
+        if (this.blameCache[target]) {
+            console.log('cache-hit: blame for', target);
+            return this.blameCache[target];
+        }
         let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
 
 
@@ -284,6 +291,8 @@ export class FileSystem {
             }
         }
         await Promise.all(files.map(f => blameFile(f)));
+
+        this.blameCache[target] = report;
         return report;
     }
 }

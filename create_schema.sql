@@ -45,11 +45,12 @@ create table githubAccounts(
 );
 
 create table githubCommitNames(
-    id integer primary key autoincrement,
+    organization text not null references repositories(organization),
+    repository text not null references repositories(name),
     name text not null,
-    organization text not null,
-    repository text not null,
-    username text not null references githubAccounts(username),
+    email text,
+    githubUsername text not null references githubAccounts(username),
+    primary key (organization, repository, name)
     foreign key(organization, repository) references repositories(organization, name)
 );
 
