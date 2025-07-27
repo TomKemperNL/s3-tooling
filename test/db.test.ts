@@ -70,12 +70,16 @@ test("can update authormapping", async () => {
     // ])
     await db.updateAuthorMapping(someCourse.githubStudentOrg, "bla", {
         "Bob": "Bobster",
+        "LautreBob": "Bobster",
         "Frob": "Frobbie"
     });
 
-    let foundMappings = await db.getAuthorMapping(someCourse.githubStudentOrg, "bla");
-    console.log(foundMappings)
+    await db.removeAliases(someCourse.githubStudentOrg, "bla", { "Bobster": ["LautreBob"] }); //L'autre Bob is toch een andere Bob
+
+    let foundMappings = await db.getAuthorMapping(someCourse.githubStudentOrg, "bla");    
+    
     expect(foundMappings["Bob"]).toBe("Bobster");
+    expect(foundMappings["LautreBob"]).toBe(undefined);
     expect(foundMappings["Frob"]).toBe("Frobbie");
 
 })

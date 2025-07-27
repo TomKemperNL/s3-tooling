@@ -30,12 +30,35 @@ function mergeAuthors(pie: { [name: string]: number }, mapping: { [name: string]
     return merged;
 }
 
+function filterAuthors(mapping: { [name: string]: string}, target: string){
+    let filtered: { [name: string]: string } = {};
+    for (let key in mapping) {
+        if (mapping[key] && mapping[key].trim() === target) {
+            filtered[key] = mapping[key];
+        }
+    }
+    return filtered;
+}
+
+function mappingToAliases(mapping: { [name: string]: string}) : { [canonical: string]: string[] } {
+    let aliases: { [canonical: string]: string[] } = {};
+    for (let alias in mapping) {
+        let canonical = mapping[alias];
+        if (!aliases[canonical]) {
+            aliases[canonical] = [];
+        }
+        aliases[canonical].push(alias);
+    }
+    return aliases;
+}
+
 export class StatisticsController implements StatsApi {
     constructor(private db: Db, private githubClient: GithubClient, private fileSystem: FileSystem,
         private repoController: ReposController //TODO: deze willen we niet als dep, maar voor nu...
     ) {
 
     }
+    
 
     #getGroups(savedCourseConfig: CourseConfig) {
         //TODO: voor nu hardcoded, maar dit wil je per cursus kunnen instellen
@@ -49,13 +72,11 @@ export class StatisticsController implements StatsApi {
     }
 
     async #getCombinedStats(savedCourseConfig: CourseConfig, assignment: string, name: string) {        
-        let [coreStats, projectStats, userMapping] = await Promise.all([
+        let [coreStats, projectStats] = await Promise.all([
             this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
-            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name),
-            this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name)
+            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name),        
         ]);
-        let stats = new CombinedStats([coreStats, projectStats]);
-        stats.mapAuthors(userMapping);
+        let stats = new CombinedStats([coreStats, projectStats]);        
         return stats;
     }
 
@@ -189,14 +210,19 @@ export class StatisticsController implements StatsApi {
 
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
         let lastDate = combinedStats.getDateRange().end;
+
+        let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
+        combinedStats.mapAuthors(authorMapping);
+
         let repoMembers = await this.db.getCollaborators(savedCourseConfig.githubStudentOrg, name);
 
         // TODO: docenten er uit filteren... dat maakt het nu slechter dan accounts die niets hebben gedaan er uit filteren
-        // let allAuthors : string[] = [...new Set(combinedStats.getDistinctAuthors().concat(repoMembers.map(m => m.login)))];
+        // let allAuthors : string[] = [...new Set(combinedStats.getDistinctAuthors().concat(repoMembers.map(m => m.login)))];        
         let allAuthors = combinedStats.getDistinctAuthors();
 
         let builder = new StatsBuilder(combinedStats);
         return {
+            aliases: mappingToAliases(authorMapping),
             total: builder.build(),
             authors: builder.groupByAuthor(allAuthors).build(),
             weekly: {
@@ -212,7 +238,10 @@ export class StatisticsController implements StatsApi {
     async getRepoStatsByGroup(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTOPerGroup> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
 
-        let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
+        let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);        
+        let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
+        combinedStats.mapAuthors(authorMapping);
+
         let lastDate = combinedStats.getDateRange().end;
 
         let builder = new StatsBuilder(combinedStats);
@@ -236,6 +265,12 @@ export class StatisticsController implements StatsApi {
         await this.db.updateAuthorMapping(savedCourseConfig.githubStudentOrg, name, mapping);
     }
 
+    @ipc("repostats-aliases:remove")
+    async removeAlias(courseId: number, name: string, aliases: { [canonical: string]: string[]; }) :Promise<void> {
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        await this.db.removeAliases(savedCourseConfig.githubStudentOrg, name, aliases);
+    }
+
 
     @ipc("repostats-blame:get")
     async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<BlameStatisticsDTO> {
@@ -253,6 +288,7 @@ export class StatisticsController implements StatsApi {
         let docsPie: { [name: string]: number } = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
 
         return {
+            aliases: mappingToAliases(authorMapping),
             blamePie: mergePies(blamePie, docsPie)
         };
     }
@@ -262,6 +298,10 @@ export class StatisticsController implements StatsApi {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         let groups = this.#getGroups(savedCourseConfig);
         let stats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
+        let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
+        stats.mapAuthors(authorMapping);
+        authorMapping = filterAuthors(authorMapping, filter.authorName);
+
         let endDate = stats.getDateRange().end;
         let byAuthor = stats.groupByAuthor([filter.authorName]);
 
@@ -270,6 +310,7 @@ export class StatisticsController implements StatsApi {
         let builder = new StatsBuilder(studentStats);
 
         return {
+            aliases: mappingToAliases(authorMapping),
             total: builder.groupBy(groups).build(),
             weekly: builder
                 .groupByWeek(savedCourseConfig.startDate, endDate)

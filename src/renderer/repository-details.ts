@@ -9,7 +9,7 @@ import { ipcContext } from "./contexts";
 import { consume } from "@lit/context";
 import { HTMLInputEvent } from "./events";
 import { a } from "vitest/dist/chunks/suite.d.FvehnV49.js";
-import { AuthorMappedEvent, EnabledAuthorsChanged } from "./author-list";
+import { AuthorMappedEvent, EnabledAuthorsChanged, RemoveAliasEvent } from "./author-list";
 
 export class AuthorSelectedEvent extends Event {
     static eventName = 'author-selected';
@@ -113,6 +113,14 @@ export class RepositoryDetails extends LitElement {
         await this.ipc.updateAuthorMapping(this.repo.courseId, this.repo.name, e.mapping);
         await this.refresh(null);
     }
+
+    async removeAlias(e: RemoveAliasEvent){
+        let aliases : Record<string, string[]> = {};
+        aliases[e.author] = [e.alias];
+
+        await this.ipc.removeAlias(this.repo.courseId, this.repo.name, aliases);
+        await this.refresh(null);
+    }
     
 
     colors = [//Heb CoPilot maar de kleuren laten kiezen...
@@ -195,6 +203,10 @@ export class RepositoryDetails extends LitElement {
         grid-template-rows: min-content minmax(25%, 50%) 1fr;
     }
 
+    /* :host > div {
+        border: 1px dashed slategray
+    } */
+
     .loading {
         opacity: 0.5;
     }
@@ -234,7 +246,8 @@ export class RepositoryDetails extends LitElement {
             name: a,
             member: this.repo.members.indexOf(a) !== -1,
             color: this.authorToColor(a),
-            enabled: this.enabledAuthors.indexOf(a) !== -1
+            enabled: this.enabledAuthors.indexOf(a) !== -1,
+            aliases: this.repoStats?.aliases[a] || []
         }));
 
         return html`
@@ -252,7 +265,12 @@ export class RepositoryDetails extends LitElement {
                 ${when(this.repoStats, () => html`
                     <li>Added: ${this.repoStats!.total.added} / Removed: ${this.repoStats!.total.removed}</li>
                     <li>Authors:
-                        <author-list .authors=${authorList} @author-selected=${this.selectAuthor} @enabled-authors-changed=${this.toggleAuthors} @author-mapped=${this.mapAuthors}></author-list>
+                        <author-list 
+                            .authors=${authorList} 
+                            @author-selected=${this.selectAuthor} 
+                            @enabled-authors-changed=${this.toggleAuthors} 
+                            @author-mapped=${this.mapAuthors}
+                            @remove-alias=${this.removeAlias}></author-list>
                     </li>
                     `)}                
             </ul>

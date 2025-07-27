@@ -96,6 +96,7 @@ export function combineStats(...stats: LinesStatistics[]): LinesStatistics {
 
 
 export type RepoStatisticsDTO = {
+    aliases: { [name: string]: string[] },
     total: LinesStatistics,
     authors: { [name: string] : LinesStatistics}
     weekly: RepoStatisticsPerWeekDTO,
@@ -113,6 +114,7 @@ export type AuthorStatisticsDTO = {
 }
 
 export type BlameStatisticsDTO = {
+    aliases: { [name: string]: string[] },
     blamePie: { [name: string] : number}
 }
 

@@ -55,7 +55,7 @@ function courseDbToConfig(r: CourseDb, as: AssignmentDb[]): CourseConfig {
     }
 }
 
-export class Db {
+export class Db {   
     #initializer: () => Database;
     #db: Database
     constructor(initializer: () => Database = null) {
@@ -158,6 +158,19 @@ export class Db {
             result[r.name] = r.githubUsername;
         }
         return result;
+    }
+
+    async removeAliases(githubStudentOrg: string, name: string, aliases: { [canonical: string]: string[]; }) {
+        await this.#inTransaction(async () => {
+            for (let canonical of Object.keys(aliases)) {
+                let aliasList = aliases[canonical];
+                for (let alias of aliasList) {
+                    await this.#runProm(
+                        `delete from githubCommitNames where organization = ? and repository = ? and name = ? and githubUsername = ?;`,
+                        [githubStudentOrg, name, alias, canonical]);
+                }
+            }
+        });
     }
 
     async updateUserMapping(courseId: number, usermapping: StringDict) {

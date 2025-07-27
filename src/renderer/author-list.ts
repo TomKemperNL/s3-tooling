@@ -5,6 +5,7 @@ import { styleMap } from "lit/directives/style-map.js";
 import { BackendApi } from "../backend-api";
 import { consume } from "@lit/context";
 import { ipcContext } from "./contexts";
+import { when } from "lit/directives/when.js";
 
 
 export type AuthorItem = {
@@ -12,6 +13,7 @@ export type AuthorItem = {
     color: string;
     member: boolean;
     enabled: boolean;
+    aliases: string[];
 }
 
 export class AuthorSelectedEvent extends Event {
@@ -44,14 +46,27 @@ export class AuthorMappedEvent extends Event {
     }
 }
 
+export class RemoveAliasEvent extends Event {
+    static eventName = 'remove-alias';
+    constructor(public author: string, public alias: string) {
+        super(RemoveAliasEvent.eventName, {
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
 @customElement('author-list')
 export class AuthorList extends LitElement {
 
-    @consume({context: ipcContext})
+    @consume({ context: ipcContext })
     ipc: BackendApi;
 
     @property({ type: Array })
     authors: AuthorItem[] = [];
+    @property({ type: Object })
+    authorMapping: Record<string, string> = {};
+
     @property({ type: Boolean, state: true })
     dragging: boolean;
 
@@ -59,13 +74,6 @@ export class AuthorList extends LitElement {
     constructor() {
         super();
     }
-
-    static styles = css`
-    li {
-        font-size: 1.2em;
-        margin: 0.3em 0;
-    }
-    `;
 
     toggleAuthor(author: AuthorItem) {
         return (e: Event) => {
@@ -99,7 +107,7 @@ export class AuthorList extends LitElement {
             e.preventDefault();
             const draggedAuthorName = e.dataTransfer!.getData('text/plain');
             console.log('dragging ', draggedAuthorName, ' onto ', author.name);
-            let mapping : Record<string,string>= {};
+            let mapping: Record<string, string> = {};
             mapping[draggedAuthorName] = author.name;
 
             this.dispatchEvent(new AuthorMappedEvent(mapping));
@@ -117,29 +125,59 @@ export class AuthorList extends LitElement {
         };
     }
 
+    removeAlias(author: AuthorItem, alias: string) {
+        return (e: Event) => {
+            e.preventDefault();
+            this.dispatchEvent(new RemoveAliasEvent(author.name, alias));
+        };
+    }
+
+    static styles = css`
+    .author {
+        font-size: 1.2em;
+        margin: 0.3em 0;
+    }
+    `;
+
     render() {
-        return html`
-    
+        let styles = (a: AuthorItem) => ({ //De VSCode formatter wordt helemaal gek als je dit inline probeert te doen:)
+            color: a.color,
+            "font-style": a.member ? 'normal' : 'italic',
+            "cursor": a.member ? 'default' : 'grab',
+            "border": this.dragging && a.member ? '1px dashed black' : 'none'
+        });
+
+        let item =  (a: AuthorItem) => html`
+            <input type="checkbox" ?checked=${a.enabled} @change=${this.toggleAuthor(a)}>
+            <button @click=${this.selectAuthor(a)} type="button">Select</button>
+            <span class="author"
+                draggable=${a.member ? 'false' : 'true'} 
+                style=${styleMap(styles(a))}
+                @dragstart=${this.startDrag(a)}
+                @dragend=${this.endDrag(a)}
+                @drop=${this.dropAuthor(a)}
+                @dragover=${this.dragover(a)}
+                >
+            ${a.name}</span>
+            `
+
+        return html`    
                 <ul>
                     ${map(this.authors, (a: AuthorItem) => html`
-
-                        <li><input type="checkbox" ?checked=${a.enabled} @change=${this.toggleAuthor(a)}>
-                            <button @click=${this.selectAuthor(a)} type="button">Select</button>
-                            <span 
-                                draggable=${a.member ? 'false' : 'true'} 
-                                style=${styleMap(
-            {
-                color: a.color,
-                "font-style": a.member ? 'normal' : 'italic',
-                "cursor": a.member ? 'default' : 'grab',
-                "border": this.dragging && a.member ? '1px dashed black' : 'none'
-            })}
-                                @dragstart=${this.startDrag(a)}
-                                @dragend=${this.endDrag(a)}
-                                @drop=${this.dropAuthor(a)}
-                                @dragover=${this.dragover(a)}
-                                >
-                                ${a.name}</span>                                 
+                        <li>${when(a.aliases.length > 0, () => html`
+                            <details>
+                            <summary>
+                                ${item(a)}
+                            </summary>
+                                <ul>
+                                    ${map(a.aliases, (alias: string) => html`
+                                        <li>${alias} <button @click=${this.removeAlias(a, alias)}>Unlink</button></li>
+                                    `)}
+                                </ul>
+                            </details>                            
+                            `, () => html`
+                            ${item(a)}
+                            `)}                                                  
                        </li>
                     `)}
                 </ul>
