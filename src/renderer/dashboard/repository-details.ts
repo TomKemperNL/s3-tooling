@@ -1,13 +1,13 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { AuthorStatisticsDTO, BlameStatisticsDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO } from "../shared";
+import { AuthorStatisticsDTO, BlameStatisticsDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO } from "../../shared";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
-import { BackendApi } from "../backend-api";
+import { BackendApi } from "../../backend-api";
 import { classMap } from "lit/directives/class-map.js";
-import { ipcContext } from "./contexts";
+import { ipcContext } from "../contexts";
 import { consume } from "@lit/context";
-import { HTMLInputEvent } from "./events";
+import { HTMLInputEvent } from "../events";
 import { a } from "vitest/dist/chunks/suite.d.FvehnV49.js";
 import { AuthorMappedEvent, EnabledAuthorsChanged, RemoveAliasEvent } from "./author-list";
 

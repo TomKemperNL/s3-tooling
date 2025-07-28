@@ -2,9 +2,9 @@ import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { styleMap } from "lit/directives/style-map.js";
-import { BackendApi } from "../backend-api";
+import { BackendApi } from "../../backend-api";
 import { consume } from "@lit/context";
-import { ipcContext } from "./contexts";
+import { ipcContext } from "../contexts";
 import { when } from "lit/directives/when.js";
 
 

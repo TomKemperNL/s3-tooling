@@ -1,6 +1,6 @@
 import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { AuthorStatisticsDTO } from "../shared";
+import { AuthorStatisticsDTO } from "../../shared";
 import { classMap } from "lit/directives/class-map.js";
 
 @customElement('student-details')
