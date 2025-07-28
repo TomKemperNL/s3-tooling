@@ -1,8 +1,8 @@
 import { html, LitElement } from "lit";
-import { RepoDTO } from "../shared";
+import { RepoDTO } from "../../shared";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { HTMLInputEvent } from "./events";
+import { HTMLInputEvent } from "../events";
 
 export class RepoSelectedEvent extends Event {
     constructor(public repo: RepoDTO){

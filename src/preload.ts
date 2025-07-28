@@ -15,5 +15,11 @@ contextBridge.exposeInMainWorld('electron', Object.assign(setupIpcPreloadHandler
     },
     loadSettings: async () => {
         return ipcRenderer.invoke('settings:load');
-    }
+    },
+    requestScreenshot: async (name: string) => {
+        return ipcRenderer.invoke('request:screenshot', name);
+    },
+    onLoadUserStats: (callback: any) => ipcRenderer.on('load-user-stats', (event: any, data: any) => {
+        callback(data);
+    })
 }));

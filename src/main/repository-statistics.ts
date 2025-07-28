@@ -1,4 +1,5 @@
 import { LinesStatistics } from "../shared";
+import { StringDict } from "./canvas-client";
 import { LoggedChange, LoggedCommit } from "./filesystem-client";
 import { CombinedStats, ExportingArray, GroupDefinition, GroupedCollection, Statistics } from "./statistics";
 
@@ -45,6 +46,11 @@ export class RepositoryStatistics implements Statistics {
         ignoredExtensions: ['.json', '.pdf'] //TODO: dit is dubbelop met de package-json. Even nadenken wat we willen
     }) {
         this.data = rawData.filter(c => !ignoredAuthors.includes(c.author));
+    }
+
+    concat(other: RepositoryStatistics): RepositoryStatistics {
+        let combinedData = this.data.concat(other.data);
+        return new RepositoryStatistics(combinedData, this.options);
     }
 
     #accumulateLines(acc: LinesStatistics, change: LoggedChange) {
@@ -123,7 +129,7 @@ export class RepositoryStatistics implements Statistics {
         return result;
     }
 
-    mapAuthors(authorMapping: {[alias: string]: string}){
+    mapAuthors(authorMapping: StringDict){
         this.data.forEach(commit => {
             if (authorMapping[commit.author]) {
                 commit.author = authorMapping[commit.author];

@@ -102,8 +102,11 @@ function combineReports(rep1: {[author:string]: number} , rep2: {[author:string]
     return result;
 }
 
+export type CloneStyle = 'https' | 'ssh'
+
 export class FileSystem {
     #basePath: string;
+    cloneStyle : CloneStyle = 'ssh'
 
     constructor(basePath: string) {
         if (!basePath) {
@@ -125,7 +128,12 @@ export class FileSystem {
             await mkdir(target, options);
         }
 
-        await exec(`git clone "${repo.http_url}"`, { cwd: target });
+        if(this.cloneStyle === 'https'){
+            await exec(`git clone "${repo.http_url}"`, { cwd: target });
+        }else if(this.cloneStyle === 'ssh'){
+            await exec(`git clone "${repo.ssh_url}"`, { cwd: target });
+        }
+        
         return fullTarget;
     }
 
@@ -153,6 +161,7 @@ export class FileSystem {
 
 
         delete this.repoCache[target];
+        delete this.blameCache[target];
     }
 
     async getCurrentBranch(...repoPath: string[]) {
@@ -199,6 +208,7 @@ export class FileSystem {
     async getRepoStats(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         if (this.repoCache[target]) {
+            console.log('cache-hit: repo for', target);
             return this.repoCache[target];
         }
         let result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });
@@ -217,9 +227,14 @@ export class FileSystem {
         return report;
     }
 
+    blameCache: { [repoPath: string]: any } = {};
 
     async getBlame(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
+        if (this.blameCache[target]) {
+            console.log('cache-hit: blame for', target);
+            return this.blameCache[target];
+        }
         let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
 
 
@@ -276,6 +291,8 @@ export class FileSystem {
             }
         }
         await Promise.all(files.map(f => blameFile(f)));
+
+        this.blameCache[target] = report;
         return report;
     }
 }

@@ -3,6 +3,11 @@ export type Member ={
     login: string;
 }
 
+export type Author = {
+    name: string,
+    email?: string,
+}
+
 export type Assignment = {
     githubAssignment: string,
     canvasId?: number,
@@ -65,7 +70,8 @@ export type RepoDTO = {
     courseId: number,
     assignment: string,
     name: string,
-    groupRepo: boolean
+    groupRepo: boolean,
+    members: string[]
 }
 
 export type StatsFilter = {
@@ -90,6 +96,7 @@ export function combineStats(...stats: LinesStatistics[]): LinesStatistics {
 
 
 export type RepoStatisticsDTO = {
+    aliases: { [name: string]: string[] },
     total: LinesStatistics,
     authors: { [name: string] : LinesStatistics}
     weekly: RepoStatisticsPerWeekDTO,
@@ -107,6 +114,7 @@ export type AuthorStatisticsDTO = {
 }
 
 export type BlameStatisticsDTO = {
+    aliases: { [name: string]: string[] },
     blamePie: { [name: string] : number}
 }
 

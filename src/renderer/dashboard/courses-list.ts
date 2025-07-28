@@ -2,11 +2,11 @@ import { LitElement, PropertyValues, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 
 import { map } from "lit/directives/map.js";
-import { BackendApi } from "../backend-api";
-import { CourseConfig, CourseDTO } from "../shared";
+import { BackendApi } from "../../backend-api";
+import { CourseConfig, CourseDTO } from "../../shared";
 import { consume } from "@lit/context";
-import { ipcContext } from "./contexts";
-import { HTMLInputEvent } from "./events";
+import { ipcContext } from "../contexts";
+import { HTMLInputEvent } from "../events";
 
 export class CourseLoadedEvent extends Event {
     constructor(public course: CourseDTO) {

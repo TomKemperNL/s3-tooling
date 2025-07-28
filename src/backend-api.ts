@@ -32,6 +32,8 @@ export interface StatsApi {
     getRepoStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<RepoStatisticsDTO>
     getBlameStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<BlameStatisticsDTO>
     getStudentStats: (courseId: number, assignment: string, name: string, filter: StudentFilter) => Promise<any>
+    updateAuthorMapping: (courseId: number, name: string, mapping: { [author: string]: string }) => Promise<void>
+    removeAlias: (courseId: number, name: string, aliases: { [canonical: string]: string[] }) => Promise<void>
 }
 
 

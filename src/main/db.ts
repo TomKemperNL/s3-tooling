@@ -1,7 +1,7 @@
 import { Database } from "sqlite3";
 import fs from 'fs/promises';
 import { bep1, bep2, cisq1, cisq2, s2 } from '../temp'
-import { CourseConfig, CourseDTO, StudentDTO } from "../shared";
+import { Author, CourseConfig, CourseDTO, StudentDTO } from "../shared";
 import { MemberResponse, RepoResponse } from "./github-client";
 import { SimpleDict, StringDict } from "./canvas-client";
 
@@ -33,7 +33,6 @@ export type RepoDb = {
     api_url: string,
     created_at: string,
     updated_at: string,
-
     lastMemberCheck: string
 }
 
@@ -56,7 +55,7 @@ function courseDbToConfig(r: CourseDb, as: AssignmentDb[]): CourseConfig {
     }
 }
 
-export class Db {
+export class Db {   
     #initializer: () => Database;
     #db: Database
     constructor(initializer: () => Database = null) {
@@ -143,22 +142,35 @@ export class Db {
             for (let authorName of Object.keys(mapping)) {
                 let username = mapping[authorName];
                 await this.#runProm(
-                    `insert into githubCommitNames(name, username, organization, repository)
-                     values(?,?,?,?);`, 
+                    `insert into githubCommitNames(name, githubUsername, organization, repository)
+                     values(?,?,?,?);`,
                      [authorName, username, org, repo]);
             };
         });
     }
 
     async getAuthorMapping(org: string, repo: string): Promise<StringDict> {
-        let rows = await this.#allProm<{ name: string, username: string }>(`
-            select name, username from githubCommitNames 
+        let rows = await this.#allProm<{ name: string, githubUsername: string }>(`
+            select name, githubUsername from githubCommitNames 
             where organization = ? and repository = ?`, [org, repo]);
         let result: { [key: string]: string } = {};
         for (let r of rows) {
-            result[r.name] = r.username;
+            result[r.name] = r.githubUsername;
         }
         return result;
+    }
+
+    async removeAliases(githubStudentOrg: string, name: string, aliases: { [canonical: string]: string[]; }) {
+        await this.#inTransaction(async () => {
+            for (let canonical of Object.keys(aliases)) {
+                let aliasList = aliases[canonical];
+                for (let alias of aliasList) {
+                    await this.#runProm(
+                        `delete from githubCommitNames where organization = ? and repository = ? and name = ? and githubUsername = ?;`,
+                        [githubStudentOrg, name, alias, canonical]);
+                }
+            }
+        });
     }
 
     async updateUserMapping(courseId: number, usermapping: StringDict) {

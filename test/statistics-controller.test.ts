@@ -56,6 +56,7 @@ test("canGetEmptyStats", async () => {
   let result = await statisticsController.getRepoStats(
     someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" })
   expect(result).toStrictEqual({
+    "aliases": {},
     "authors": {},
     "total": {
       "added": 0,
@@ -94,6 +95,7 @@ test("Can Get Merged Stats", async () => {
     someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" });
   expect(result).toStrictEqual(
     {
+      "aliases": {},
       "authors": {
         "Bob": {
           "added": 14,
@@ -140,6 +142,7 @@ test("Can Get User Stats with only Commits", async () => {
   
   expect(result).toStrictEqual(
     {
+      "aliases": {},
       "total": {
         "Backend": {
           "added": 0,
@@ -205,6 +208,7 @@ test("Can Get User Stats with only Project-stuff", async () => {
   someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
   expect(result).toStrictEqual(
     {
+      "aliases": {},
       "total": {
         "Backend": {
           "added": 0,

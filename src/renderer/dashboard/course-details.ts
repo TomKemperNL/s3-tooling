@@ -1,11 +1,11 @@
 import { html, LitElement } from "lit";
-import { Assignment, CourseDTO, RepoDTO } from "../shared";
+import { Assignment, CourseDTO, RepoDTO } from "../../shared";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
-import { BackendApi } from "../backend-api";
-import { ipcContext } from "./contexts";
+import { BackendApi } from "../../backend-api";
+import { ipcContext } from "../contexts";
 import { consume } from "@lit/context";
-import { HTMLInputEvent } from "./events";
+import { HTMLInputEvent } from "../events";
 
 export class ReposLoadedEvent extends Event {
     constructor(public repos: RepoDTO[]) {
@@ -19,7 +19,7 @@ export class CourseDetails extends LitElement {
     @property({ type: Object })
     course: CourseDTO
 
-    @property({ state: true })
+    @property({ type: Boolean, state: true })
     loading = false;
 
     selectedSections: string[] = [];
