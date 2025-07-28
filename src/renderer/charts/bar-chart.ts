@@ -58,10 +58,6 @@ export class BarChart extends LitElement {
         `;
     }
 
-    protected createRenderRoot() {
-        return this;
-      }
-
     static styles = css`
         :host {
             display: block;

@@ -181,7 +181,7 @@ export class RepositoryDetails extends LitElement {
             "numbers _";
             ;
         grid-template-columns: 1fr 2fr;
-        grid-template-rows: min-content minmax(25%, 50%) 1fr;
+        /* grid-template-rows: min-content minmax(25%, 50%) 1fr; */
     }
 
     /* :host > div {
@@ -243,6 +243,16 @@ export class RepositoryDetails extends LitElement {
             </select><button type="button" ?disabled=${this.loading} @click=${this.refresh}>Refresh</button></p>
         </div>        
         
+        <div style="grid-area: pie">
+        ${when(this.repoStats, () => html`
+            <pie-chart 
+                class=${classMap({ loading: this.loading, chart: true })} 
+                
+                .labels=${blameLabels}
+                .values=${blameValues}
+                .colors=${blameColors}></pie-chart>
+        `)}
+        </div>  
         <div style="grid-area: numbers;" class=${classMap({ loading: this.loading })}>
             <ul>
                 ${when(this.repoStats, () => html`
@@ -261,22 +271,12 @@ export class RepositoryDetails extends LitElement {
         <div style="grid-area: bar">
         ${when(this.repoStats, () => html`
             <stacked-bar-chart 
-                class=${classMap({ loading: this.loading })} 
+                class=${classMap({ loading: this.loading, chart: true  })} 
                 
                 .labels=${labels} 
                 .datasets=${datasets}></stacked-bar-chart>
         `)}
-        </div>
-        <div style="grid-area: pie">
-        ${when(this.repoStats, () => html`
-            <pie-chart 
-                class=${classMap({ loading: this.loading })} 
-                
-                .labels=${blameLabels}
-                .values=${blameValues}
-                .colors=${blameColors}></pie-chart>
-        `)}
-        </div>      
+        </div>    
         `;
     }
 }
