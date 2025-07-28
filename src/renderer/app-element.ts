@@ -67,6 +67,12 @@ export class AppElement extends LitElement {
         this.activeRepo = null;
     }
 
+    courseCleared(e: Event) {
+        this.activeCourse = null;
+        this.availableRepos = null;
+        this.activeRepo = null;
+    }
+
     reposLoaded(e: ReposLoadedEvent) {
         this.availableRepos = e.repos;
         this.activeRepo = null;
@@ -74,6 +80,15 @@ export class AppElement extends LitElement {
 
     repoSelected(e: RepoSelectedEvent) {
         this.activeRepo = e.repo;
+    }
+
+    repoCleared(e: Event) {
+        this.activeRepo = null;
+    }
+
+    reposCleared(e: Event) {        
+        this.availableRepos = null;
+        this.activeRepo = null;
     }
 
     static styles = css`
@@ -173,13 +188,13 @@ export class AppElement extends LitElement {
         <nav style="grid-area: nav;" label="dashboard navigation">
             ${when(this.isActive, () => html`  
                 <h2>Cursussen</h2>            
-                <courses-list @course-loaded=${this.courseLoaded}></courses-list>
+                <courses-list @course-loaded=${this.courseLoaded} @course-cleared=${this.courseCleared}></courses-list>
                 ${when(this.activeCourse, () => html`  
-                    <course-details .course=${this.activeCourse} @repos-loaded=${this.reposLoaded}></course-details>
+                    <course-details .course=${this.activeCourse} @repos-loaded=${this.reposLoaded} @repos-cleared=${this.reposCleared}></course-details>
                 `)}
                 ${when(this.availableRepos, () => html`                
                     <h3>Repositories</h3>
-                    <repositories-list .repos=${this.availableRepos} @repo-selected=${this.repoSelected}></repositories-list>
+                    <repositories-list .repos=${this.availableRepos} @repo-selected=${this.repoSelected} @repo-cleared=${this.repoCleared}></repositories-list>
                 `)}
             `)}
         </nav>

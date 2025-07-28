@@ -13,6 +13,12 @@ export class ReposLoadedEvent extends Event {
     }
 }
 
+export class ReposClearedEvent extends Event {
+    constructor() {
+        super('repos-cleared')
+    }
+}
+
 @customElement('course-details')
 export class CourseDetails extends LitElement {
 
@@ -23,6 +29,7 @@ export class CourseDetails extends LitElement {
     loading = false;
 
     selectedSection: string = "";
+    selectedAssignment: string = "";
 
     @consume({context: ipcContext})
     ipc: BackendApi
@@ -30,18 +37,32 @@ export class CourseDetails extends LitElement {
     constructor() {
         super();
     }
-
+    
     sectionDropdownChange(e: HTMLInputEvent) {
-        let selected = e.target.value;
-        if (selected) {
-            this.selectedSection = selected;
+        this.selectedSection = e.target.value;        
+
+        if(this.selectedSection && this.selectedAssignment){
+            this.loadRepos();
+        }else{
+            this.dispatchEvent(new ReposClearedEvent());
         }
     }
 
-    async loadRepos(a: Assignment) {
+    assignmentDropdownChange(e: HTMLInputEvent) {
+        this.selectedAssignment = e.target.value;
+
+        if(this.selectedSection && this.selectedAssignment){
+            this.loadRepos();
+        }else{
+            this.dispatchEvent(new ReposClearedEvent());
+        }
+    }
+
+
+    async loadRepos() {
         try {
             this.loading = true;
-            let result = await this.ipc.loadRepos(this.course.canvasId, a.githubAssignment, { sections: [ this.selectedSection] })
+            let result = await this.ipc.loadRepos(this.course.canvasId, this.selectedAssignment, { sections: [ this.selectedSection] })
             this.dispatchEvent(new ReposLoadedEvent(result));
         }
         catch (e) {
@@ -51,15 +72,6 @@ export class CourseDetails extends LitElement {
         }
     }
 
-    assignmentDropdownChange(e: HTMLInputEvent) {
-        let selected = e.target.value;
-        if (selected) {
-            let assignment = this.course.assignments.find(a => a.githubAssignment === selected);
-            if (assignment) {
-                this.loadRepos(assignment);
-            }
-        }
-    }
 
     render() {
         return html`          
