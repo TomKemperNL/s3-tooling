@@ -58,6 +58,7 @@ export class AppElement extends LitElement {
     protected firstUpdated(_changedProperties: PropertyValues): void {
         this.ipc.startup().then(startup => {
             this.reload(startup);
+            this.load();
         });
     }
 
@@ -80,6 +81,7 @@ export class AppElement extends LitElement {
 
     repoSelected(e: RepoSelectedEvent) {
         this.activeRepo = e.repo;
+        this.save();
     }
 
     repoCleared(e: Event) {
@@ -159,6 +161,30 @@ export class AppElement extends LitElement {
     async onSettingsChanged(e: Event) {  
         let startup = await this.ipc.startup();
         this.reload(startup);
+    }
+
+    save(){
+        let memento = {
+            activeRepo: this.activeRepo,
+            activeCourse: this.activeCourse,
+            availableRepos: this.availableRepos
+        }
+
+        window.sessionStorage.setItem('app-element-memento', JSON.stringify(memento));
+    }
+
+    load(){
+        try{
+            let memento = window.sessionStorage.getItem('app-element-memento');
+            if(memento){
+                let parsed = JSON.parse(memento);
+                this.activeRepo = parsed.activeRepo;
+                this.activeCourse = parsed.activeCourse;
+                this.availableRepos = parsed.availableRepos;
+            }
+        }catch(e){
+            console.error("Error loading memento", e);
+        }
     }
 
     render() {

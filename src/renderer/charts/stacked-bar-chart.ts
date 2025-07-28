@@ -64,9 +64,14 @@ export class StackedBarChart extends LitElement {
         `;
     }
 
+    protected createRenderRoot() {
+        return this;
+      }
+
     static styles = css`
         :host {
             display: block;
+            position: relative;
         }
     `
 }
