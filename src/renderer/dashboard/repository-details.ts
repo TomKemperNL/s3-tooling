@@ -44,10 +44,6 @@ export class RepositoryDetails extends LitElement {
     blameStats?: BlameStatisticsDTO;
     @property({ type: Boolean, state: true })
     loading: boolean = false;
-    @property({ type: String, state: true })
-    selectedAuthorName: string = '';
-    @property({ type: Object, state: true })
-    selectedAuthor: AuthorStatisticsDTO;
 
     @property({ type: Array, state: true })
     allAuthors: string[] = [];
@@ -65,8 +61,6 @@ export class RepositoryDetails extends LitElement {
             this.branches = [];
             this.repoStats = undefined;
             this.blameStats = undefined;
-            this.selectedAuthorName = '';
-            this.selectedAuthor = undefined;
             this.allAuthors = [];
             this.enabledAuthors = [];
 
@@ -96,19 +90,6 @@ export class RepositoryDetails extends LitElement {
         this.enabledAuthors = e.enabledAuthors;
     }
         
-    selectAuthor(e: AuthorSelectedEvent) {
-        this.selectedAuthorName = e.authorName;
-        this.ipc.getStudentStats(
-            this.repo.courseId,
-            this.repo.assignment,
-            this.repo.name,
-            { authorName: e.authorName }).then(
-                authorStats => {
-                    this.selectedAuthor = authorStats;
-                });
-
-    };
-
     async mapAuthors(e: AuthorMappedEvent) {
         await this.ipc.updateAuthorMapping(this.repo.courseId, this.repo.name, e.mapping);
         await this.refresh(null);
@@ -197,7 +178,7 @@ export class RepositoryDetails extends LitElement {
         grid-template-areas:
             "title title"
             "pie     bar"
-            "numbers student";
+            "numbers _";
             ;
         grid-template-columns: 1fr 2fr;
         grid-template-rows: min-content minmax(25%, 50%) 1fr;
@@ -247,12 +228,14 @@ export class RepositoryDetails extends LitElement {
             member: this.repo.members.indexOf(a) !== -1,
             color: this.authorToColor(a),
             enabled: this.enabledAuthors.indexOf(a) !== -1,
-            aliases: this.repoStats?.aliases[a] || []
+            aliases: this.repoStats?.aliases[a] || [],
+            added: this.repoStats?.authors[a]?.added || 0,
+            removed: this.repoStats?.authors[a]?.removed || 0
         }));
 
         return html`
         <div style="grid-area: title">
-            <h3>${this.repo.name}</h3>
+            <h3><a href=${this.repo.url.replace("https", "external")}>${this.repo.name}</a></h3>
             <p><select ?disabled=${this.loading} @change=${this.switchBranch}>
                 ${map(this.branches, b => html`
                     <option value=${b} ?selected=${b === this.currentBranch}>${b}</option>
@@ -266,8 +249,7 @@ export class RepositoryDetails extends LitElement {
                     <li>Added: ${this.repoStats!.total.added} / Removed: ${this.repoStats!.total.removed}</li>
                     <li>Authors:
                         <author-list 
-                            .authors=${authorList} 
-                            @author-selected=${this.selectAuthor} 
+                            .authors=${authorList}
                             @enabled-authors-changed=${this.toggleAuthors} 
                             @author-mapped=${this.mapAuthors}
                             @remove-alias=${this.removeAlias}></author-list>
@@ -294,12 +276,7 @@ export class RepositoryDetails extends LitElement {
                 .values=${blameValues}
                 .colors=${blameColors}></pie-chart>
         `)}
-        </div>
-        <div style="grid-area: student">
-        ${when(this.selectedAuthor, () => html`
-                <student-details  .authorName=${this.selectedAuthorName} .authorStats=${this.selectedAuthor}></student-details>
-            `)}    
-        </div>
+        </div>      
         `;
     }
 }

@@ -84,8 +84,8 @@ export function parseBlame(blameLines: string[]): { [author: string]: number } {
     return report;
 }
 
-function combineReports(rep1: {[author:string]: number} , rep2: {[author:string]: number} ) {
-    let result: {[author:string]: number} = {};
+function combineReports(rep1: { [author: string]: number }, rep2: { [author: string]: number }) {
+    let result: { [author: string]: number } = {};
     function addToReport(key: string, value: number) {
         if (!result[key]) {
             result[key] = 0;
@@ -106,7 +106,7 @@ export type CloneStyle = 'https' | 'ssh'
 
 export class FileSystem {
     #basePath: string;
-    cloneStyle : CloneStyle = 'ssh'
+    cloneStyle: CloneStyle = 'ssh'
 
     constructor(basePath: string) {
         if (!basePath) {
@@ -128,12 +128,12 @@ export class FileSystem {
             await mkdir(target, options);
         }
 
-        if(this.cloneStyle === 'https'){
+        if (this.cloneStyle === 'https') {
             await exec(`git clone "${repo.http_url}"`, { cwd: target });
-        }else if(this.cloneStyle === 'ssh'){
+        } else if (this.cloneStyle === 'ssh') {
             await exec(`git clone "${repo.ssh_url}"`, { cwd: target });
         }
-        
+
         return fullTarget;
     }
 
@@ -162,28 +162,50 @@ export class FileSystem {
 
         delete this.repoCache[target];
         delete this.blameCache[target];
+        delete this.branchCache[target];
     }
 
+    branchCache: { [path: string]: any } = {};
+
     async getCurrentBranch(...repoPath: string[]) {
+        if (this.branchCache[repoPath.join('/')] && this.branchCache[repoPath.join('/')].current) {
+            return this.branchCache[repoPath.join('/')].current;
+        }
+
         let target = path.join(this.#basePath, ...repoPath);
         let result = await exec(`git branch --show-current`, { cwd: target, encoding: 'utf8' });
-        return result.stdout.trim();
+        let output = result.stdout.trim();
+
+        this.branchCache[repoPath.join('/')] = this.branchCache[repoPath.join('/')] || {};
+        this.branchCache[repoPath.join('/')].current = output;
     }
 
     async getDefaultBranch(...repoPath: string[]) {
+        if (this.branchCache[repoPath.join('/')] && this.branchCache[repoPath.join('/')].default) {
+            return this.branchCache[repoPath.join('/')].default;
+        }
+
         let target = path.join(this.#basePath, ...repoPath);
         let result = await exec(`git remote show origin`, { cwd: target, encoding: 'utf8' });
         let lines = result.stdout.split('\n');
 
         let defaultBranchLine = lines.find(line => line.trim().startsWith('HEAD branch:'));
         if (defaultBranchLine) {
-            return defaultBranchLine.replace('HEAD branch:', '').trim();
+            let output = defaultBranchLine.replace('HEAD branch:', '').trim();
+
+            this.branchCache[repoPath.join('/')] = this.branchCache[repoPath.join('/')] || {};
+            this.branchCache[repoPath.join('/')].default = output;
+            return output;
         } else {
             throw new Error('Could not determine default branch');
         }
     }
 
     async getBranches(defaultBranch: string, ...repoPath: string[]) {
+        if (this.branchCache[repoPath.join('/')] && this.branchCache[repoPath.join('/')].branches) {
+            return this.branchCache[repoPath.join('/')].branches;
+        }
+
         let target = path.join(this.#basePath, ...repoPath);
         let result = await exec(`git branch --all --remote --no-merge "${defaultBranch}"`, { cwd: target, encoding: 'utf8' });
         let branches = result.stdout.split('\n').filter(b => b.length > 0).map(b => b.trim());
@@ -191,6 +213,9 @@ export class FileSystem {
         branches = branches.filter(b => b.indexOf('HEAD') === -1);
 
         branches = [...new Set(branches.sort())];
+
+        this.branchCache[repoPath.join('/')] = this.branchCache[repoPath.join('/')] || {};
+        this.branchCache[repoPath.join('/')].branches = branches;
         return branches;
     }
 
@@ -222,7 +247,7 @@ export class FileSystem {
     async getGroupBlame(groups: GroupDefinition[], ...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
-        let report : {[groups:string]: number} = {};
+        let report: { [groups: string]: number } = {};
 
         return report;
     }
@@ -239,7 +264,7 @@ export class FileSystem {
 
 
         let files = filesRaw.stdout.split('\n').filter(f => f.length > 0).map(f => f.trim());
-        let report : {[author:string]: number} = {};
+        let report: { [author: string]: number } = {};
 
         //Het is jammer, maar helaas dat git blame anders omgaat met binary files dan git log. Dus het zal nog even klooien zijn om er voor te zorgen
         //dat die 2 getallen met elkaar gaan matchen.

@@ -72,6 +72,7 @@ export type RepoDTO = {
     name: string,
     groupRepo: boolean,
     members: string[]
+    url: string
 }
 
 export type StatsFilter = {

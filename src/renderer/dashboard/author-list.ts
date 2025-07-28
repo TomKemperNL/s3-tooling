@@ -14,6 +14,8 @@ export type AuthorItem = {
     member: boolean;
     enabled: boolean;
     aliases: string[];
+    added: number;
+    removed: number;
 }
 
 export class AuthorSelectedEvent extends Event {
@@ -162,7 +164,7 @@ export class AuthorList extends LitElement {
                 @drop=${this.dropAuthor(a)}
                 @dragover=${this.dragover(a)}
                 >
-            ${a.name}</span>
+            ${a.name} (+${a.added}/-${a.removed})</span>
             `
 
         return html`    
