@@ -1,5 +1,5 @@
 import { group } from "console";
-import { BlameStatisticsDTO, combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsDTOPerGroup, StatsFilter, StudentFilter } from "../shared";
+import { PieDTO, combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsDTOPerGroup, StatsFilter, StudentFilter } from "../shared";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient } from "./github-client";
@@ -273,23 +273,39 @@ export class StatisticsController implements StatsApi {
 
 
     @ipc("repostats-blame:get")
-    async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<BlameStatisticsDTO> {
+    async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<PieDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         
-        let [blamePie, projectStats] = await Promise.all([
+        let [gitPie, projectStats] = await Promise.all([
             this.fileSystem.getLinesByAuthorPie(savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
         ]);
         
         let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name)
         projectStats.mapAuthors(authorMapping);        
-        blamePie = mergeAuthors(blamePie, authorMapping);
+        gitPie = mergeAuthors(gitPie, authorMapping);
 
         let docsPie: { [name: string]: number } = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
 
         return {
             aliases: mappingToAliases(authorMapping),
-            blamePie: mergePies(blamePie, docsPie)
+            pie: mergePies(gitPie, docsPie)
+        };
+    }
+
+    @ipc("repostats-group-pie:get")
+    async getGroupPie(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<PieDTO> {
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name)
+        let [gitPie, projectStats] = await Promise.all([
+            this.fileSystem.getLinesByGroupPie(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment, name),
+            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
+        ]);
+        let docsPie: { [name: string]: number } = { "Docs" : projectStats.getLinesTotal().added }
+
+        return {
+            aliases: mappingToAliases(authorMapping),
+            pie: mergePies(gitPie, docsPie)
         };
     }
 

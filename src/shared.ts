@@ -114,9 +114,9 @@ export type AuthorStatisticsDTO = {
     weekly: { [group: string]: LinesStatistics }[],
 }
 
-export type BlameStatisticsDTO = {
+export type PieDTO = {
     aliases: { [name: string]: string[] },
-    blamePie: { [name: string] : number}
+    pie: { [name: string] : number}
 }
 
 export type RepoStatisticsPerWeekDTO = {

@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { AuthorStatisticsDTO, BlameStatisticsDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO } from "../../shared";
+import { AuthorStatisticsDTO, PieDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO } from "../../shared";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
 import { BackendApi } from "../../backend-api";
@@ -41,7 +41,12 @@ export class RepositoryDetails extends LitElement {
     @property({ type: Object, state: true })
     repoStats?: RepoStatisticsDTO;
     @property({ type: Object, state: true })
-    blameStats?: BlameStatisticsDTO;
+    blameStats?: PieDTO;
+
+    @property({ type: Object, state: true })
+    groupPie?: PieDTO;
+
+
     @property({ type: Boolean, state: true })
     loading: boolean = false;
 
@@ -68,12 +73,15 @@ export class RepositoryDetails extends LitElement {
             let gettingBranchInfo = this.ipc.getBranchInfo(this.repo.courseId, this.repo.assignment, this.repo.name);
             let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
             let gettingBlameStats = this.ipc.getBlameStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
-            Promise.all([gettingBranchInfo, gettingRepos, gettingBlameStats]).then(([branchInfo, repoStats, blamestats]) => {
+            let gettingGroupPie = this.ipc.getGroupPie(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
+
+            Promise.all([gettingBranchInfo, gettingRepos, gettingBlameStats, gettingGroupPie]).then(([branchInfo, repoStats, blamestats, groupPie]) => {
 
                 this.currentBranch = branchInfo.currentBranch;
                 this.branches = branchInfo.availableBranches;
                 this.repoStats = repoStats;
                 this.blameStats = blamestats;
+                this.groupPie = groupPie;
                 this.loading = false;
             });
         }
@@ -119,12 +127,30 @@ export class RepositoryDetails extends LitElement {
         "rgba(223,159,191,1)"
     ]
 
+    //TODO: Copy-pasta van author-details fixen
+    groupColors = [        
+        "rgba(255, 99, 132, 0.8)",
+        "rgba(54, 162, 235, 0.8)",
+        "rgba(255, 206, 86, 0.8)",
+        "rgba(75, 192, 192, 0.8)",
+        "rgba(153, 102, 255, 0.8)",
+    ]
+
     authorToColor(author: string): string {
         let authors = this.allAuthors;
         if (authors.indexOf(author) === -1) {
             return 'rgba(0,0,0,1)';
         } else {
             return this.colors[authors.indexOf(author) % this.colors.length];
+        }
+    }
+
+    groupToColor(group: string): string {
+        let groups = Object.keys(this.groupPie?.pie || []);
+        if (groups.indexOf(group) === -1) {
+            return 'rgba(0,0,0,1)';
+        } else {
+            return this.groupColors[groups.indexOf(group) % this.groupColors.length];
         }
     }
 
@@ -176,11 +202,11 @@ export class RepositoryDetails extends LitElement {
     :host {
         display: grid;
         grid-template-areas:
-            "title title"
-            "pie     bar"
-            "numbers _";
+            "title    title"
+            "pie      bar"
+            "numbers  _";
             ;
-        grid-template-columns: 1fr 2fr;
+        grid-template-columns: 1fr 3fr;
         /* grid-template-rows: min-content minmax(25%, 50%) 1fr; */
     }
 
@@ -204,6 +230,11 @@ export class RepositoryDetails extends LitElement {
         let blameValues: number[] = [];
         let blameColors: string[] = [];
 
+        let groupLabels: string[] = [];
+        let groupValues: number[] = [];
+        let groupColors: string[] = [];
+
+
         if (this.repoStats) {
 
             for (let i = 0; i < this.repoStats.weekly.total.length; i++) {
@@ -213,13 +244,21 @@ export class RepositoryDetails extends LitElement {
         }
 
         if (this.blameStats) {
-            for (let a of Object.keys(this.blameStats?.blamePie)) {
+            for (let a of Object.keys(this.blameStats?.pie)) {
                 if (this.enabledAuthors.indexOf(a) === -1) {
                     continue;
                 }
                 blameLabels.push(a);
-                blameValues.push(this.blameStats.blamePie[a]);
+                blameValues.push(this.blameStats.pie[a]);
                 blameColors.push(this.authorToColor(a));
+            }
+        }
+
+        if(this.groupPie){
+            for (let g of Object.keys(this.groupPie?.pie)) {
+                groupLabels.push(g);
+                groupValues.push(this.groupPie.pie[g]);
+                groupColors.push(this.groupToColor(g));
             }
         }
 
@@ -252,7 +291,16 @@ export class RepositoryDetails extends LitElement {
                 .values=${blameValues}
                 .colors=${blameColors}></pie-chart>
         `)}
-        </div>  
+        ${when(this.groupPie, () => html`
+            <pie-chart 
+                class=${classMap({ loading: this.loading, chart: true })} 
+                
+                .labels=${groupLabels}
+                .values=${groupValues}
+                .colors=${groupColors}></pie-chart>
+        `)}
+        </div>
+
         <div style="grid-area: numbers;" class=${classMap({ loading: this.loading })}>
             <ul>
                 ${when(this.repoStats, () => html`

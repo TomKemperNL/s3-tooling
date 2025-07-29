@@ -1,4 +1,4 @@
-import { BlameStatisticsDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "../shared";
+import { PieDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "../shared";
 import { Settings } from "../shared";
 import { BackendApi } from "../backend-api";
 
@@ -9,6 +9,17 @@ export class ErrorHandlingBackendApi implements BackendApi {
     constructor(ipc: BackendApi) {
         this.ipc = ipc;
     }
+
+    async getGroupPie(courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<PieDTO>{
+        try {
+            return await this.ipc.getGroupPie(courseId, assignment, name, filter);
+        } catch (error) {
+            console.error("Error fetching group pie:", error);
+            alert("Failed to load group pie stats:" + error.message);
+            throw error; // Rethrow the error to be handled by the caller
+        }
+    } 
+
     async removeAlias(courseId: number, name: string, aliases: { [canonical: string]: string[]; }){
         try {
             await this.ipc.removeAlias(courseId, name, aliases);
@@ -123,13 +134,13 @@ export class ErrorHandlingBackendApi implements BackendApi {
             return {} as RepoStatisticsDTO; // Return an empty object on error
         }
     }
-    async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<BlameStatisticsDTO> {
+    async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<PieDTO> {
         try {
             return await this.ipc.getBlameStats(courseId, assignment, name, filter);
         } catch (error) {
             console.error("Error fetching blame stats:", error);
             alert("Failed to load blame stats:" + error.message);
-            return {} as BlameStatisticsDTO; // Return an empty object on error
+            return {} as PieDTO; // Return an empty object on error
         }
     }
     async getStudentStats(courseId: number, assignment: string, name: string, filter: StudentFilter): Promise<any> {

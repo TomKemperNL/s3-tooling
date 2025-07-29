@@ -246,35 +246,40 @@ export class FileSystem {
 
     async getLinesByGroupPie(groups: GroupDefinition[], ...repoPath: string[]) : Promise<Record<string, number>> {
         let target = path.join(this.#basePath, ...repoPath);
-        let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
+        let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });        
+        let files = filesRaw.stdout.split('\n').filter(f => f.length > 0).map(f => f.trim());
         let report: { [groups: string]: number } = {};
 
-        for( let group of groups) {
-            report[group.name] = 0;
-            if(group.extensions){
-                let extensions = group.extensions.map(ext => ext.toLowerCase());
-                let files = filesRaw.stdout.split('\n').filter(f => f.length > 0).map(f => f.trim());
+        async function processFile(file: string, extensions: string[]) : Promise<number> {
+            if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
+                return 0;
+            }
+            if (file.indexOf('node_modules/') !== -1) { //.gitignore is moeilijk soms...
+                return 0;
+            }
+            if (file.indexOf('target/') !== -1) {
+                return 0;
+            }
 
-                for (let file of files) {
-                    if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
-                        continue;
-                    }
-                    if (file.indexOf('node_modules/') !== -1) { //.gitignore is moeilijk soms...
-                        continue;
-                    }
-                    if (file.indexOf('target/') !== -1) {
-                        continue;
-                    }
-
-
-                    if (extensions.some(ext => file.toLowerCase().endsWith(ext))) {
-                        let lines = await readFile(path.join(target, file), { encoding: 'utf8' });
-                        let lineCount = lines.split('\n').map(l => l.trim()).filter(l => l.length > 0).length;                        
-                        report[group.name] += lineCount;                        
-                    }
-                }
+            if (extensions.some(ext => file.toLowerCase().endsWith(ext.toLowerCase()))) {
+                let lines = await readFile(path.join(target, file), { encoding: 'utf8' });
+                let lineCount = lines.split('\n').map(l => l.trim()).filter(l => l.length > 0).length;                        
+                return lineCount;                        
+            }else {
+                return 0;
             }
         }
+
+        async function processGroup(group: GroupDefinition) {
+            if(group.extensions){
+                let lines = await Promise.all(files.map(f => processFile(f, group.extensions)));
+                report[group.name] = lines.reduce((acc, cur) => acc + cur, 0);
+            }else{
+                report[group.name] = 0;
+            }
+        }
+
+        await Promise.all(groups.map(processGroup))
 
         return report;
     }
