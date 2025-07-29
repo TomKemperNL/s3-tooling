@@ -1,4 +1,4 @@
-import { PieDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "../shared";
+import { PieDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO } from "../shared";
 import { Settings } from "../shared";
 import { BackendApi } from "../backend-api";
 
@@ -10,7 +10,7 @@ export class ErrorHandlingBackendApi implements BackendApi {
         this.ipc = ipc;
     }
 
-    async getGroupPie(courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<PieDTO>{
+    async getGroupPie(courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<GroupPieDTO>{
         try {
             return await this.ipc.getGroupPie(courseId, assignment, name, filter);
         } catch (error) {

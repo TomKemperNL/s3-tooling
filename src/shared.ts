@@ -119,6 +119,11 @@ export type PieDTO = {
     pie: { [name: string] : number}
 }
 
+export type GroupPieDTO = {
+    aliases: { [name: string]: string[] },
+    groupedPie: Record<string, Record<string,number>>
+}
+
 export type RepoStatisticsPerWeekDTO = {
     total: LinesStatistics[],
     authors: { [name: string] : LinesStatistics[]}

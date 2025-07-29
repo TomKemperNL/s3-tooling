@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { AuthorStatisticsDTO, PieDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO } from "../../shared";
+import { AuthorStatisticsDTO, PieDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO, GroupPieDTO } from "../../shared";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
 import { BackendApi } from "../../backend-api";
@@ -44,7 +44,7 @@ export class RepositoryDetails extends LitElement {
     blameStats?: PieDTO;
 
     @property({ type: Object, state: true })
-    groupPie?: PieDTO;
+    groupPie?: GroupPieDTO;
 
 
     @property({ type: Boolean, state: true })
@@ -66,6 +66,7 @@ export class RepositoryDetails extends LitElement {
             this.branches = [];
             this.repoStats = undefined;
             this.blameStats = undefined;
+            this.groupPie = undefined;
             this.allAuthors = [];
             this.enabledAuthors = [];
 
@@ -146,7 +147,7 @@ export class RepositoryDetails extends LitElement {
     }
 
     groupToColor(group: string): string {
-        let groups = Object.keys(this.groupPie?.pie || []);
+        let groups = Object.keys(this.groupPie?.groupedPie || []);
         if (groups.indexOf(group) === -1) {
             return 'rgba(0,0,0,1)';
         } else {
@@ -255,9 +256,16 @@ export class RepositoryDetails extends LitElement {
         }
 
         if(this.groupPie){
-            for (let g of Object.keys(this.groupPie?.pie)) {
+            for (let g of Object.keys(this.groupPie?.groupedPie)) {
                 groupLabels.push(g);
-                groupValues.push(this.groupPie.pie[g]);
+
+                let authorTotals = 0;
+                for( let a of Object.keys(this.groupPie.groupedPie[g])) {
+                    if( this.enabledAuthors.indexOf(a) !== -1) {
+                        authorTotals += this.groupPie.groupedPie[g][a];
+                    }
+                }
+                groupValues.push(authorTotals);
                 groupColors.push(this.groupToColor(g));
             }
         }

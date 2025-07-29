@@ -1,5 +1,5 @@
 import { group } from "console";
-import { PieDTO, combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsDTOPerGroup, StatsFilter, StudentFilter } from "../shared";
+import { PieDTO, combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsDTOPerGroup, StatsFilter, StudentFilter, GroupPieDTO } from "../shared";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient } from "./github-client";
@@ -294,11 +294,11 @@ export class StatisticsController implements StatsApi {
     }
 
     @ipc("repostats-group-pie:get")
-    async getGroupPie(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<PieDTO> {
+    async getGroupPie(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<GroupPieDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name)
         let [gitPie, projectStats] = await Promise.all([
-            this.fileSystem.getLinesByGroupPie(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment, name),
+            this.fileSystem.getLinesByGroupThenAuthor(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
         ]);
 
@@ -306,14 +306,19 @@ export class StatisticsController implements StatsApi {
         let comGroup = groups.find(g => g.extensions === undefined);
         let pie = gitPie;
         if(comGroup){
-            let comPie : Record<string,number>= {};            
-            comPie[comGroup.name] = projectStats.getLinesTotal().added;
-            pie = mergePies(gitPie, comPie);    
+            let comPie: { [name: string]: number } = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();            
+            pie[comGroup.name] = comPie;
         }
-        
+
+        for(let group of Object.keys(pie)) {
+            let groupPie = pie[group];
+            groupPie = mergeAuthors(groupPie, authorMapping);
+            pie[group] = groupPie;
+        }
+
         return {
             aliases: mappingToAliases(authorMapping),
-            pie
+            groupedPie: pie
         };
     }
 
