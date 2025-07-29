@@ -301,11 +301,19 @@ export class StatisticsController implements StatsApi {
             this.fileSystem.getLinesByGroupPie(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
         ]);
-        let docsPie: { [name: string]: number } = { "Docs" : projectStats.getLinesTotal().added }
 
+        let groups = this.#getGroups(savedCourseConfig);
+        let comGroup = groups.find(g => g.extensions === undefined);
+        let pie = gitPie;
+        if(comGroup){
+            let comPie : Record<string,number>= {};            
+            comPie[comGroup.name] = projectStats.getLinesTotal().added;
+            pie = mergePies(gitPie, comPie);    
+        }
+        
         return {
             aliases: mappingToAliases(authorMapping),
-            pie: mergePies(gitPie, docsPie)
+            pie
         };
     }
 

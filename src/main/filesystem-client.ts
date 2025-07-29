@@ -178,6 +178,7 @@ export class FileSystem {
 
         this.branchCache[repoPath.join('/')] = this.branchCache[repoPath.join('/')] || {};
         this.branchCache[repoPath.join('/')].current = output;
+        return output;
     }
 
     async getDefaultBranch(...repoPath: string[]) {
@@ -281,7 +282,11 @@ export class FileSystem {
 
         await Promise.all(groups.map(processGroup))
 
-        return report;
+        let result : Record<string,number> = {}; //netter om het in dezelfde volgorde te returnen
+        for(let group of groups) {
+            result[group.name] = report[group.name];
+        }
+        return result;
     }
 
     blameCache: { [repoPath: string]: any } = {};
