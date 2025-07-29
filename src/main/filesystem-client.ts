@@ -244,7 +244,7 @@ export class FileSystem {
         return parsedLog;
     }
 
-    async getGroupBlame(groups: GroupDefinition[], ...repoPath: string[]) {
+    async getGroupBlame(groups: GroupDefinition[], ...repoPath: string[]) : Promise<Record<string, number>> {
         let target = path.join(this.#basePath, ...repoPath);
         let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
         let report: { [groups: string]: number } = {};
@@ -254,7 +254,7 @@ export class FileSystem {
 
     blameCache: { [repoPath: string]: any } = {};
 
-    async getBlame(...repoPath: string[]) {
+    async getBlame(...repoPath: string[]) : Promise<Record<string, number>> {
         let target = path.join(this.#basePath, ...repoPath);
         if (this.blameCache[target]) {
             console.log('cache-hit: blame for', target);

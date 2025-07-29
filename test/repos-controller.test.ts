@@ -96,7 +96,8 @@ function setupFakeGroupRepos() {
             id: 42,
             name: projectAssignmentName + '-some-group',
             full_name: 'bla-org' + '/' + projectAssignmentName + '-some-group',
-            organization: { login: 'bla-org' }
+            organization: { login: 'bla-org' },
+            html_url: 'https://example.org/bla'
         }];
     githubFake.members[projectAssignmentName + '-some-group'] = [{ login: 'githubtest' }];
 
