@@ -296,7 +296,7 @@ export class FileSystem {
         let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
         let files = filesRaw.stdout.split('\n').map(f => f.trim()).filter(f => f.length > 0);        
 
-        async function processFile(file: string): Promise<Record<string,number>>{
+        async function processFile(file: string): Promise<Record<string,number>>{            
             let hardcodedBinaryExtensions = ['.pdf', '.png', '.jar', '.zip', '.jpeg', '.webp', '.pptx', '.docx', '.xslx'];
 
             if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
@@ -314,23 +314,28 @@ export class FileSystem {
 
             let soloLog = null;
             try {
-                soloLog = await exec(`git log -1 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' });
+                soloLog = await exec(`git log -10 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' }); //Deze -10 is een beetje een lelijke gok
+                //basically willen we files ignoren die altijd binary zijn, of alleen maar merge-commits hebben.
+
+                //hmm, dat klinkt niet heel logisch: TODO, wat wouden we hier eigenlijk?:)
             } catch (e) {
                 //Als er een casing-probleem (zelfde file bestaat/bestond onder meerdere spellingen) is, 
                 // dan geeft git log hier een hele vreemde error
                 console.error('Error in git log', e);
                 return {};
             }
-
+            
             let logLines = soloLog.stdout.split('\n');
-            let [parsedLog] = parseLog(logLines);
+            let parsedLog = parseLog(logLines);
+            
 
-            if (parsedLog.changes.length === 0) {
+            
+            if (parsedLog.every(l => l.changes.length === 0)) {
                 return {}; //Ignore merge commits without any other changes
-            } else if (parsedLog.changes.some(c => c.added === '-' || c.removed === '-')) {
+            } else if (parsedLog.every(l => l.changes.some(c => c.added === '-' || c.removed === '-'))) {
                 return {}; //Ignore binary files
             }
-            else if (!ignoredAuthors.some(ia => ia === parsedLog.author)) {
+            else if (!parsedLog.every(l =>ignoredAuthors.some(ia => ia === l.author))) {
                 try {
                     let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
                     let blameLines = blame.stdout.split('\n');
@@ -340,6 +345,8 @@ export class FileSystem {
                     console.error('Error in blame', logLines, e);
                     return {};
                 }
+            }else{
+                return {};
             }
         }
 
@@ -349,12 +356,15 @@ export class FileSystem {
 
             if(group.extensions){
                 
-                let results = await Promise.all(files.filter(f => group.extensions.some(ext => f.toLowerCase().endsWith(ext.toLowerCase()))).map(f => processFile(f)));
-                
-                if(results.length !== 0){
-                    let result = results.reduce(combineRecords, {});
-                    output[group.name] = result;       
-                }
+                let results = await Promise.all(
+                    files.filter(f => group.extensions.some(ext => f.toLowerCase().endsWith(ext.toLowerCase()))).map(f =>  processFile(f).then(r => {
+                        if(!r){
+                            console.log(f, 'had no results');
+                        }
+                        return r;
+                    })));
+                let result = results.reduce(combineRecords, {});
+                output[group.name] = result;            
              
             }            
             return output;
