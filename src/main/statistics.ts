@@ -19,51 +19,35 @@ export interface StatsBuilderThenBy {
 
 export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
 
-    private wip: any;
-    constructor(private stats: Statistics, wip: any = null) {
-        if (!wip) {
-            this.wip = stats;
-        } else {
-            this.wip = wip;
-        }
+    #firstOp: (a: Statistics) => GroupedCollection<Statistics> | ExportingArray<Statistics>;
+    #otherOps: ((a: Statistics) => (GroupedCollection<Statistics> | ExportingArray<Statistics>))[] = [];
+
+    constructor(private start: Statistics) {        
     }
 
     groupByWeek(startDate: Date, endDate: Date): StatsBuilderThenBy {
-        if (this.wip instanceof CombinedStats || this.wip instanceof RepositoryStatistics || this.wip instanceof ProjectStatistics) {
-            return new StatsBuilder(this.stats, this.wip.groupByWeek(startDate, endDate));
-        } else if (this.wip instanceof ExportingArray || this.wip instanceof GroupedCollection) {
-            return new StatsBuilder(this.stats, this.wip.map(stat => stat.groupByWeek(startDate, endDate)));
-        } else {
-            throw new Error('Unsupported type for groupByWeek: ' + typeof this.wip);
-        }
+        this.#firstOp = (a: Statistics) => a.groupByWeek(startDate, endDate);
+        return this;
     }
     groupByAuthor(authors: string[]): StatsBuilderThenBy {
-        if (this.wip instanceof CombinedStats || this.wip instanceof RepositoryStatistics || this.wip instanceof ProjectStatistics) {
-            return new StatsBuilder(this.stats, this.wip.groupByAuthor(authors));
-        } else if (this.wip instanceof ExportingArray || this.wip instanceof GroupedCollection) {
-            console.log(this.wip);
-            return new StatsBuilder(this.stats, this.wip.map(stat => stat.groupByAuthor(authors)));
-        } else {
-            throw new Error('Unsupported type for groupByAuthor: ' + typeof this.wip);
-        }
+        this.#firstOp = (a: Statistics) => a.groupByAuthor(authors);
+        return this;
     }
     groupBy(groups: GroupDefinition[]): StatsBuilderThenBy {
-        if (this.wip instanceof CombinedStats || this.wip instanceof RepositoryStatistics || this.wip instanceof ProjectStatistics) {
-            return new StatsBuilder(this.stats, this.wip.groupBy(groups));
-        } else if (this.wip instanceof ExportingArray || this.wip instanceof GroupedCollection) {
-            return new StatsBuilder(this.stats, this.wip.map(stat => stat.groupBy(groups)));
-        } else {
-            throw new Error('Unsupported type for groupBy: ' + typeof this.wip);
-        }
+        this.#firstOp = (a: Statistics) => a.groupBy(groups);
+        return this;
     }
     thenByWeek(startDate: Date, endDate: Date = null): StatsBuilderThenBy {
-        return this.groupByWeek(startDate, endDate);
+        this.#otherOps.push((a: Statistics) => a.groupByWeek(startDate, endDate));
+        return this;
     }
     thenByAuthor(authors: string[]): StatsBuilderThenBy {
-        return this.groupByAuthor(authors);
+        this.#otherOps.push((a: Statistics) => a.groupByAuthor(authors));
+        return this;
     }
     thenBy(groups: GroupDefinition[]): StatsBuilderThenBy {
-        return this.groupBy(groups);
+        this.#otherOps.push((a: Statistics) => a.groupBy(groups));
+        return this;
     }
 
     static #deepOp(target: any, op: (a: Statistics) => any): any {
@@ -88,7 +72,14 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
     }
 
     build(): any {
-        return StatsBuilder.#flatten(this.wip);
+        let result : any = this.start;
+        if(this.#firstOp){
+            result = this.#firstOp(result)
+        }
+        for(let op of this.#otherOps) {
+            result = StatsBuilder.#deepOp(result, op);
+        }
+        return StatsBuilder.#flatten(result);
     }
 
 }

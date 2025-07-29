@@ -109,7 +109,6 @@ test('StatsBuilder - 3 doors down', async () => {
         }
     ]);
 
-
     const statsBuilder = new StatsBuilder(repoStats);
     let range = repoStats.getDateRange()
     let result = statsBuilder.groupByWeek(range.start, range.end).thenBy([
@@ -117,6 +116,13 @@ test('StatsBuilder - 3 doors down', async () => {
         { name: 'backend', extensions: ['js'] },        
     ]).thenByAuthor(["Bob", "Fred"]).build();
 
-    console.log(result)
+    expect(result).toStrictEqual([{
+        frontend: { Bob: { added: 1, removed: 2 }, Fred: { added: 0, removed: 0 } },
+        backend: { Bob: { added: 3, removed: 4 }, Fred: { added: 0, removed: 0 } }
+      },
+      {
+        frontend: { Bob: { added: 0, removed: 0 }, Fred: { added: 0, removed: 0 } },
+        backend: { Fred: { added: 3, removed: 4 }, Bob: { added: 0, removed: 0 } }
+      }]);
     
 });
