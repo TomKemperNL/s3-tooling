@@ -73,10 +73,11 @@ export class RepositoryDetails extends LitElement {
 
             let gettingBranchInfo = this.ipc.getBranchInfo(this.repo.courseId, this.repo.assignment, this.repo.name);
             let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
+            let gettingRepos2 = this.ipc.getRepoStats2(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
             let gettingBlameStats = this.ipc.getBlameStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
             let gettingGroupPie = this.ipc.getGroupPie(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
 
-            Promise.all([gettingBranchInfo, gettingRepos, gettingBlameStats, gettingGroupPie]).then(([branchInfo, repoStats, blamestats, groupPie]) => {
+            Promise.all([gettingBranchInfo, gettingRepos, gettingBlameStats, gettingGroupPie, gettingRepos2]).then(([branchInfo, repoStats, blamestats, groupPie, repoStats2]) => {
 
                 this.currentBranch = branchInfo.currentBranch;
                 this.branches = branchInfo.availableBranches;
@@ -84,6 +85,7 @@ export class RepositoryDetails extends LitElement {
                 this.blameStats = blamestats;
                 this.groupPie = groupPie;
                 this.loading = false;
+                console.log(repoStats2)
             });
         }
         if (_changedProperties.has('repoStats')) {

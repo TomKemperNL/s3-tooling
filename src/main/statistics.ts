@@ -41,9 +41,10 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
         if (this.wip instanceof CombinedStats || this.wip instanceof RepositoryStatistics || this.wip instanceof ProjectStatistics) {
             return new StatsBuilder(this.stats, this.wip.groupByAuthor(authors));
         } else if (this.wip instanceof ExportingArray || this.wip instanceof GroupedCollection) {
+            console.log(this.wip);
             return new StatsBuilder(this.stats, this.wip.map(stat => stat.groupByAuthor(authors)));
         } else {
-            throw new Error('Unsupported type for groupByWeek: ' + typeof this.wip);
+            throw new Error('Unsupported type for groupByAuthor: ' + typeof this.wip);
         }
     }
     groupBy(groups: GroupDefinition[]): StatsBuilderThenBy {
@@ -52,7 +53,7 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
         } else if (this.wip instanceof ExportingArray || this.wip instanceof GroupedCollection) {
             return new StatsBuilder(this.stats, this.wip.map(stat => stat.groupBy(groups)));
         } else {
-            throw new Error('Unsupported type for groupByWeek: ' + typeof this.wip);
+            throw new Error('Unsupported type for groupBy: ' + typeof this.wip);
         }
     }
     thenByWeek(startDate: Date, endDate: Date = null): StatsBuilderThenBy {
@@ -107,6 +108,7 @@ export interface Statistics {
 export class CombinedStats implements Statistics {
     constructor(private stats: Statistics[]) {
     }
+    
     getDistinctAuthors(): string[] {
         let authors = new Set<string>();
         for (let stat of this.stats) {
@@ -282,6 +284,7 @@ export class ExportingArray<T> {
     }
 
     map<Y>(fn: (r: T) => Y): ExportingArray<Y> {
+        console.log('in array', this.items);
         let result = this.items.map(fn);
         return new ExportingArray(result);
     }

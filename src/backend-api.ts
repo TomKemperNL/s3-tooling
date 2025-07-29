@@ -1,4 +1,4 @@
-import { PieDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO } from "./shared";
+import { PieDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO, RepoStatisticsDTO2 } from "./shared";
 import { Settings } from "./shared"
 
 
@@ -30,6 +30,7 @@ export interface RepoApi {
 
 export interface StatsApi {
     getRepoStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<RepoStatisticsDTO>
+    getRepoStats2: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<RepoStatisticsDTO2>
     getBlameStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<PieDTO>
     getGroupPie: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<GroupPieDTO>
     getStudentStats: (courseId: number, assignment: string, name: string, filter: StudentFilter) => Promise<any>

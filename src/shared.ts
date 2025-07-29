@@ -103,6 +103,12 @@ export type RepoStatisticsDTO = {
     weekly: RepoStatisticsPerWeekDTO,
 }
 
+
+export type RepoStatisticsDTO2 = {
+    aliases: { [name: string]: string[] },
+    week_group_author: Record<string, Record<string, LinesStatistics>>[],
+}
+
 export type RepoStatisticsDTOPerGroup = {
     total: LinesStatistics,
     groups: { [name: string] : LinesStatistics}

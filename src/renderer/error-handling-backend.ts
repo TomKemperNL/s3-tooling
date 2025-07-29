@@ -1,4 +1,4 @@
-import { PieDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO } from "../shared";
+import { PieDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO, RepoStatisticsDTO2 } from "../shared";
 import { Settings } from "../shared";
 import { BackendApi } from "../backend-api";
 
@@ -125,6 +125,7 @@ export class ErrorHandlingBackendApi implements BackendApi {
             return [];
         }
     }
+    
     async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
         try {
             return await this.ipc.getRepoStats(courseId, assignment, name, filter);
@@ -134,6 +135,18 @@ export class ErrorHandlingBackendApi implements BackendApi {
             return {} as RepoStatisticsDTO; // Return an empty object on error
         }
     }
+
+    async getRepoStats2(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO2> {
+        try {
+            return await this.ipc.getRepoStats2(courseId, assignment, name, filter);
+        } catch (error) {
+            console.error("Error fetching repository stats:", error);
+            alert("Failed to load repository stats:" + error.message);
+            return {} as RepoStatisticsDTO2; // Return an empty object on error
+        }
+    }
+
+
     async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<PieDTO> {
         try {
             return await this.ipc.getBlameStats(courseId, assignment, name, filter);

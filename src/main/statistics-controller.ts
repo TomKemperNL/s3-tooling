@@ -1,5 +1,5 @@
 import { group } from "console";
-import { PieDTO, combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsDTOPerGroup, StatsFilter, StudentFilter, GroupPieDTO } from "../shared";
+import { PieDTO, combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsDTOPerGroup, StatsFilter, StudentFilter, GroupPieDTO, RepoStatisticsDTO2 } from "../shared";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient } from "./github-client";
@@ -214,8 +214,7 @@ export class StatisticsController implements StatsApi {
         let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
         combinedStats.mapAuthors(authorMapping);
 
-        let repoMembers = await this.db.getCollaborators(savedCourseConfig.githubStudentOrg, name);
-
+        // let repoMembers = await this.db.getCollaborators(savedCourseConfig.githubStudentOrg, name);
         // TODO: docenten er uit filteren... dat maakt het nu slechter dan accounts die niets hebben gedaan er uit filteren
         // let allAuthors : string[] = [...new Set(combinedStats.getDistinctAuthors().concat(repoMembers.map(m => m.login)))];        
         let allAuthors = combinedStats.getDistinctAuthors();
@@ -233,6 +232,32 @@ export class StatisticsController implements StatsApi {
                     .build()
             }
         };
+    }
+
+    @ipc("repostats:get2")
+    async getRepoStats2(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO2> {
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);        
+
+        let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
+        let firstDate = savedCourseConfig.startDate;
+        let lastDate = combinedStats.getDateRange().end;
+        
+        let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
+        combinedStats.mapAuthors(authorMapping);
+        let allAuthors = combinedStats.getDistinctAuthors();
+
+        let builder = new StatsBuilder(combinedStats);
+        let week_group_author = builder
+            .groupByWeek(firstDate, lastDate)
+            .thenBy(this.#getGroups(savedCourseConfig))
+            .thenByAuthor(allAuthors)
+            .build();
+
+        return {
+            aliases: mappingToAliases(authorMapping),
+            week_group_author: week_group_author
+        }
+
     }
 
     async getRepoStatsByGroup(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTOPerGroup> {
