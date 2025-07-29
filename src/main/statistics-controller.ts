@@ -277,7 +277,7 @@ export class StatisticsController implements StatsApi {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         
         let [blamePie, projectStats] = await Promise.all([
-            this.fileSystem.getBlame(savedCourseConfig.githubStudentOrg, assignment, name),
+            this.fileSystem.getLinesByAuthorPie(savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
         ]);
         
