@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { AuthorStatisticsDTO, PieDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO, GroupPieDTO } from "../../shared";
+import { AuthorStatisticsDTO, PieDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO, GroupPieDTO, RepoStatisticsDTO2 } from "../../shared";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
 import { BackendApi } from "../../backend-api";
@@ -40,6 +40,9 @@ export class RepositoryDetails extends LitElement {
     branches: string[] = [];
     @property({ type: Object, state: true })
     repoStats?: RepoStatisticsDTO;
+    @property({ type: Object, state: true })
+    repoStats2: RepoStatisticsDTO2;
+
     @property({ type: Object, state: true })
     blameStats?: PieDTO;
 
@@ -85,14 +88,14 @@ export class RepositoryDetails extends LitElement {
                 this.blameStats = blamestats;
                 this.groupPie = groupPie;
                 this.loading = false;
-                console.log(repoStats2)
+                this.repoStats2 = repoStats2;
             });
         }
         if (_changedProperties.has('repoStats')) {
             console.log('setting authors');
             if(this.repoStats){
-                this.allAuthors = Object.keys(this.repoStats.authors);
-                this.enabledAuthors = Object.keys(this.repoStats.authors);
+                this.allAuthors = Object.keys(this.repoStats.aliases);
+                this.enabledAuthors = Object.keys(this.repoStats.aliases);
             }            
         }
     }
@@ -184,6 +187,14 @@ export class RepositoryDetails extends LitElement {
         return datasets;
     }
 
+    toDatasets2(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {
+        let datasets: any[] = [];
+
+       
+
+        return datasets;
+    }
+
     async refresh(e: Event){
         console.log('Refreshing repository', this.repo);
         this.loading = true;
@@ -228,6 +239,7 @@ export class RepositoryDetails extends LitElement {
     render() {
         let labels: string[] = [];
         let datasets: any[] = [];
+        let datasets2: any[] = [];
 
         let blameLabels: string[] = [];
         let blameValues: number[] = [];
@@ -244,6 +256,14 @@ export class RepositoryDetails extends LitElement {
                 labels.push('Week ' + (i + 1));
             }
             datasets = this.toDatasets(this.repoStats.weekly!);
+        }
+
+        if (this.repoStats2) {
+
+            for (let i = 0; i < this.repoStats.weekly.total.length; i++) {
+                labels.push('Week ' + (i + 1));
+            }
+            datasets2 = this.toDatasets2(this.repoStats2.week_group_author);
         }
 
         if (this.blameStats) {
