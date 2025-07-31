@@ -1,12 +1,12 @@
 import { test, expect, beforeEach, afterAll } from 'vitest';
-import { Db } from '../src/main/db';
+import { Db } from '../../src/main/db';
 import { Database } from 'sqlite3';
 
 import { FakeCanvasClient } from './fakes/FakeCanvasClient';
 import { FakeGithubClient } from './fakes/FakeGithubClient';
 import { FakeFileSystem } from './fakes/FakeFileSystem';
-import { CourseConfig, CourseDTO } from '../src/shared';
-import { ReposController } from '../src/main/repos-controller';
+import { CourseConfig, CourseDTO } from '../../src/shared';
+import { ReposController } from '../../src/main/repos-controller';
 
 let db: Db = null;
 let reposController: ReposController = null;

@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { RepositoryStatistics } from '../src/main/repository-statistics';
+import { RepositoryStatistics } from '../../src/main/repository-statistics';
 
 test('CanSumLinesPerAuthor', {}, () => {
     let stats = new RepositoryStatistics([

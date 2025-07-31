@@ -1,5 +1,5 @@
-import { RepoResponse } from "../../src/main/github-client";
-import { Issue, PullRequest } from "../../src/shared";
+import { RepoResponse } from "../../../src/main/github-client";
+import { Issue, PullRequest } from "../../../src/shared";
 
 export class FakeGithubClient {
     apiCalls = 0;

@@ -1,4 +1,4 @@
-import { SectionResponse, SimpleDict } from "../../src/main/canvas-client";
+import { SectionResponse, SimpleDict } from "../../../src/main/canvas-client";
 
 export class FakeCanvasClient {
     apiCalls = 0;

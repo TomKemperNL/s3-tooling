@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { parseBlame, parseLog } from '../src/main/filesystem-client';
+import { parseBlame, parseLog } from '../../src/main/filesystem-client';
 
 test('CanParseChanges', () => {
     let result = parseLog(`eenofandere0123hash,2025-04-09T13:51:33+02:00,WoopWoop,Icons toegvoegd

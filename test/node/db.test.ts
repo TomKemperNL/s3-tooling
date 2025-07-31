@@ -1,7 +1,7 @@
 import { test, expect, beforeEach, afterAll } from 'vitest';
-import { Db } from '../src/main/db'
+import { Db } from '../../src/main/db'
 import { Database } from "sqlite3";
-import { CourseConfig, StudentDTO } from '../src/shared';
+import { CourseConfig, StudentDTO } from '../../src/shared';
 
 let db: Db = null;
 beforeEach(async () => {

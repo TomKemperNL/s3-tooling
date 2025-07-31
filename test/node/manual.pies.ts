@@ -1,4 +1,4 @@
-import { FileSystem as FileSystemClient } from "../src/main/filesystem-client";
+import { FileSystem as FileSystemClient } from "../../src/main/filesystem-client";
 
 async function main(){
     let gfs = new FileSystemClient(".");

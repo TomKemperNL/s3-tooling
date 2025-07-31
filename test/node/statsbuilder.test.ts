@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest';
-import { RepositoryStatistics } from '../src/main/repository-statistics';
-import { StatsBuilder } from '../src/main/statistics';
+import { RepositoryStatistics } from '../../src/main/repository-statistics';
+import { StatsBuilder } from '../../src/main/statistics';
 
 test('StatsBuilder - 1 doors down', async () => {
     let repoStats = new RepositoryStatistics([
