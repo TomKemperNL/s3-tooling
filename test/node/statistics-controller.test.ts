@@ -75,6 +75,56 @@ test("canGetEmptyStats", async () => {
 });
 
 
+test("canGetEmptyStats2", async () => {
+  let result = await statisticsController.getRepoStats2(
+    someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" })
+
+  expect(result).toStrictEqual({
+    aliases: {},
+    week_group_author: [
+      {
+        Backend: {},
+        Frontend: {},
+        Markup: {},
+        Docs: {},
+        Communication: {}
+      }]
+  });
+});
+
+test("Can Get Merged Stats2", async () => {
+  fsFake.commits = [
+    {
+      author: "Bob", hash: "ABCD1234", subject: "Feature X", date: new Date('2023-10-01'),
+      changes: [
+        { added: 10, removed: 2, path: "file1.js" },
+      ]
+    }
+  ];
+  githubFake.pullRequests = [
+    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
+  ];
+  githubFake.issues = [
+    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
+  ];
+
+  let result = await statisticsController.getRepoStats2(
+    someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" });
+  expect(result).toStrictEqual({
+    aliases: {},
+    week_group_author: [
+      {
+        Backend: { "Bob": { added: 0, removed: 0 } },
+        Frontend: { "Bob": { added: 10, removed: 2 } },
+        Markup: { "Bob": { added: 0, removed: 0 } },
+        Docs: { "Bob": { added: 0, removed: 0 } },
+        Communication: { "Bob": { added: 4, removed: 0 } }
+      }
+    ]
+  });
+});
+
+
 test("Can Get Merged Stats", async () => {
   fsFake.commits = [
     {
@@ -138,8 +188,8 @@ test("Can Get User Stats with only Commits", async () => {
   ];
 
   let result = await statisticsController.getStudentStats(
-  someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
-  
+    someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
+
   expect(result).toStrictEqual(
     {
       "aliases": {},
@@ -196,7 +246,7 @@ test("Can Get User Stats with only Commits", async () => {
 
 
 test("Can Get User Stats with only Project-stuff", async () => {
-  
+
   githubFake.pullRequests = [
     { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
   ];
@@ -205,7 +255,7 @@ test("Can Get User Stats with only Project-stuff", async () => {
   ];
 
   let result = await statisticsController.getStudentStats(
-  someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
+    someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
   expect(result).toStrictEqual(
     {
       "aliases": {},

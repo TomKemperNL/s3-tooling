@@ -357,12 +357,7 @@ export class FileSystem {
             if(group.extensions){
                 
                 let results = await Promise.all(
-                    files.filter(f => group.extensions.some(ext => f.toLowerCase().endsWith(ext.toLowerCase()))).map(f =>  processFile(f).then(r => {
-                        if(!r){
-                            console.log(f, 'had no results');
-                        }
-                        return r;
-                    })));
+                    files.filter(f => group.extensions.some(ext => f.toLowerCase().endsWith(ext.toLowerCase()))).map(f =>  processFile(f)));
                 let result = results.reduce(combineRecords, {});
                 output[group.name] = result;            
              

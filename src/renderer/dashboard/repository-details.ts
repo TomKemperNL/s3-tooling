@@ -91,11 +91,10 @@ export class RepositoryDetails extends LitElement {
                 this.repoStats2 = repoStats2;
             });
         }
-        if (_changedProperties.has('repoStats')) {
-            console.log('setting authors');
+        if (_changedProperties.has('repoStats')) {            
             if(this.repoStats){
-                this.allAuthors = Object.keys(this.repoStats.aliases);
-                this.enabledAuthors = Object.keys(this.repoStats.aliases);
+                this.allAuthors = Object.keys(this.repoStats.authors);
+                this.enabledAuthors = Object.keys(this.repoStats.authors);
             }            
         }
     }
@@ -161,6 +160,7 @@ export class RepositoryDetails extends LitElement {
     }
 
     toDatasets(statsByWeek: RepoStatisticsPerWeekDTO): any[] {
+        console.log('toDatasets', statsByWeek);
         let datasets: any[] = [];
 
         for (let a of this.enabledAuthors) {            
@@ -188,15 +188,50 @@ export class RepositoryDetails extends LitElement {
     }
 
     toDatasets2(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {
-        let datasets: any[] = [];
+        console.log('toDatasets2', statsByWeek);
+        let dataPerAuthor: Record<string, LinesStatistics>[] = [];
+        for(let week of statsByWeek){
+            let dataSet : Record<string, LinesStatistics> = {};
+            for (let group of Object.keys(week)){
+                let groupStats = week[group];
+                for(let author of Object.keys(groupStats)){
+                    if(this.enabledAuthors.indexOf(author) === -1) {
+                        continue;
+                    }
+                    dataSet[author] = groupStats[author] || { added: 0, removed: 0 };
+                    dataSet[author].added += groupStats[author].added;
+                    dataSet[author].removed -= groupStats[author].removed;
+                }
+            }
+            dataPerAuthor.push(dataSet);
+        }
 
-       
+        let datasets: any[] = [];
+        for(let author of this.enabledAuthors) {
+            let addedNumbers = dataPerAuthor.map(w => w[author]?.added || 0);
+            let removedNumbers = dataPerAuthor.map(w => w[author]?.removed || 0);
+            let options = {
+                label: author,
+                backgroundColor: this.authorToColor(author),
+                borderColor: this.authorToColor(author),
+                borderWidth: 1
+            }
+
+            datasets.push({
+                data: addedNumbers,
+                ...options
+            });
+
+            datasets.push({
+                data: removedNumbers,
+                ...options
+            });
+        }
 
         return datasets;
     }
 
-    async refresh(e: Event){
-        console.log('Refreshing repository', this.repo);
+    async refresh(e: Event){        
         this.loading = true;
         await this.ipc.refreshRepo(this.repo.courseId, this.repo.assignment, this.repo.name);
         this.repo = {...this.repo};
@@ -218,7 +253,7 @@ export class RepositoryDetails extends LitElement {
         grid-template-areas:
             "title    title"
             "pie      bar"
-            "numbers  _";
+            "numbers  bar2";
             ;
         grid-template-columns: 1fr 3fr;
         /* grid-template-rows: min-content minmax(25%, 50%) 1fr; */
@@ -238,6 +273,7 @@ export class RepositoryDetails extends LitElement {
 
     render() {
         let labels: string[] = [];
+        let labels2: string[] = [];
         let datasets: any[] = [];
         let datasets2: any[] = [];
 
@@ -261,7 +297,7 @@ export class RepositoryDetails extends LitElement {
         if (this.repoStats2) {
 
             for (let i = 0; i < this.repoStats.weekly.total.length; i++) {
-                labels.push('Week ' + (i + 1));
+                labels2.push('Week ' + (i + 1));
             }
             datasets2 = this.toDatasets2(this.repoStats2.week_group_author);
         }
@@ -355,6 +391,15 @@ export class RepositoryDetails extends LitElement {
                 .datasets=${datasets}></stacked-bar-chart>
         `)}
         </div>    
+        <div style="grid-area: bar2">
+        ${when(this.repoStats, () => html`
+            <stacked-bar-chart 
+                class=${classMap({ loading: this.loading, chart: true  })} 
+                
+                .labels=${labels2} 
+                .datasets=${datasets2}></stacked-bar-chart>
+        `)}
+        </div>   
         `;
     }
 }

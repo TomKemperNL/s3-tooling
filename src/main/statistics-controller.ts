@@ -189,7 +189,6 @@ export class StatisticsController implements StatsApi {
             }
             return groupTotals;
         }, {});
-        console.log("Grouped", grouped);
 
         return {
             total: {

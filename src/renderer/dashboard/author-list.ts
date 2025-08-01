@@ -107,8 +107,7 @@ export class AuthorList extends LitElement {
     dropAuthor(author: AuthorItem) {
         return (e: DragEvent) => {
             e.preventDefault();
-            const draggedAuthorName = e.dataTransfer!.getData('text/plain');
-            console.log('dragging ', draggedAuthorName, ' onto ', author.name);
+            const draggedAuthorName = e.dataTransfer!.getData('text/plain');            
             let mapping: Record<string, string> = {};
             mapping[draggedAuthorName] = author.name;
 

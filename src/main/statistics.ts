@@ -274,8 +274,7 @@ export class ExportingArray<T> {
         // Object.setPrototypeOf(this, ExportingArray.prototype);
     }
 
-    map<Y>(fn: (r: T) => Y): ExportingArray<Y> {
-        console.log('in array', this.items);
+    map<Y>(fn: (r: T) => Y): ExportingArray<Y> {        
         let result = this.items.map(fn);
         return new ExportingArray(result);
     }
