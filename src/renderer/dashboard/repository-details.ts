@@ -188,6 +188,7 @@ export class RepositoryDetails extends LitElement {
     }
 
     toDatasets2(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {        
+        console.log(statsByWeek[0])
         let dataPerWeek: Record<string, LinesStatistics>[] = [];
         for(let week of statsByWeek){
             let weekData : Record<string, LinesStatistics> = {};

@@ -310,6 +310,10 @@ export class ExportingArray<T> {
         return this.items.length;
     }
 
+    get(ix: number): T {
+        return this.items[ix];
+    }
+
     export() {
         let result = [];
         for (let item of this.items) {
