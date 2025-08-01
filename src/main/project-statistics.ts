@@ -163,10 +163,7 @@ export class ProjectStatistics implements Statistics {
             Math.min(...this.prs.map(pr => pr.createdAt.valueOf())),
             Math.min(...this.comments.map(c => c.createdAt.valueOf()))
         );
-        if (beginDate) {
-            earliestDate = Math.max(earliestDate, beginDate.valueOf());
-        }        
-
+        
         let lastDate = Math.max(            
             Math.max(...this.issues.map(i => i.createdAt.valueOf())),
             Math.max(...this.prs.map(pr => pr.createdAt.valueOf())),
@@ -176,7 +173,7 @@ export class ProjectStatistics implements Statistics {
             lastDate = endDate.valueOf();
         }
 
-        let startDate = new Date(earliestDate);
+        let startDate = beginDate || new Date(earliestDate);
         let nextDate = ProjectStatistics.#addWeek(startDate);
 
         while (nextDate.valueOf() <= lastDate) {

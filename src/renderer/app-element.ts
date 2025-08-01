@@ -186,12 +186,12 @@ export class AppElement extends LitElement {
             selectedAuthor: this.selectedAuthor
         }
 
-        window.sessionStorage.setItem('app-element-memento', JSON.stringify(memento));
+        window.localStorage.setItem('app-element-memento', JSON.stringify(memento));
     }
 
     load(){
         try{
-            let memento = window.sessionStorage.getItem('app-element-memento');
+            let memento = window.localStorage.getItem('app-element-memento');
             if(memento){
                 let parsed = JSON.parse(memento);
                 this.activeRepo = parsed.activeRepo;

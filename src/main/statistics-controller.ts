@@ -208,6 +208,8 @@ export class StatisticsController implements StatsApi {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);        
 
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
+        
+        let firstDate = savedCourseConfig.startDate;
         let lastDate = combinedStats.getDateRange().end;
 
         let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
@@ -217,28 +219,17 @@ export class StatisticsController implements StatsApi {
         // TODO: docenten er uit filteren... dat maakt het nu slechter dan accounts die niets hebben gedaan er uit filteren
         // let allAuthors : string[] = [...new Set(combinedStats.getDistinctAuthors().concat(repoMembers.map(m => m.login)))];        
         let allAuthors = combinedStats.getDistinctAuthors();
-
-        
-        // let huh = combinedStats.groupByWeek(savedCourseConfig.startDate, lastDate).get(0);
-        // console.log('wut1', huh.getLinesTotal())
-        
-
-        let builder = new StatsBuilder(combinedStats);
-        let weeklyAuthors = builder
-        .groupByAuthor(allAuthors)
-        .thenByWeek(savedCourseConfig.startDate, lastDate)
-        .build();
-
-        // console.log('parsa1', weeklyAuthors["parsamhx"][0])
-
-        
+                
         return {
             aliases: mappingToAliases(authorMapping),
-            total: builder.build(),
-            authors: builder.groupByAuthor(allAuthors).build(),
+            total: new StatsBuilder(combinedStats).build(),
+            authors: new StatsBuilder(combinedStats).groupByAuthor(allAuthors).build(),
             weekly: {
-                total: builder.groupByWeek(savedCourseConfig.startDate, lastDate).build(),
-                authors: weeklyAuthors
+                total: new StatsBuilder(combinedStats).groupByWeek(firstDate, lastDate).build(),
+                authors: new StatsBuilder(combinedStats)
+                .groupByAuthor(allAuthors)
+                .thenByWeek(firstDate, lastDate)
+                .build()
             }
         };
     }
@@ -260,24 +251,11 @@ export class StatisticsController implements StatsApi {
 
         let builder = new StatsBuilder(combinedStats);
 
-        let huh = combinedStats.groupByWeek(firstDate, lastDate).get(0);
-        console.log('wut2', huh.getLinesTotal())
-
-
-        let week_totals = new StatsBuilder(combinedStats).groupByWeek(firstDate, lastDate).build();
-        console.log('total1', week_totals[0])
-        let week_author = new StatsBuilder(combinedStats).groupByWeek(firstDate, lastDate).thenByAuthor(allAuthors).build();
-        console.log('author1', week_author[0])
-        let week_group = new StatsBuilder(combinedStats).groupByWeek(firstDate, lastDate).thenBy(this.#getGroups(savedCourseConfig)).build();
-        console.log('groups1', week_group[0])
-
-
         let week_group_author = builder
             .groupByWeek(firstDate, lastDate)
             .thenBy(this.#getGroups(savedCourseConfig))
             .thenByAuthor(allAuthors)
             .build();
-        console.log('wweelgroup-authut', week_group_author[0])
         return {
             aliases: mappingToAliases(authorMapping),
             week_group_author: week_group_author

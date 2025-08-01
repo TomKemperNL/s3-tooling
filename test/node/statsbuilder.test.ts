@@ -123,6 +123,5 @@ test('StatsBuilder - 3 doors down', async () => {
       {
         frontend: { Bob: { added: 0, removed: 0 }, Fred: { added: 0, removed: 0 } },
         backend: { Fred: { added: 3, removed: 4 }, Bob: { added: 0, removed: 0 } }
-      }]);
-    
+      }]);    
 });

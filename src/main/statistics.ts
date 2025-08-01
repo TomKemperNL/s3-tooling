@@ -23,31 +23,43 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
     #otherOps: ((a: Statistics) => (GroupedCollection<Statistics> | ExportingArray<Statistics>))[] = [];
 
     constructor(private start: Statistics) {        
-    }
+    }    
 
     groupByWeek(startDate: Date, endDate: Date): StatsBuilderThenBy {
-        this.#firstOp = (a: Statistics) => a.groupByWeek(startDate, endDate);
-        return this;
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = (a: Statistics) => a.groupByWeek(startDate, endDate);
+        return result;
     }
     groupByAuthor(authors: string[]): StatsBuilderThenBy {
-        this.#firstOp = (a: Statistics) => a.groupByAuthor(authors);
-        return this;
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = (a: Statistics) => a.groupByAuthor(authors);
+        return result;
     }
     groupBy(groups: GroupDefinition[]): StatsBuilderThenBy {
-        this.#firstOp = (a: Statistics) => a.groupBy(groups);
-        return this;
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = (a: Statistics) => a.groupBy(groups);
+        return result;
     }
     thenByWeek(startDate: Date, endDate: Date = null): StatsBuilderThenBy {
-        this.#otherOps.push((a: Statistics) => a.groupByWeek(startDate, endDate));
-        return this;
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = this.#firstOp;
+        result.#otherOps = this.#otherOps.slice();
+        result.#otherOps.push((a: Statistics) => a.groupByWeek(startDate, endDate));
+        return result;
     }
     thenByAuthor(authors: string[]): StatsBuilderThenBy {
-        this.#otherOps.push((a: Statistics) => a.groupByAuthor(authors));
-        return this;
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = this.#firstOp;
+        result.#otherOps = this.#otherOps.slice();
+        result.#otherOps.push((a: Statistics) => a.groupByAuthor(authors));
+        return result;
     }
     thenBy(groups: GroupDefinition[]): StatsBuilderThenBy {
-        this.#otherOps.push((a: Statistics) => a.groupBy(groups));
-        return this;
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = this.#firstOp;
+        result.#otherOps = this.#otherOps.slice();
+        result.#otherOps.push((a: Statistics) => a.groupBy(groups));
+        return result;
     }
 
     static #deepOp(target: any, op: (a: Statistics) => any): any {
