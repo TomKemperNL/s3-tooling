@@ -9,7 +9,7 @@ import { writeFile } from "fs/promises";
 let settings : Settings = {
     githubToken: process.env.ACCES_TOKEN,
     canvasToken: process.env.CANVAS_TOKEN,
-    dataPath: 'C:/s3-tooling-data',
+    dataPath: 'C:/s3-tooling-data2',
     keepDB: true,
     ignoreAuthors: []
 }
@@ -21,19 +21,16 @@ async function main(){
     console.time("start")
 
     const id = 44633; 
-    const repo = ['HU-SD-S2-studenten-2425', 'sd-s2-project','sd-s2-project-samensterk'];
+    const repo = ['HU-SD-S2-studenten-2425', 'sd-s2-project','sd-s2-project-pentacode'];
     const section = "TICT-SD-V1A";
     const assignment = "sd-s2-project";
 
-    await app.coursesController.loadCourse(44633);
-    // let result = await app.statisticsController.getClassStats(44633, assignment, section)
-    // let result = await app.statisticsController.getCourseStats(id, assignment)
-    // let result = await app.repoController.getCurrentUserMappingFromCourse(id, assignment);
-    let result = await importUserMappingTemp();
 
 
+    let result = await app.statisticsController.getRepoStats2(id, assignment, 'sd-s2-project-pentacode', {filterString: ""});
+    
 
-    console.log("result", result);
+    console.log("result", result.week_group_author[0]);
 
     console.timeEnd("start")
     // await writeFile('result.json', JSON.stringify(result), { encoding: 'utf-8' })

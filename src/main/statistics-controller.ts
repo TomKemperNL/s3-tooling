@@ -251,7 +251,7 @@ export class StatisticsController implements StatsApi {
             .thenBy(this.#getGroups(savedCourseConfig))
             .thenByAuthor(allAuthors)
             .build();
-
+        
         return {
             aliases: mappingToAliases(authorMapping),
             week_group_author: week_group_author

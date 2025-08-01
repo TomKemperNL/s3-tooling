@@ -160,7 +160,7 @@ export class RepositoryDetails extends LitElement {
     }
 
     toDatasets(statsByWeek: RepoStatisticsPerWeekDTO): any[] {
-        console.log('toDatasets', statsByWeek);
+        
         let datasets: any[] = [];
 
         for (let a of this.enabledAuthors) {            
@@ -187,29 +187,25 @@ export class RepositoryDetails extends LitElement {
         return datasets;
     }
 
-    toDatasets2(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {
-        console.log('toDatasets2', statsByWeek);
-        let dataPerAuthor: Record<string, LinesStatistics>[] = [];
+    toDatasets2(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {        
+        let dataPerWeek: Record<string, LinesStatistics>[] = [];
         for(let week of statsByWeek){
-            let dataSet : Record<string, LinesStatistics> = {};
+            let weekData : Record<string, LinesStatistics> = {};
             for (let group of Object.keys(week)){
                 let groupStats = week[group];
-                for(let author of Object.keys(groupStats)){
-                    if(this.enabledAuthors.indexOf(author) === -1) {
-                        continue;
-                    }
-                    dataSet[author] = groupStats[author] || { added: 0, removed: 0 };
-                    dataSet[author].added += groupStats[author].added;
-                    dataSet[author].removed -= groupStats[author].removed;
+                for(let author of Object.keys(groupStats)){                   
+                    weekData[author] = weekData[author] || { added: 0, removed: 0 };
+                    weekData[author].added += groupStats[author].added;
+                    weekData[author].removed -= groupStats[author].removed;
                 }
             }
-            dataPerAuthor.push(dataSet);
+            dataPerWeek.push(weekData);
         }
-
+        
         let datasets: any[] = [];
         for(let author of this.enabledAuthors) {
-            let addedNumbers = dataPerAuthor.map(w => w[author]?.added || 0);
-            let removedNumbers = dataPerAuthor.map(w => w[author]?.removed || 0);
+            let addedNumbers = dataPerWeek.map(w => w[author]?.added || 0);
+            let removedNumbers = dataPerWeek.map(w => w[author]?.removed || 0);
             let options = {
                 label: author,
                 backgroundColor: this.authorToColor(author),
