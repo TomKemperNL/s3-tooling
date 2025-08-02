@@ -48,10 +48,10 @@ export class ProjectStatistics implements Statistics {
     groupBy(groups: GroupDefinition[]): GroupedCollection<Statistics> {
         let result: { [name: string]: Statistics } = {};
         for (let group of groups) {
-            if(group. extensions){
-                result[group.name] = new CombinedStats([]);
+            if(group.projectContent){
+                result[group.name] = this; //TODO: splitsen van issues, prs en comments in losse groups
             }else{
-                result[group.name] = this;
+                result[group.name] = new CombinedStats([]);
             }
         }
 

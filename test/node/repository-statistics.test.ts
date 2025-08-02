@@ -179,7 +179,8 @@ test('Can Group Commits By Backend/Frontend/Docs/Other', {}, () => {
     
     let groups = [
         RepositoryStatistics.backend,
-        RepositoryStatistics.frontendIncludingMarkup        
+        RepositoryStatistics.frontendIncludingMarkup,
+        { name: "Other", other: true}        
     ]
     let stats = new RepositoryStatistics([
         {
@@ -210,13 +211,14 @@ test('Can Group Commits By Backend/Frontend/Docs/Other', {}, () => {
     let result = stats.groupBy(groups).map(g => g.getLinesTotal()).export();
     expect(result["Backend"]).toStrictEqual({ added: 4, removed: 4});
     expect(result["Frontend"]).toStrictEqual({ added: 4, removed: 8});
-    // expect(result["Other"]).toBe({ added: 2, removed: 1}); TODO
+    expect(result["Other"]).toStrictEqual({ added: 2, removed: 1}); 
 });
 
 test('Can Group Commits By Week, and then by Backend/Frontend/Docs/Other', {}, () => {
     let groups = [
         RepositoryStatistics.backend,
-        RepositoryStatistics.frontendIncludingMarkup        
+        RepositoryStatistics.frontendIncludingMarkup,
+        { name: "Other", other: true}
     ]
     let stats = new RepositoryStatistics([
         {
@@ -249,6 +251,7 @@ test('Can Group Commits By Week, and then by Backend/Frontend/Docs/Other', {}, (
 
     expect(result[0]["Backend"]).toStrictEqual({ added: 4, removed: 4});
     expect(result[0]["Frontend"]).toStrictEqual({ added: 4, removed: 8});
+    expect(result[0]["Other"]).toStrictEqual({ added: 2, removed: 1});
 });
 
 

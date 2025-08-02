@@ -137,6 +137,7 @@ export class RepositoryDetails extends LitElement {
         "rgba(255, 206, 86, 0.8)",
         "rgba(75, 192, 192, 0.8)",
         "rgba(153, 102, 255, 0.8)",
+        "rgba(88, 88, 88, 0.8)",
     ]
 
     authorToColor(author: string): string {

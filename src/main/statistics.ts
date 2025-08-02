@@ -3,6 +3,15 @@ import { StringDict } from "./canvas-client";
 import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 
+export type ProjectContent = "issues" | "pullrequests" | "comments"
+
+export type GroupDefinition = {
+    name: string,
+    extensions?: string[]
+    projectContent?: ProjectContent[],
+    other?: boolean
+}
+
 export interface StatsBuilderInitial {
     groupByWeek(startDate: Date, endDate: Date): StatsBuilderThenBy
     groupByAuthor(authors: string[]): StatsBuilderThenBy
@@ -197,18 +206,6 @@ export class CombinedStats implements Statistics {
     }
 }
 
-type RepoGroupDefinition = {
-    name: string,
-    extensions: string[]
-}
-
-type ProjectGroupDefinition = {
-    name: string
-    extensions: never
-}
-
-export type GroupDefinition =
-    RepoGroupDefinition | ProjectGroupDefinition;
 
 function isExportable(obj: any): obj is Exportable {
     return obj && typeof obj.export === 'function';

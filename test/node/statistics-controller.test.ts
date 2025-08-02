@@ -58,13 +58,14 @@ test("canGetEmptyStats", async () => {
   expect(result).toStrictEqual({
     "aliases": {},
     "authors": [ ],
-    "groups": [ "Backend", "Frontend", "Markup", "Docs", "Communication" ],
+    "groups": [ "Backend", "Frontend", "Markup", "Docs", "Communication", "Other" ],
     "week_group_author":[{
       "Backend": {},
       "Frontend": {},
       "Markup": {},
       "Docs": {},
       "Communication": {},
+      "Other": {}
     }]    
   });
 });
@@ -92,13 +93,14 @@ test("Can Get Merged Stats", async () => {
     {
       "aliases": {},
       "authors": [ "Bob" ],
-      "groups": [ "Backend", "Frontend", "Markup", "Docs", "Communication" ],
+      "groups": [ "Backend", "Frontend", "Markup", "Docs", "Communication", "Other" ],
       "week_group_author":[{
         "Backend": { "Bob": { added: 0, removed: 0} },
         "Frontend": { "Bob": { added: 10, removed: 2} },
         "Markup": { "Bob": { added: 0, removed: 0} },
         "Docs": { "Bob": { added: 0, removed: 0} },
         "Communication": { "Bob": { added: 4, removed: 0} },
+        "Other": { "Bob": { added: 0, removed: 0} }
       }]  
     }
   );
@@ -141,6 +143,10 @@ test("Can Get User Stats with only Commits", async () => {
         "Communication": {
           "added": 0,
           "removed": 0
+        },
+        "Other": {
+          "added": 0,
+          "removed": 0
         }
       },
       "weekly": [
@@ -164,7 +170,11 @@ test("Can Get User Stats with only Commits", async () => {
           "Communication": {
             "added": 0,
             "removed": 0
-          }
+          },
+          "Other": {
+          "added": 0,
+          "removed": 0
+        }
         }
       ]
     }
@@ -207,7 +217,11 @@ test("Can Get User Stats with only Project-stuff", async () => {
         "Communication": {
           "added": 4,
           "removed": 0
-        }
+        },
+        "Other": {
+          "added": 0,
+          "removed": 0
+        },
       },
       "weekly": [
         {
@@ -229,6 +243,10 @@ test("Can Get User Stats with only Project-stuff", async () => {
           },
           "Communication": {
             "added": 4,
+            "removed": 0
+          },
+          "Other": {
+            "added": 0,
             "removed": 0
           }
         }

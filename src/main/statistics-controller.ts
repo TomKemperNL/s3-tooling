@@ -6,7 +6,7 @@ import { GithubClient } from "./github-client";
 import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 import { ReposController } from "./repos-controller";
-import { CombinedStats, GroupDefinition, StatsBuilder } from "./statistics";
+import { CombinedStats, GroupDefinition, ProjectContent, StatsBuilder } from "./statistics";
 import { ipc } from "../electron-setup";
 import { StatsApi } from "../backend-api";
 
@@ -60,14 +60,15 @@ export class StatisticsController implements StatsApi {
     }
     
 
-    #getGroups(savedCourseConfig: CourseConfig) {
+    #getGroups(savedCourseConfig: CourseConfig) : GroupDefinition[] {
         //TODO: voor nu hardcoded, maar dit wil je per cursus kunnen instellen
         return [
             RepositoryStatistics.backend,
             RepositoryStatistics.frontend,
             RepositoryStatistics.markup,
             RepositoryStatistics.docs,
-            { name: 'Communication', extensions: undefined }
+            { name: 'Communication', projectContent: ["issues", "pullrequests", "comments"] },
+            { name: "Other", other: true }
         ];
     }
 
