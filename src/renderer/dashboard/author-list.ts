@@ -168,7 +168,7 @@ export class AuthorList extends LitElement {
                 <ul>
                     ${map(this.authors, (a: AuthorItem) => html`
                         <li> <input type="checkbox" ?checked=${a.enabled} @change=${this.toggleAuthor(a)}>
-            <button @click=${this.selectAuthor(a)} type="button">Select</button>
+            <!-- <button @click=${this.selectAuthor(a)} type="button">Select</button> -->
                             ${when(a.aliases.length > 0, () => html`
                             <details>
                             <summary>

@@ -10,6 +10,7 @@ import { consume } from "@lit/context";
 import { HTMLInputEvent } from "../events";
 import { a } from "vitest/dist/chunks/suite.d.FvehnV49.js";
 import { AuthorMappedEvent, EnabledAuthorsChanged, RemoveAliasEvent } from "./author-list";
+import { EnabledItemsChanged } from "./group-list";
 
 export class AuthorSelectedEvent extends Event {
     static eventName = 'author-selected';
@@ -101,6 +102,11 @@ export class RepositoryDetails extends LitElement {
         this.enabledAuthors = e.enabledAuthors;
     }
         
+    
+    toggleGroups(e: EnabledItemsChanged){
+        this.enabledGroups = e.enabledGroups;
+    }
+
     async mapAuthors(e: AuthorMappedEvent) {
         await this.ipc.updateAuthorMapping(this.repo.courseId, this.repo.name, e.mapping);
         await this.refresh(null);
@@ -161,6 +167,9 @@ export class RepositoryDetails extends LitElement {
     toAuthorPie(pie: Record<string, Record<string, number>>) : Record<string, number>{
         let result: Record<string, number> = {};
         for(let group of Object.keys(pie)){
+            if( this.enabledGroups.indexOf(group) === -1) {
+                continue;
+            }
             for(let author of Object.keys(pie[group])){
                 result[author] = (result[author] || 0) + pie[group][author];
             }
@@ -215,6 +224,9 @@ export class RepositoryDetails extends LitElement {
         for(let week of statsByWeek){
             let weekData : Record<string, LinesStatistics> = {};
             for (let group of Object.keys(week)){
+                if( this.enabledGroups.indexOf(group) === -1) {
+                    continue;
+                }
                 let groupStats = week[group];
                 for(let author of Object.keys(groupStats)){                   
                     weekData[author] = weekData[author] || { added: 0, removed: 0 };
@@ -270,12 +282,11 @@ export class RepositoryDetails extends LitElement {
     :host {
         display: grid;
         grid-template-areas:
-            "title    title"
-            "pieA      barA"
-            "pieG      barG"
-            "numbers  _";
+            "title   title     title"
+            "authors pieA      barA"
+            "groups  pieG      barG"            
             ;
-        grid-template-columns: 1fr 3fr;
+        grid-template-columns: 1fr 1fr 3fr;
         /* grid-template-rows: min-content minmax(25%, 50%) 1fr; */
     }
 
@@ -326,6 +337,9 @@ export class RepositoryDetails extends LitElement {
             }
 
             for (let g of Object.keys(this.groupPie?.groupedPie)) {
+                if( this.enabledGroups.indexOf(g) === -1) {
+                    continue;
+                }
                 groupLabels.push(g);
 
                 let authorTotals = 0;
@@ -349,28 +363,37 @@ export class RepositoryDetails extends LitElement {
             // removed: this.repoStats?.authors[a]?.removed || 0
         }));
 
+        let groupList = this.allGroups.map(g => ({
+            name: g,
+            enabled: this.enabledGroups.indexOf(g) !== -1,
+            color: this.groupToColor(g),
+        }));
+
         return html`
         <div style="grid-area: title">
             <h3><a href=${this.repo.url.replace("https", "external")}>${this.repo.name}</a></h3>
-            <p><select ?disabled=${this.loading} @change=${this.switchBranch}>
+            <select ?disabled=${this.loading} @change=${this.switchBranch}>
                 ${map(this.branches, b => html`
                     <option value=${b} ?selected=${b === this.currentBranch}>${b}</option>
                 `)}
-            </select><button type="button" ?disabled=${this.loading} @click=${this.refresh}>Refresh</button></p>
+            </select><button type="button" ?disabled=${this.loading} @click=${this.refresh}>Refresh</button>
         </div>        
         
         <div style="grid-area: pieA">
         ${when(this.repoStats, () => html`
+            <h4>Regels code in eindproduct per auteur</h4>
             <pie-chart 
                 class=${classMap({ loading: this.loading, chart: true })} 
                 
                 .labels=${blameLabels}
                 .values=${blameValues}
                 .colors=${blameColors}></pie-chart>
+                
         `)}        
         </div>
         <div style="grid-area: pieG">        
         ${when(this.groupPie, () => html`
+            <h4>Regels code in eindproduct per groepering</h4>
             <pie-chart 
                 class=${classMap({ loading: this.loading, chart: true })} 
                 
@@ -380,36 +403,53 @@ export class RepositoryDetails extends LitElement {
         `)}
         </div>
 
-        <div style="grid-area: numbers;" class=${classMap({ loading: this.loading })}>
+        <div style="grid-area: authors;" class=${classMap({ loading: this.loading })}>
             <ul>
-                ${when(this.repoStats, () => html`                    
-                    <li>Authors:
+                ${when(this.allAuthors.length > 0, () => html`                    
+                    <h4>Auteurs</h4>
                         <author-list 
                             .authors=${authorList}
                             @enabled-authors-changed=${this.toggleAuthors} 
                             @author-mapped=${this.mapAuthors}
                             @remove-alias=${this.removeAlias}></author-list>
-                    </li>
+                    
                     `)}                
             </ul>
             
         </div>
+
+        <div style="grid-area: groups;" class=${classMap({ loading: this.loading })}>
+            <ul>
+                ${when(this.allGroups.length > 0, () => html`                    
+                    <h4>Groeperingen</h4>
+                        <group-list 
+                            .groups=${groupList}
+                            @enabled-items-changed=${this.toggleGroups}                             
+                            ></group-list>                
+                    `)}                
+            </ul>
+            
+        </div>
+
         <div style="grid-area: barA">
         ${when(this.repoStats, () => html`
+            <h4>Changes per week per auteur</h4>
             <stacked-bar-chart 
                 class=${classMap({ loading: this.loading, chart: true  })} 
                 
                 .labels=${labels} 
                 .datasets=${authorBarcharts}></stacked-bar-chart>
+                
         `)}
         </div>
         <div style="grid-area: barG">
         ${when(this.repoStats, () => html`
+            <h4>Changes per week per groepering</h4>
             <stacked-bar-chart 
                 class=${classMap({ loading: this.loading, chart: true  })} 
                 
                 .labels=${labels} 
-                .datasets=${groupBarcharts}></stacked-bar-chart>
+                .datasets=${groupBarcharts}></stacked-bar-chart>           
         `)}
         </div>
         `;

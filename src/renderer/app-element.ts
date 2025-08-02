@@ -249,10 +249,6 @@ export class AppElement extends LitElement {
                 ${when(this.activeRepo, () => html`
                     <repository-details .repo=${this.activeRepo} @author-selected=${this.selectAuthor}></repository-details>
                 `)}
-
-                ${when(this.activeRepo && this.selectedAuthor, () => html`
-                    <author-details .repo=${this.activeRepo} .authorName=${this.selectedAuthor}></author-details>
-                `)}
         `)}
         </main>
         `
