@@ -97,14 +97,8 @@ export function combineStats(...stats: LinesStatistics[]): LinesStatistics {
 
 
 export type RepoStatisticsDTO = {
-    aliases: { [name: string]: string[] },
-    total: LinesStatistics,
-    authors: { [name: string] : LinesStatistics}
-    weekly: RepoStatisticsPerWeekDTO,
-}
-
-
-export type RepoStatisticsDTO2 = {
+    authors: string[],
+    groups: string[],
     aliases: { [name: string]: string[] },
     week_group_author: Record<string, Record<string, LinesStatistics>>[],
 }

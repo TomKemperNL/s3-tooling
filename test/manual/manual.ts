@@ -27,7 +27,7 @@ async function main(){
 
 
 
-    let result = await app.statisticsController.getRepoStats2(id, assignment, 'sd-s2-project-pentacode', {filterString: ""});
+    let result = await app.statisticsController.getRepoStats(id, assignment, 'sd-s2-project-pentacode', {filterString: ""});
     
 
     console.log("result", result.week_group_author[0]);

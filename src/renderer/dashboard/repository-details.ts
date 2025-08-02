@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { AuthorStatisticsDTO, PieDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO, GroupPieDTO, RepoStatisticsDTO2 } from "../../shared";
+import { AuthorStatisticsDTO, PieDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO, GroupPieDTO } from "../../shared";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
 import { BackendApi } from "../../backend-api";
@@ -38,17 +38,12 @@ export class RepositoryDetails extends LitElement {
     currentBranch: string = '';
     @property({ type: Array, state: true })
     branches: string[] = [];
+    
     @property({ type: Object, state: true })
-    repoStats?: RepoStatisticsDTO;
-    @property({ type: Object, state: true })
-    repoStats2: RepoStatisticsDTO2;
-
-    @property({ type: Object, state: true })
-    blameStats?: PieDTO;
+    repoStats: RepoStatisticsDTO;
 
     @property({ type: Object, state: true })
     groupPie?: GroupPieDTO;
-
 
     @property({ type: Boolean, state: true })
     loading: boolean = false;
@@ -59,6 +54,11 @@ export class RepositoryDetails extends LitElement {
     @property({ type: Array, state: true })
     enabledAuthors: string[] = [];
 
+    @property({ type: Array, state: true })
+    allGroups: string[] = [];
+
+    @property({ type: Array, state: true })
+    enabledGroups: string[] = [];
 
     
     protected updated(_changedProperties: PropertyValues): void {
@@ -68,7 +68,6 @@ export class RepositoryDetails extends LitElement {
             this.currentBranch = '';
             this.branches = [];
             this.repoStats = undefined;
-            this.blameStats = undefined;
             this.groupPie = undefined;
             this.allAuthors = [];
             this.enabledAuthors = [];
@@ -76,25 +75,24 @@ export class RepositoryDetails extends LitElement {
 
             let gettingBranchInfo = this.ipc.getBranchInfo(this.repo.courseId, this.repo.assignment, this.repo.name);
             let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
-            let gettingRepos2 = this.ipc.getRepoStats2(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
-            let gettingBlameStats = this.ipc.getBlameStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
             let gettingGroupPie = this.ipc.getGroupPie(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
 
-            Promise.all([gettingBranchInfo, gettingRepos, gettingBlameStats, gettingGroupPie, gettingRepos2]).then(([branchInfo, repoStats, blamestats, groupPie, repoStats2]) => {
+            Promise.all([gettingBranchInfo, gettingRepos, gettingGroupPie]).then(([branchInfo, repoStats, groupPie]) => {
 
                 this.currentBranch = branchInfo.currentBranch;
                 this.branches = branchInfo.availableBranches;
-                this.repoStats = repoStats;
-                this.blameStats = blamestats;
+                this.repoStats = repoStats;                
                 this.groupPie = groupPie;
                 this.loading = false;
-                this.repoStats2 = repoStats2;
+                
             });
         }
         if (_changedProperties.has('repoStats')) {            
             if(this.repoStats){
-                this.allAuthors = Object.keys(this.repoStats.authors);
-                this.enabledAuthors = Object.keys(this.repoStats.authors);
+                this.allAuthors = this.repoStats.authors;
+                this.enabledAuthors = this.repoStats.authors;
+                this.allGroups = this.repoStats.groups;
+                this.enabledGroups = this.repoStats.groups;
             }            
         }
     }
@@ -159,17 +157,41 @@ export class RepositoryDetails extends LitElement {
         }
     }
 
-    toDatasets(statsByWeek: RepoStatisticsPerWeekDTO): any[] {
-        
-        let datasets: any[] = [];
+    toAuthorPie(pie: Record<string, Record<string, number>>) : Record<string, number>{
+        let result: Record<string, number> = {};
+        for(let group of Object.keys(pie)){
+            for(let author of Object.keys(pie[group])){
+                result[author] = (result[author] || 0) + pie[group][author];
+            }
+        }
+        return result;
+    }
 
-        for (let a of this.enabledAuthors) {            
-            let addedNumbers = statsByWeek.authors[a].map(w => w.added);
-            let removedNumbers = statsByWeek.authors[a].map(w => w.removed * -1);
+    toGroupBarchart(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {
+        let dataPerWeek: Record<string, LinesStatistics>[] = [];
+        for(let week of statsByWeek){
+            let weekData : Record<string, LinesStatistics> = {};
+            for (let group of Object.keys(week)) {
+                let groupData = { added: 0, removed: 0 };
+                for(let author of Object.keys(week[group])) {
+                    if( this.enabledAuthors.indexOf(author) === -1) {
+                        continue;
+                    }
+                    groupData.added += week[group][author].added;
+                    groupData.removed -= week[group][author].removed;
+                }
+                weekData[group] = groupData;
+            }
+            dataPerWeek.push(weekData);
+        }
+        let datasets: any[] = [];
+        for(let group of this.enabledGroups) {
+            let addedNumbers = dataPerWeek.map(w => w[group]?.added || 0);
+            let removedNumbers = dataPerWeek.map(w => w[group]?.removed || 0);
             let options = {
-                label: a,
-                backgroundColor: this.authorToColor(a),
-                borderColor: this.authorToColor(a),
+                label: group,
+                backgroundColor: this.groupToColor(group),
+                borderColor: this.groupToColor(group),
                 borderWidth: 1
             }
 
@@ -187,7 +209,7 @@ export class RepositoryDetails extends LitElement {
         return datasets;
     }
 
-    toDatasets2(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {        
+    toAuthorBarchart(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {        
         let dataPerWeek: Record<string, LinesStatistics>[] = [];
         for(let week of statsByWeek){
             let weekData : Record<string, LinesStatistics> = {};
@@ -248,8 +270,9 @@ export class RepositoryDetails extends LitElement {
         display: grid;
         grid-template-areas:
             "title    title"
-            "pie      bar"
-            "numbers  bar2";
+            "pieA      barA"
+            "pieG      barG"
+            "numbers  _";
             ;
         grid-template-columns: 1fr 3fr;
         /* grid-template-rows: min-content minmax(25%, 50%) 1fr; */
@@ -269,9 +292,8 @@ export class RepositoryDetails extends LitElement {
 
     render() {
         let labels: string[] = [];
-        let labels2: string[] = [];
-        let datasets: any[] = [];
-        let datasets2: any[] = [];
+        let authorBarcharts: any[] = [];
+        let groupBarcharts: any[] = [];
 
         let blameLabels: string[] = [];
         let blameValues: number[] = [];
@@ -284,32 +306,24 @@ export class RepositoryDetails extends LitElement {
 
         if (this.repoStats) {
 
-            for (let i = 0; i < this.repoStats.weekly.total.length; i++) {
+            for (let i = 0; i < this.repoStats.week_group_author.length; i++) {
                 labels.push('Week ' + (i + 1));
             }
-            datasets = this.toDatasets(this.repoStats.weekly!);
+            authorBarcharts = this.toAuthorBarchart(this.repoStats.week_group_author);
+            groupBarcharts = this.toGroupBarchart(this.repoStats.week_group_author);
         }
 
-        if (this.repoStats2) {
-
-            for (let i = 0; i < this.repoStats.weekly.total.length; i++) {
-                labels2.push('Week ' + (i + 1));
-            }
-            datasets2 = this.toDatasets2(this.repoStats2.week_group_author);
-        }
-
-        if (this.blameStats) {
-            for (let a of Object.keys(this.blameStats?.pie)) {
+        if(this.groupPie){
+            let authorPie = this.toAuthorPie(this.groupPie.groupedPie);
+            for (let a of Object.keys(authorPie)) {
                 if (this.enabledAuthors.indexOf(a) === -1) {
                     continue;
                 }
                 blameLabels.push(a);
-                blameValues.push(this.blameStats.pie[a]);
+                blameValues.push(authorPie[a]);
                 blameColors.push(this.authorToColor(a));
             }
-        }
 
-        if(this.groupPie){
             for (let g of Object.keys(this.groupPie?.groupedPie)) {
                 groupLabels.push(g);
 
@@ -330,8 +344,8 @@ export class RepositoryDetails extends LitElement {
             color: this.authorToColor(a),
             enabled: this.enabledAuthors.indexOf(a) !== -1,
             aliases: this.repoStats?.aliases[a] || [],
-            added: this.repoStats?.authors[a]?.added || 0,
-            removed: this.repoStats?.authors[a]?.removed || 0
+            // added: this.repoStats?.authors[a]?.added || 0,
+            // removed: this.repoStats?.authors[a]?.removed || 0
         }));
 
         return html`
@@ -344,7 +358,7 @@ export class RepositoryDetails extends LitElement {
             </select><button type="button" ?disabled=${this.loading} @click=${this.refresh}>Refresh</button></p>
         </div>        
         
-        <div style="grid-area: pie">
+        <div style="grid-area: pieA">
         ${when(this.repoStats, () => html`
             <pie-chart 
                 class=${classMap({ loading: this.loading, chart: true })} 
@@ -352,7 +366,9 @@ export class RepositoryDetails extends LitElement {
                 .labels=${blameLabels}
                 .values=${blameValues}
                 .colors=${blameColors}></pie-chart>
-        `)}
+        `)}        
+        </div>
+        <div style="grid-area: pieG">        
         ${when(this.groupPie, () => html`
             <pie-chart 
                 class=${classMap({ loading: this.loading, chart: true })} 
@@ -365,8 +381,7 @@ export class RepositoryDetails extends LitElement {
 
         <div style="grid-area: numbers;" class=${classMap({ loading: this.loading })}>
             <ul>
-                ${when(this.repoStats, () => html`
-                    <li>Added: ${this.repoStats!.total.added} / Removed: ${this.repoStats!.total.removed}</li>
+                ${when(this.repoStats, () => html`                    
                     <li>Authors:
                         <author-list 
                             .authors=${authorList}
@@ -378,24 +393,24 @@ export class RepositoryDetails extends LitElement {
             </ul>
             
         </div>
-        <div style="grid-area: bar">
+        <div style="grid-area: barA">
         ${when(this.repoStats, () => html`
             <stacked-bar-chart 
                 class=${classMap({ loading: this.loading, chart: true  })} 
                 
                 .labels=${labels} 
-                .datasets=${datasets}></stacked-bar-chart>
+                .datasets=${authorBarcharts}></stacked-bar-chart>
         `)}
-        </div>    
-        <div style="grid-area: bar2">
+        </div>
+        <div style="grid-area: barG">
         ${when(this.repoStats, () => html`
             <stacked-bar-chart 
                 class=${classMap({ loading: this.loading, chart: true  })} 
                 
-                .labels=${labels2} 
-                .datasets=${datasets2}></stacked-bar-chart>
+                .labels=${labels} 
+                .datasets=${groupBarcharts}></stacked-bar-chart>
         `)}
-        </div>   
+        </div>
         `;
     }
 }

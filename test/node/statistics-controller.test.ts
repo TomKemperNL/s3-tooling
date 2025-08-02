@@ -57,70 +57,15 @@ test("canGetEmptyStats", async () => {
     someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" })
   expect(result).toStrictEqual({
     "aliases": {},
-    "authors": {},
-    "total": {
-      "added": 0,
-      "removed": 0,
-    },
-    "weekly": {
-      "authors": {},
-      "total": [
-        {
-          "added": 0,
-          "removed": 0,
-        },
-      ],
-    },
-  });
-});
-
-
-test("canGetEmptyStats2", async () => {
-  let result = await statisticsController.getRepoStats2(
-    someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" })
-
-  expect(result).toStrictEqual({
-    aliases: {},
-    week_group_author: [
-      {
-        Backend: {},
-        Frontend: {},
-        Markup: {},
-        Docs: {},
-        Communication: {}
-      }]
-  });
-});
-
-test("Can Get Merged Stats2", async () => {
-  fsFake.commits = [
-    {
-      author: "Bob", hash: "ABCD1234", subject: "Feature X", date: new Date('2023-10-01'),
-      changes: [
-        { added: 10, removed: 2, path: "file1.js" },
-      ]
-    }
-  ];
-  githubFake.pullRequests = [
-    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
-  ];
-  githubFake.issues = [
-    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
-  ];
-
-  let result = await statisticsController.getRepoStats2(
-    someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" });
-  expect(result).toStrictEqual({
-    aliases: {},
-    week_group_author: [
-      {
-        Backend: { "Bob": { added: 0, removed: 0 } },
-        Frontend: { "Bob": { added: 10, removed: 2 } },
-        Markup: { "Bob": { added: 0, removed: 0 } },
-        Docs: { "Bob": { added: 0, removed: 0 } },
-        Communication: { "Bob": { added: 4, removed: 0 } }
-      }
-    ]
+    "authors": [ ],
+    "groups": [ "Backend", "Frontend", "Markup", "Docs", "Communication" ],
+    "week_group_author":[{
+      "Backend": {},
+      "Frontend": {},
+      "Markup": {},
+      "Docs": {},
+      "Communication": {},
+    }]    
   });
 });
 
@@ -146,32 +91,15 @@ test("Can Get Merged Stats", async () => {
   expect(result).toStrictEqual(
     {
       "aliases": {},
-      "authors": {
-        "Bob": {
-          "added": 14,
-          "removed": 2,
-        },
-      },
-      "total": {
-        "added": 14,
-        "removed": 2,
-      },
-      "weekly": {
-        "authors": {
-          "Bob": [
-            {
-              "added": 14,
-              "removed": 2,
-            },
-          ],
-        },
-        "total": [
-          {
-            "added": 14,
-            "removed": 2,
-          },
-        ],
-      },
+      "authors": [ "Bob" ],
+      "groups": [ "Backend", "Frontend", "Markup", "Docs", "Communication" ],
+      "week_group_author":[{
+        "Backend": { "Bob": { added: 0, removed: 0} },
+        "Frontend": { "Bob": { added: 10, removed: 2} },
+        "Markup": { "Bob": { added: 0, removed: 0} },
+        "Docs": { "Bob": { added: 0, removed: 0} },
+        "Communication": { "Bob": { added: 4, removed: 0} },
+      }]  
     }
   );
 

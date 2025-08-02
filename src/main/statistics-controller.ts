@@ -1,5 +1,5 @@
 import { group } from "console";
-import { PieDTO, combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsDTOPerGroup, StatsFilter, StudentFilter, GroupPieDTO, RepoStatisticsDTO2 } from "../shared";
+import { PieDTO, combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsDTOPerGroup, StatsFilter, StudentFilter, GroupPieDTO } from "../shared";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient } from "./github-client";
@@ -208,42 +208,13 @@ export class StatisticsController implements StatsApi {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);        
 
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
-        
-        let firstDate = savedCourseConfig.startDate;
-        let lastDate = combinedStats.getDateRange().end;
-
-        let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
-        combinedStats.mapAuthors(authorMapping);
-
-        // let repoMembers = await this.db.getCollaborators(savedCourseConfig.githubStudentOrg, name);
-        // TODO: docenten er uit filteren... dat maakt het nu slechter dan accounts die niets hebben gedaan er uit filteren
-        // let allAuthors : string[] = [...new Set(combinedStats.getDistinctAuthors().concat(repoMembers.map(m => m.login)))];        
-        let allAuthors = combinedStats.getDistinctAuthors();
-                
-        return {
-            aliases: mappingToAliases(authorMapping),
-            total: new StatsBuilder(combinedStats).build(),
-            authors: new StatsBuilder(combinedStats).groupByAuthor(allAuthors).build(),
-            weekly: {
-                total: new StatsBuilder(combinedStats).groupByWeek(firstDate, lastDate).build(),
-                authors: new StatsBuilder(combinedStats)
-                .groupByAuthor(allAuthors)
-                .thenByWeek(firstDate, lastDate)
-                .build()
-            }
-        };
-    }
-
-    @ipc("repostats:get2")
-    async getRepoStats2(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO2> {
-        let savedCourseConfig = await this.db.getCourseConfig(courseId);        
-
-        let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
 
         
 
         let firstDate = savedCourseConfig.startDate;
         let lastDate = combinedStats.getDateRange().end;
+
+        let groups = this.#getGroups(savedCourseConfig);
         
         let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
         combinedStats.mapAuthors(authorMapping);
@@ -253,38 +224,16 @@ export class StatisticsController implements StatsApi {
 
         let week_group_author = builder
             .groupByWeek(firstDate, lastDate)
-            .thenBy(this.#getGroups(savedCourseConfig))
+            .thenBy(groups)
             .thenByAuthor(allAuthors)
             .build();
         return {
+            authors: allAuthors,
+            groups: groups.map(g => g.name),
             aliases: mappingToAliases(authorMapping),
             week_group_author: week_group_author
         }
 
-    }
-
-    async getRepoStatsByGroup(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTOPerGroup> {
-        let savedCourseConfig = await this.db.getCourseConfig(courseId);
-
-        let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);        
-        let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
-        combinedStats.mapAuthors(authorMapping);
-
-        let lastDate = combinedStats.getDateRange().end;
-
-        let builder = new StatsBuilder(combinedStats);
-
-        return {
-            total: builder.build(),
-            groups: builder.groupBy(this.#getGroups(savedCourseConfig)).build(),
-            weekly: {
-                total: builder.groupByWeek(savedCourseConfig.startDate, lastDate).build(),
-                groups: builder
-                    .groupBy(this.#getGroups(savedCourseConfig))
-                    .thenByWeek(savedCourseConfig.startDate, lastDate)
-                    .build()
-            }
-        };
     }
 
     @ipc("repostats-mapping:update")
@@ -297,28 +246,6 @@ export class StatisticsController implements StatsApi {
     async removeAlias(courseId: number, name: string, aliases: { [canonical: string]: string[]; }) :Promise<void> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         await this.db.removeAliases(savedCourseConfig.githubStudentOrg, name, aliases);
-    }
-
-
-    @ipc("repostats-blame:get")
-    async getBlameStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<PieDTO> {
-        let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        
-        let [gitPie, projectStats] = await Promise.all([
-            this.fileSystem.getLinesByAuthorPie(savedCourseConfig.githubStudentOrg, assignment, name),
-            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
-        ]);
-        
-        let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name)
-        projectStats.mapAuthors(authorMapping);        
-        gitPie = mergeAuthors(gitPie, authorMapping);
-
-        let docsPie: { [name: string]: number } = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
-
-        return {
-            aliases: mappingToAliases(authorMapping),
-            pie: mergePies(gitPie, docsPie)
-        };
     }
 
     @ipc("repostats-group-pie:get")
@@ -344,7 +271,7 @@ export class StatisticsController implements StatsApi {
             pie[group] = groupPie;
         }
 
-        return {
+        return {            
             aliases: mappingToAliases(authorMapping),
             groupedPie: pie
         };

@@ -162,7 +162,6 @@ export class FileSystem {
 
 
         delete this.repoCache[target];
-        delete this.blameCache[target];
         delete this.branchCache[target];
     }
 
@@ -246,50 +245,6 @@ export class FileSystem {
         return parsedLog;
     }
 
-    async getLinesByGroupPie(groups: GroupDefinition[], ...repoPath: string[]) : Promise<Record<string, number>> {
-        let target = path.join(this.#basePath, ...repoPath);
-        let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });        
-        let files = filesRaw.stdout.split('\n').filter(f => f.length > 0).map(f => f.trim());
-        let report: { [groups: string]: number } = {};
-
-        async function processFile(file: string, extensions: string[]) : Promise<number> {
-            if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
-                return 0;
-            }
-            if (file.indexOf('node_modules/') !== -1) { //.gitignore is moeilijk soms...
-                return 0;
-            }
-            if (file.indexOf('target/') !== -1) {
-                return 0;
-            }
-
-            if (extensions.some(ext => file.toLowerCase().endsWith(ext.toLowerCase()))) {
-                let lines = await readFile(path.join(target, file), { encoding: 'utf8' });
-                let lineCount = lines.split('\n').map(l => l.trim()).filter(l => l.length > 0).length;                        
-                return lineCount;                        
-            }else {
-                return 0;
-            }
-        }
-
-        async function processGroup(group: GroupDefinition) {
-            if(group.extensions){
-                let lines = await Promise.all(files.map(f => processFile(f, group.extensions)));
-                report[group.name] = lines.reduce((acc, cur) => acc + cur, 0);
-            }else{
-                report[group.name] = 0;
-            }
-        }
-
-        await Promise.all(groups.map(processGroup))
-
-        let result : Record<string,number> = {}; //netter om het in dezelfde volgorde te returnen
-        for(let group of groups) {
-            result[group.name] = report[group.name];
-        }
-        return result;
-    }
-
     async getLinesByGroupThenAuthor(groups: GroupDefinition[], ...repoPath: string[]) : Promise<Record<string, Record<string, number>>> {
         let target = path.join(this.#basePath, ...repoPath);
         
@@ -371,75 +326,6 @@ export class FileSystem {
             report[group.name] = resultingGroups.find(rg => rg[group.name])?.[group.name] || {};
         }
 
-        return report;
-    }
-
-    blameCache: { [repoPath: string]: any } = {};
-
-    async getLinesByAuthorPie(...repoPath: string[]) : Promise<Record<string, number>> {
-        let target = path.join(this.#basePath, ...repoPath);
-        if (this.blameCache[target]) {
-            console.log('cache-hit: blame for', target);
-            return this.blameCache[target];
-        }
-        let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
-
-
-        let files = filesRaw.stdout.split('\n').map(f => f.trim()).filter(f => f.length > 0);
-        let report: { [author: string]: number } = {};
-
-        //Het is jammer, maar helaas dat git blame anders omgaat met binary files dan git log. Dus het zal nog even klooien zijn om er voor te zorgen
-        //dat die 2 getallen met elkaar gaan matchen.
-        async function blameFile(file: string) {
-            //git log filtert binaries er ook uit, maar cost een extra console call. Dus een lijstje opbouwen van files die we vaak tegenkomen en echt niet hoeven
-            //te checken is handig qua performance
-            let hardcodedBinaryExtensions = ['.pdf', '.png', '.jar', '.zip', '.jpeg', '.webp', '.pptx', '.docx', '.xslx'];
-
-            if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
-                return;
-            }
-            if (hardcodedBinaryExtensions.some(ext => file.toLowerCase().endsWith(ext))) {
-                return;
-            }
-            if (file.indexOf('node_modules/') !== -1) { //.gitignore is moeilijk soms...
-                return;
-            }
-            if (file.indexOf('target/') !== -1) {
-                return;
-            }
-
-            let soloLog = null;
-            try {
-                soloLog = await exec(`git log -1 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' });
-            } catch (e) {
-                //Als er een casing-probleem (zelfde file bestaat/bestond onder meerdere spellingen) is, 
-                // dan geeft git log hier een hele vreemde error
-                console.error('Error in git log', e);
-                return;
-            }
-
-            let logLines = soloLog.stdout.split('\n');
-            let [parsedLog] = parseLog(logLines);
-
-            if (parsedLog.changes.length === 0) {
-                return; //Ignore merge commits without any other changes
-            } else if (parsedLog.changes.some(c => c.added === '-' || c.removed === '-')) {
-                return; //Ignore binary files
-            }
-            else if (!ignoredAuthors.some(ia => ia === parsedLog.author)) {
-                try {
-                    let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
-                    let blameLines = blame.stdout.split('\n');
-                    let fileResults = parseBlame(blameLines);
-                    report = combineRecords(report, fileResults);
-                } catch (e) {
-                    console.error('Error in blame', logLines, e);
-                }
-            }
-        }
-        await Promise.all(files.map(f => blameFile(f)));
-
-        this.blameCache[target] = report;
         return report;
     }
 }
