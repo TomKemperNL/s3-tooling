@@ -323,7 +323,7 @@ export class FileSystem {
 
         let otherGroup = groups.find(g => g.other);
 
-        for (let file of files) {
+        async function parseFile(file: string){
             if (await this.#includeFileInBlames(target, file)) {
                 let matchingGroup = repoGroups.find(g => g.extensions.some(ext => file.toLowerCase().endsWith(ext.toLowerCase())));
                 let blameLines: string[] = await this.gitCli.getBlame(target, file);
@@ -348,6 +348,8 @@ export class FileSystem {
                 }
             }
         }
+
+        await Promise.all(files.map(f => parseFile.apply(this, [f])));
         return report;
     }
 }
