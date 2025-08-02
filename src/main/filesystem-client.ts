@@ -68,7 +68,7 @@ export function parseLog(logLines: string[]): LoggedCommit[] {
     return commits;
 }
 
-export function parseBlame(blameLines: string[]): Record<string,number> {
+export function parseBlame(blameLines: string[]): Record<string, number> {
     let report: { [author: string]: number } = {};
     for (let line of blameLines) {
         let blameMatch = line.match(blamePattern);
@@ -85,8 +85,8 @@ export function parseBlame(blameLines: string[]): Record<string,number> {
 }
 
 
-function combineRecords(rep1: Record<string,number>, rep2: Record<string,number>) {
-    let result: Record<string,number> = {};
+function combineRecords(rep1: Record<string, number>, rep2: Record<string, number>) {
+    let result: Record<string, number> = {};
     function addToReport(key: string, value: number) {
         if (!result[key]) {
             result[key] = 0;
@@ -105,9 +105,37 @@ function combineRecords(rep1: Record<string,number>, rep2: Record<string,number>
 
 export type CloneStyle = 'https' | 'ssh'
 
+export interface GitCommands {
+    listFiles(path: string): Promise<string[]>
+    getFileLog(path: string, file: string): Promise<LoggedCommit[]>
+    getBlame(path: string, file: string): Promise<string[]>
+}
+
+class GitCli implements GitCommands {
+    async listFiles(target: string) {
+        let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
+        let files = filesRaw.stdout.split('\n').map(f => f.trim()).filter(f => f.length > 0);
+        return files
+    }
+
+    async getFileLog(target: string, file: string): Promise<LoggedCommit[]> {
+        let log = await exec(`git log -10 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' }); //Deze -10 is een beetje een lelijke gok
+        let logLines = log.stdout.split('\n');
+        let parsedLog = parseLog(logLines);
+        return parsedLog;
+    }
+
+    async getBlame(target: string, file: string): Promise<string[]> {
+        let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
+        return blame.stdout.split('\n');
+    }
+
+}
+
 export class FileSystem {
     #basePath: string;
     cloneStyle: CloneStyle = 'ssh'
+    gitCli: GitCommands = new GitCli();
 
     constructor(basePath: string) {
         if (!basePath) {
@@ -245,87 +273,81 @@ export class FileSystem {
         return parsedLog;
     }
 
-    async getLinesByGroupThenAuthor(groups: GroupDefinition[], ...repoPath: string[]) : Promise<Record<string, Record<string, number>>> {
+    async #includeFileInBlames(path: string, file: string) {
+        let hardcodedBinaryExtensions = ['.pdf', '.png', '.jar', '.zip', '.jpeg', '.webp', '.pptx', '.docx', '.xslx'];
+
+        if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
+            return false;;
+        }
+        if (hardcodedBinaryExtensions.some(ext => file.toLowerCase().endsWith(ext))) {
+            return false;;
+        }
+        if (file.indexOf('node_modules/') !== -1) { //.gitignore is moeilijk soms...
+            return false;;
+        }
+        if (file.indexOf('target/') !== -1) {
+            return false;;
+        }
+
+        let parsedLog: LoggedCommit[] = null;
+        try {
+            parsedLog = await this.gitCli.getFileLog(path, file);
+            //basically willen we files ignoren die altijd binary zijn, of alleen maar merge-commits hebben.
+            //hmm, dat klinkt niet heel logisch: TODO, wat wouden we hier eigenlijk?:)
+        } catch (e) {
+            //Als er een casing-probleem (zelfde file bestaat/bestond onder meerdere spellingen) is, 
+            // dan geeft git log hier een hele vreemde error
+            console.error('Error in git log', e);
+            return false;
+        }
+
+
+        if (parsedLog.every(l => l.changes.length === 0)) {
+            return false;; //Ignore merge commits without any other changes
+        } else if (parsedLog.every(l => l.changes.some(c => c.added === '-' || c.removed === '-'))) {
+            return false;; //Ignore binary files
+        }
+        else if (!parsedLog.every(l => ignoredAuthors.some(ia => ia === l.author))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    async getLinesByGroupThenAuthor(groups: GroupDefinition[], ...repoPath: string[]): Promise<Record<string, Record<string, number>>> {
         let target = path.join(this.#basePath, ...repoPath);
-        
-        let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
-        let files = filesRaw.stdout.split('\n').map(f => f.trim()).filter(f => f.length > 0);        
+        let files = await this.gitCli.listFiles(target);
+        let repoGroups = groups.filter(g => g.extensions && g.extensions.length > 0);
 
-        async function processFile(file: string): Promise<Record<string,number>>{            
-            let hardcodedBinaryExtensions = ['.pdf', '.png', '.jar', '.zip', '.jpeg', '.webp', '.pptx', '.docx', '.xslx'];
+        let report = {} as Record<string, Record<string, number>>;
 
-            if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
-                return {};
-            }
-            if (hardcodedBinaryExtensions.some(ext => file.toLowerCase().endsWith(ext))) {
-                return {};
-            }
-            if (file.indexOf('node_modules/') !== -1) { //.gitignore is moeilijk soms...
-                return {};
-            }
-            if (file.indexOf('target/') !== -1) {
-                return {};
-            }
+        let otherGroup = groups.find(g => g.other);
 
-            let soloLog = null;
-            try {
-                soloLog = await exec(`git log -10 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' }); //Deze -10 is een beetje een lelijke gok
-                //basically willen we files ignoren die altijd binary zijn, of alleen maar merge-commits hebben.
+        for (let file of files) {
+            if (await this.#includeFileInBlames(target, file)) {
+                let matchingGroup = repoGroups.find(g => g.extensions.some(ext => file.toLowerCase().endsWith(ext.toLowerCase())));
+                let blameLines: string[] = await this.gitCli.getBlame(target, file);
+                let fileResults = parseBlame(blameLines);
 
-                //hmm, dat klinkt niet heel logisch: TODO, wat wouden we hier eigenlijk?:)
-            } catch (e) {
-                //Als er een casing-probleem (zelfde file bestaat/bestond onder meerdere spellingen) is, 
-                // dan geeft git log hier een hele vreemde error
-                console.error('Error in git log', e);
-                return {};
-            }
-            
-            let logLines = soloLog.stdout.split('\n');
-            let parsedLog = parseLog(logLines);
-            
-
-            
-            if (parsedLog.every(l => l.changes.length === 0)) {
-                return {}; //Ignore merge commits without any other changes
-            } else if (parsedLog.every(l => l.changes.some(c => c.added === '-' || c.removed === '-'))) {
-                return {}; //Ignore binary files
-            }
-            else if (!parsedLog.every(l =>ignoredAuthors.some(ia => ia === l.author))) {
-                try {
-                    let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
-                    let blameLines = blame.stdout.split('\n');
-                    let fileResults = parseBlame(blameLines);
-                    return fileResults;
-                } catch (e) {
-                    console.error('Error in blame', logLines, e);
-                    return {};
+                if (matchingGroup) {
+                    report[matchingGroup.name] = report[matchingGroup.name] || {};
+                    for (let author of Object.keys(fileResults)) {
+                        if (!report[matchingGroup.name][author]) {
+                            report[matchingGroup.name][author] = 0;
+                        }
+                        report[matchingGroup.name][author] += fileResults[author];
+                    }
+                } else if (otherGroup) {
+                    report[otherGroup.name] = report[otherGroup.name] || {};
+                    for (let author of Object.keys(fileResults)) {
+                        if (!report[otherGroup.name][author]) {
+                            report[otherGroup.name][author] = 0;
+                        }
+                        report[otherGroup.name][author] += fileResults[author];
+                    }
                 }
-            }else{
-                return {};
             }
         }
-
-        async function processGroup(group: GroupDefinition): Promise<Record<string, Record<string, number>>> {    
-            let output : Record<string, Record<string,number>> = {};
-            output[group.name] = {};
-
-            if(group.extensions){
-                
-                let results = await Promise.all(
-                    files.filter(f => group.extensions.some(ext => f.toLowerCase().endsWith(ext.toLowerCase()))).map(f =>  processFile(f)));
-                let result = results.reduce(combineRecords, {});
-                output[group.name] = result;            
-             
-            }            
-            return output;
-        }
-
-        let resultingGroups = await Promise.all(groups.map(g => processGroup(g)));
-        let report : Record<string, Record<string, number>> = {};
-        for(let group of groups){
-            report[group.name] = resultingGroups.find(rg => rg[group.name])?.[group.name] || {};
-        }
-
         return report;
     }
 }
