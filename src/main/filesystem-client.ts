@@ -350,6 +350,15 @@ export class FileSystem {
         }
 
         await Promise.all(files.map(f => parseFile.apply(this, [f])));
-        return report;
+        
+        let orderedReport = {} as Record<string, Record<string, number>>;
+        for (let group of groups) {
+            if (report[group.name]) {
+                orderedReport[group.name] = report[group.name];
+            } else {
+                orderedReport[group.name] = {};
+            }
+        }
+        return orderedReport;
     }
 }
