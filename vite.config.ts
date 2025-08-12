@@ -7,7 +7,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: './src/renderer/index.html',
-        screenshot: './src/renderer/screenshot.html'
+        screenshot: './src/renderer/screenshot.html',
+        web: './src/renderer/web.html'
       }
     },
     sourcemap: true,

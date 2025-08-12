@@ -16,3 +16,4 @@ import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 
 import './screenshot-element'
+import './webapp-element'	

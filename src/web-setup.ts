@@ -1,9 +1,20 @@
 import express from "express"
 import { promisify } from "util";
 import { S3App } from "./main/index";
+import * as fspath from "path";
 
 let expressApp = express();
+let apiRouter = express.Router();
+
+expressApp.use('/api', apiRouter);
+expressApp.use('/assets', express.static('dist/src/renderer/assets'));
+expressApp.get('/*spa', (req, res) => {    
+    res.sendFile(fspath.resolve(process.cwd(), 'dist', 'src', 'renderer', 'web.html'));
+});
+
 const listen = promisify(expressApp.listen).bind(expressApp);
+
+const PORT = process.env.PORT || 3000;
 
 const getRegistry : {[channel: string]: any} = {};
 const paramRegistry : any[] = [];
@@ -61,7 +72,7 @@ export async function setupWebHandlers(app: S3App) {
             }
         }
         console.log('Adding GET for ', path);
-        expressApp.get(path, async (req, res) => {            
+        apiRouter.get(path, async (req, res) => {            
             let params : any[] = [];            
             for(let param of entry.params){                
                 let value = undefined;
@@ -84,5 +95,6 @@ export async function setupWebHandlers(app: S3App) {
     }
     
     
-    await listen(3000);
+    console.log(`Listening on port ${PORT}`);
+    await listen(PORT);
 }
