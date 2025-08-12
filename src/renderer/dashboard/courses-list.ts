@@ -14,6 +14,12 @@ export class CourseLoadedEvent extends Event {
     }
 }
 
+export class CourseClearedEvent extends Event {
+    constructor() {
+        super('course-cleared');
+    }
+}
+
 @customElement('courses-list')
 export class CoursesList extends LitElement {
 
@@ -55,6 +61,8 @@ export class CoursesList extends LitElement {
             if (course) {
                 this.loadCourse(course);
             }
+        }else{
+            this.dispatchEvent(new CourseClearedEvent());
         }
     }
 

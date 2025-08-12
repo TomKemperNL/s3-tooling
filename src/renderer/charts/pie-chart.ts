@@ -65,6 +65,7 @@ export class PieChart extends LitElement {
     static styles = css`
         :host {
             display: block;
+            position: relative;
         }
     `
 }

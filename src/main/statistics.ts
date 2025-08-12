@@ -3,6 +3,15 @@ import { StringDict } from "./canvas-client";
 import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 
+export type ProjectContent = "issues" | "pullrequests" | "comments"
+
+export type GroupDefinition = {
+    name: string,
+    extensions?: string[]
+    projectContent?: ProjectContent[],
+    other?: boolean
+}
+
 export interface StatsBuilderInitial {
     groupByWeek(startDate: Date, endDate: Date): StatsBuilderThenBy
     groupByAuthor(authors: string[]): StatsBuilderThenBy
@@ -19,50 +28,47 @@ export interface StatsBuilderThenBy {
 
 export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
 
-    private wip: any;
-    constructor(private stats: Statistics, wip: any = null) {
-        if (!wip) {
-            this.wip = stats;
-        } else {
-            this.wip = wip;
-        }
-    }
+    #firstOp: (a: Statistics) => GroupedCollection<Statistics> | ExportingArray<Statistics>;
+    #otherOps: ((a: Statistics) => (GroupedCollection<Statistics> | ExportingArray<Statistics>))[] = [];
+
+    constructor(private start: Statistics) {        
+    }    
 
     groupByWeek(startDate: Date, endDate: Date): StatsBuilderThenBy {
-        if (this.wip instanceof CombinedStats || this.wip instanceof RepositoryStatistics || this.wip instanceof ProjectStatistics) {
-            return new StatsBuilder(this.stats, this.wip.groupByWeek(startDate, endDate));
-        } else if (this.wip instanceof ExportingArray || this.wip instanceof GroupedCollection) {
-            return new StatsBuilder(this.stats, this.wip.map(stat => stat.groupByWeek(startDate, endDate)));
-        } else {
-            throw new Error('Unsupported type for groupByWeek: ' + typeof this.wip);
-        }
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = (a: Statistics) => a.groupByWeek(startDate, endDate);
+        return result;
     }
     groupByAuthor(authors: string[]): StatsBuilderThenBy {
-        if (this.wip instanceof CombinedStats || this.wip instanceof RepositoryStatistics || this.wip instanceof ProjectStatistics) {
-            return new StatsBuilder(this.stats, this.wip.groupByAuthor(authors));
-        } else if (this.wip instanceof ExportingArray || this.wip instanceof GroupedCollection) {
-            return new StatsBuilder(this.stats, this.wip.map(stat => stat.groupByAuthor(authors)));
-        } else {
-            throw new Error('Unsupported type for groupByWeek: ' + typeof this.wip);
-        }
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = (a: Statistics) => a.groupByAuthor(authors);
+        return result;
     }
     groupBy(groups: GroupDefinition[]): StatsBuilderThenBy {
-        if (this.wip instanceof CombinedStats || this.wip instanceof RepositoryStatistics || this.wip instanceof ProjectStatistics) {
-            return new StatsBuilder(this.stats, this.wip.groupBy(groups));
-        } else if (this.wip instanceof ExportingArray || this.wip instanceof GroupedCollection) {
-            return new StatsBuilder(this.stats, this.wip.map(stat => stat.groupBy(groups)));
-        } else {
-            throw new Error('Unsupported type for groupByWeek: ' + typeof this.wip);
-        }
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = (a: Statistics) => a.groupBy(groups);
+        return result;
     }
     thenByWeek(startDate: Date, endDate: Date = null): StatsBuilderThenBy {
-        return this.groupByWeek(startDate, endDate);
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = this.#firstOp;
+        result.#otherOps = this.#otherOps.slice();
+        result.#otherOps.push((a: Statistics) => a.groupByWeek(startDate, endDate));
+        return result;
     }
     thenByAuthor(authors: string[]): StatsBuilderThenBy {
-        return this.groupByAuthor(authors);
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = this.#firstOp;
+        result.#otherOps = this.#otherOps.slice();
+        result.#otherOps.push((a: Statistics) => a.groupByAuthor(authors));
+        return result;
     }
     thenBy(groups: GroupDefinition[]): StatsBuilderThenBy {
-        return this.groupBy(groups);
+        let result = new StatsBuilder(this.start);
+        result.#firstOp = this.#firstOp;
+        result.#otherOps = this.#otherOps.slice();
+        result.#otherOps.push((a: Statistics) => a.groupBy(groups));
+        return result;
     }
 
     static #deepOp(target: any, op: (a: Statistics) => any): any {
@@ -87,7 +93,14 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
     }
 
     build(): any {
-        return StatsBuilder.#flatten(this.wip);
+        let result : any = this.start;
+        if(this.#firstOp){
+            result = this.#firstOp(result)
+        }
+        for(let op of this.#otherOps) {
+            result = StatsBuilder.#deepOp(result, op);
+        }
+        return StatsBuilder.#flatten(result);
     }
 
 }
@@ -107,6 +120,7 @@ export interface Statistics {
 export class CombinedStats implements Statistics {
     constructor(private stats: Statistics[]) {
     }
+    
     getDistinctAuthors(): string[] {
         let authors = new Set<string>();
         for (let stat of this.stats) {
@@ -192,18 +206,6 @@ export class CombinedStats implements Statistics {
     }
 }
 
-type RepoGroupDefinition = {
-    name: string,
-    extensions: string[]
-}
-
-type ProjectGroupDefinition = {
-    name: string
-    extensions: never
-}
-
-export type GroupDefinition =
-    RepoGroupDefinition | ProjectGroupDefinition;
 
 function isExportable(obj: any): obj is Exportable {
     return obj && typeof obj.export === 'function';
@@ -281,7 +283,7 @@ export class ExportingArray<T> {
         // Object.setPrototypeOf(this, ExportingArray.prototype);
     }
 
-    map<Y>(fn: (r: T) => Y): ExportingArray<Y> {
+    map<Y>(fn: (r: T) => Y): ExportingArray<Y> {        
         let result = this.items.map(fn);
         return new ExportingArray(result);
     }
@@ -315,6 +317,10 @@ export class ExportingArray<T> {
 
     get length() {
         return this.items.length;
+    }
+
+    get(ix: number): T {
+        return this.items[ix];
     }
 
     export() {

@@ -14,6 +14,17 @@ if (ignoredAuthorsEnv) {
 
 console.log('Ignored authors:', ignoredAuthors);
 
+function partition<T>(array: T[], predicate: (value: T) => boolean): [T[], T[]] {
+    return array.reduce((acc, item) => {
+        if(predicate(item)) {
+            acc[0].push(item);
+        }else{
+            acc[1].push(item);
+        }            
+        return acc;
+    }, [[], []]);
+}
+
 export class RepositoryStatistics implements Statistics {
     ignoredFiles = ['package-lock.json'];
     ignoredFolders = ['node_modules'];
@@ -82,18 +93,6 @@ export class RepositoryStatistics implements Statistics {
         return data.reduce((acc, commit) => {
             return acc.concat(commit.changes);
         }, [])
-    }
-
-    static #filterCommit(commit: LoggedCommit, extensions: string[]): LoggedCommit {
-        function getChangesForGroup(changes: LoggedChange[]): LoggedChange[] {
-            return changes.filter(c => extensions.some(ext => c.path.toLocaleLowerCase().endsWith(ext.toLocaleLowerCase())));
-        }
-
-        let changes: LoggedChange[] = getChangesForGroup(commit.changes);
-        return {
-            ...commit,
-            changes
-        }
     }
 
     #privGetCommitsPerWeek(someData: LoggedCommit[], startDate: Date = null, endDate: Date): LoggedCommit[][] {
@@ -173,25 +172,48 @@ export class RepositoryStatistics implements Statistics {
         return new GroupedCollection(result);
     }
 
+    
+
 
     groupBy(groups: GroupDefinition[]): GroupedCollection<Statistics> {
-        let result: { [name: string]: Statistics } = {};
-        for (let group of groups) {
-            if(!group.extensions){
-                result[group.name] = new CombinedStats([]);
-            }else{
-                let groupCommits = [];
-                for (let commit of this.data) {
-                    let filteredCommit = RepositoryStatistics.#filterCommit(commit, group.extensions);
+        let intermediate: { [name: string]: LoggedCommit[] } = {};        
+        let otherCommits = [];
+
+        for(let commit of this.data){      
+            let copyCommit = { ...commit, changes: [...commit.changes] }; // Maak een kopie van de commit om te voorkomen dat we de originele data aanpassen      
+            for(let group of groups){
+                if(group.extensions){
+                    let [matchingChanges, nonMatchingChanges] = partition(copyCommit.changes, (c: LoggedChange) => group.extensions.some(ext => c.path.toLocaleLowerCase().endsWith(ext.toLocaleLowerCase())))
+                    let filteredCommit = {
+                        ...copyCommit,
+                        changes: matchingChanges
+                    };
                     if (filteredCommit.changes.length > 0) {
-                        groupCommits.push(filteredCommit);
+                        if (!intermediate[group.name]) {
+                            intermediate[group.name] = [];
+                        }
+                        intermediate[group.name].push(filteredCommit);                        
                     }
-    
+                    copyCommit.changes = nonMatchingChanges;
                 }
-                let groupResult = new RepositoryStatistics(groupCommits, this.options);
-                result[group.name] = groupResult;
-            }            
+            }
+            if(copyCommit.changes.length > 0){
+                otherCommits.push(copyCommit);
+            }
         }
+
+        let result : Record<string, Statistics> = {};
+        for(let group of groups){
+            if (intermediate[group.name]) {
+                result[group.name] = new RepositoryStatistics(intermediate[group.name], this.options);
+            } else if (group.other) {
+                result[group.name] = new RepositoryStatistics(otherCommits, this.options);                
+            }
+            else{
+                result[group.name] = new RepositoryStatistics([], this.options);
+            }
+        }
+
 
         return new GroupedCollection(result);
     }

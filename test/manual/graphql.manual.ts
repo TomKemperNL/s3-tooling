@@ -1,4 +1,4 @@
-import { GithubClient } from "../src/main/github-client";
+import { GithubClient } from "../../src/main/github-client";
 console.log("Using token", process.env.GITHUB_TOKEN);
 
 let client = new GithubClient(process.env.GITHUB_TOKEN);

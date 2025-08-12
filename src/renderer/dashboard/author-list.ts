@@ -105,8 +105,7 @@ export class AuthorList extends LitElement {
     dropAuthor(author: AuthorItem) {
         return (e: DragEvent) => {
             e.preventDefault();
-            const draggedAuthorName = e.dataTransfer!.getData('text/plain');
-            console.log('dragging ', draggedAuthorName, ' onto ', author.name);
+            const draggedAuthorName = e.dataTransfer!.getData('text/plain');            
             let mapping: Record<string, string> = {};
             mapping[draggedAuthorName] = author.name;
 
@@ -137,6 +136,12 @@ export class AuthorList extends LitElement {
         font-size: 1.2em;
         margin: 0.3em 0;
     }
+    li {
+        list-style-type: none;        
+    }
+    details {
+        display: inline-block;
+    }
     `;
 
     render() {
@@ -148,8 +153,6 @@ export class AuthorList extends LitElement {
         });
 
         let item =  (a: AuthorItem) => html`
-            <input type="checkbox" ?checked=${a.enabled} @change=${this.toggleAuthor(a)}>
-            <button @click=${this.selectAuthor(a)} type="button">Select</button>
             <span class="author"
                 draggable=${a.member ? 'false' : 'true'} 
                 style=${styleMap(styles(a))}
@@ -164,7 +167,9 @@ export class AuthorList extends LitElement {
         return html`    
                 <ul>
                     ${map(this.authors, (a: AuthorItem) => html`
-                        <li>${when(a.aliases.length > 0, () => html`
+                        <li> <input type="checkbox" ?checked=${a.enabled} @change=${this.toggleAuthor(a)}>
+            <!-- <button @click=${this.selectAuthor(a)} type="button">Select</button> -->
+                            ${when(a.aliases.length > 0, () => html`
                             <details>
                             <summary>
                                 ${item(a)}

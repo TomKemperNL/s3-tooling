@@ -72,6 +72,7 @@ export type RepoDTO = {
     name: string,
     groupRepo: boolean,
     members: string[]
+    url: string
 }
 
 export type StatsFilter = {
@@ -96,10 +97,10 @@ export function combineStats(...stats: LinesStatistics[]): LinesStatistics {
 
 
 export type RepoStatisticsDTO = {
+    authors: string[],
+    groups: string[],
     aliases: { [name: string]: string[] },
-    total: LinesStatistics,
-    authors: { [name: string] : LinesStatistics}
-    weekly: RepoStatisticsPerWeekDTO,
+    week_group_author: Record<string, Record<string, LinesStatistics>>[],
 }
 
 export type RepoStatisticsDTOPerGroup = {
@@ -113,9 +114,14 @@ export type AuthorStatisticsDTO = {
     weekly: { [group: string]: LinesStatistics }[],
 }
 
-export type BlameStatisticsDTO = {
+export type PieDTO = {
     aliases: { [name: string]: string[] },
-    blamePie: { [name: string] : number}
+    pie: { [name: string] : number}
+}
+
+export type GroupPieDTO = {
+    aliases: { [name: string]: string[] },
+    groupedPie: Record<string, Record<string,number>>
 }
 
 export type RepoStatisticsPerWeekDTO = {

@@ -1,4 +1,4 @@
-import { BlameStatisticsDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter } from "./shared";
+import { PieDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO } from "./shared";
 import { Settings } from "./shared"
 
 
@@ -29,8 +29,8 @@ export interface RepoApi {
 }
 
 export interface StatsApi {
-    getRepoStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<RepoStatisticsDTO>
-    getBlameStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<BlameStatisticsDTO>
+    getRepoStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<RepoStatisticsDTO>        
+    getGroupPie: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<GroupPieDTO>
     getStudentStats: (courseId: number, assignment: string, name: string, filter: StudentFilter) => Promise<any>
     updateAuthorMapping: (courseId: number, name: string, mapping: { [author: string]: string }) => Promise<void>
     removeAlias: (courseId: number, name: string, aliases: { [canonical: string]: string[] }) => Promise<void>

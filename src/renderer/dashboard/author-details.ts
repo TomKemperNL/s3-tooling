@@ -1,11 +1,18 @@
-import { html, LitElement } from "lit";
+import { html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { AuthorStatisticsDTO } from "../../shared";
+import { AuthorStatisticsDTO, RepoDTO } from "../../shared";
 import { classMap } from "lit/directives/class-map.js";
+import { consume } from "@lit/context";
+import { ipcContext } from "../contexts";
+import { BackendApi } from "../../backend-api";
 
-@customElement('student-details')
-export class StudentDetails extends LitElement {
-    @property({ type: Object })
+@customElement('author-details')
+export class AuthorDetails extends LitElement {
+
+    @consume({context: ipcContext})
+    ipc: BackendApi;
+
+    @property({ type: Object, state: true })
     authorStats: AuthorStatisticsDTO = {
         total: {},
         weekly: []
@@ -17,13 +24,33 @@ export class StudentDetails extends LitElement {
     @property({type: String})
     authorName: string = "";
 
-    private colors = [
+    @property({ type: Object })
+    repo: RepoDTO;
+
+    private colors = [        
         "rgba(255, 99, 132, 0.8)",
         "rgba(54, 162, 235, 0.8)",
         "rgba(255, 206, 86, 0.8)",
         "rgba(75, 192, 192, 0.8)",
         "rgba(153, 102, 255, 0.8)",
+        "rgba(88, 88, 88, 0.8)",
     ]
+
+    protected updated(_changedProperties: PropertyValues): void {
+        if(_changedProperties.has('repo') || _changedProperties.has('authorName')) {
+            this.loading = true;
+
+            this.ipc.getStudentStats(
+                this.repo.courseId,
+                this.repo.assignment,
+                this.repo.name,
+                { authorName: this.authorName }).then(
+                    authorStats => {
+                        this.authorStats = authorStats;
+                        this.loading = false;
+                    });
+        }
+    }
 
     toDatasets(): any[] {
         let datasets: any[] = [];

@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { CourseDTO, RepoDTO, Startup } from "../shared";
+import { AuthorStatisticsDTO, CourseDTO, RepoDTO, Startup } from "../shared";
 import { when } from "lit/directives/when.js";
 import { CourseLoadedEvent } from "./dashboard/courses-list";
 import { RepoSelectedEvent } from "./dashboard/repositories-list";
@@ -9,6 +9,7 @@ import { BackendApi } from "../backend-api";
 import { ipcContext } from "./contexts";
 import { provide } from "@lit/context";
 import { ErrorHandlingBackendApi } from "./error-handling-backend";
+import { AuthorSelectedEvent } from "./dashboard/author-list";
 
 @customElement("app-element")
 export class AppElement extends LitElement {
@@ -40,6 +41,9 @@ export class AppElement extends LitElement {
     githubUser: string = '';
     @property({ type: String, state: true })
     canvasUser: string = '';
+    
+    @property({ type: String, state: true })
+    selectedAuthor: string;
 
     reload(startup: Startup){
         if(startup.validSettings){
@@ -58,6 +62,7 @@ export class AppElement extends LitElement {
     protected firstUpdated(_changedProperties: PropertyValues): void {
         this.ipc.startup().then(startup => {
             this.reload(startup);
+            this.load();
         });
     }
 
@@ -65,15 +70,42 @@ export class AppElement extends LitElement {
         this.activeCourse = e.course;
         this.availableRepos = null;
         this.activeRepo = null;
+        this.selectedAuthor = null;
+    }
+
+    courseCleared(e: Event) {
+        this.activeCourse = null;
+        this.availableRepos = null;
+        this.activeRepo = null;
+        this.selectedAuthor = null;
     }
 
     reposLoaded(e: ReposLoadedEvent) {
         this.availableRepos = e.repos;
         this.activeRepo = null;
+        this.selectedAuthor = null;
     }
 
     repoSelected(e: RepoSelectedEvent) {
         this.activeRepo = e.repo;
+        this.selectedAuthor = null;
+        this.save();
+    }
+
+    repoCleared(e: Event) {
+        this.activeRepo = null;
+        this.selectedAuthor = null;
+    }
+
+    reposCleared(e: Event) {        
+        this.availableRepos = null;
+        this.activeRepo = null;
+        this.selectedAuthor = null;
+    }
+
+    selectAuthor(e: AuthorSelectedEvent){
+        this.selectedAuthor = e.authorName;
+        this.save();
     }
 
     static styles = css`
@@ -146,6 +178,32 @@ export class AppElement extends LitElement {
         this.reload(startup);
     }
 
+    save(){
+        let memento = {
+            activeRepo: this.activeRepo,
+            activeCourse: this.activeCourse,
+            availableRepos: this.availableRepos,
+            selectedAuthor: this.selectedAuthor
+        }
+
+        window.localStorage.setItem('app-element-memento', JSON.stringify(memento));
+    }
+
+    load(){
+        try{
+            let memento = window.localStorage.getItem('app-element-memento');
+            if(memento){
+                let parsed = JSON.parse(memento);
+                this.activeRepo = parsed.activeRepo;
+                this.activeCourse = parsed.activeCourse;
+                this.availableRepos = parsed.availableRepos;
+                this.selectedAuthor = parsed.selectedAuthor;
+            }
+        }catch(e){
+            console.error("Error loading memento", e);
+        }
+    }
+
     render() {
         return html`
         <header style="grid-area: header;">
@@ -173,13 +231,13 @@ export class AppElement extends LitElement {
         <nav style="grid-area: nav;" label="dashboard navigation">
             ${when(this.isActive, () => html`  
                 <h2>Cursussen</h2>            
-                <courses-list @course-loaded=${this.courseLoaded}></courses-list>
+                <courses-list @course-loaded=${this.courseLoaded} @course-cleared=${this.courseCleared}></courses-list>
                 ${when(this.activeCourse, () => html`  
-                    <course-details .course=${this.activeCourse} @repos-loaded=${this.reposLoaded}></course-details>
+                    <course-details .course=${this.activeCourse} @repos-loaded=${this.reposLoaded} @repos-cleared=${this.reposCleared}></course-details>
                 `)}
                 ${when(this.availableRepos, () => html`                
                     <h3>Repositories</h3>
-                    <repositories-list .repos=${this.availableRepos} @repo-selected=${this.repoSelected}></repositories-list>
+                    <repositories-list .repos=${this.availableRepos} @repo-selected=${this.repoSelected} @repo-cleared=${this.repoCleared}></repositories-list>
                 `)}
             `)}
         </nav>
@@ -189,7 +247,7 @@ export class AppElement extends LitElement {
                 <settings-page @settings-changed=${this.onSettingsChanged}></settings-page>`, 
             () => html`            
                 ${when(this.activeRepo, () => html`
-                    <repository-details .repo=${this.activeRepo}></repository-details>
+                    <repository-details .repo=${this.activeRepo} @author-selected=${this.selectAuthor}></repository-details>
                 `)}
         `)}
         </main>

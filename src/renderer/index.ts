@@ -5,6 +5,8 @@ import './dashboard/repositories-list'
 import './dashboard/repository-details'
 import './dashboard/author-details'
 import './dashboard/author-list'
+import './dashboard/group-list'
+
 import './settings-page'
 
 import './charts/bar-chart'

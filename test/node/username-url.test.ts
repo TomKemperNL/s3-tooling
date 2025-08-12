@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { getUsernameFromUrl } from '../src/main/canvas-client'
+import { getUsernameFromUrl } from '../../src/main/canvas-client'
 
 let urls: [(string | null), string][] = [
     ['Alik-Hu', 'https://github.com/HU-SD-S2-studenten-2425/sd-s2-verantwoording-Alik-Hu.git'],

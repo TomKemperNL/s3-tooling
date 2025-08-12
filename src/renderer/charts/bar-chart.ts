@@ -61,6 +61,7 @@ export class BarChart extends LitElement {
     static styles = css`
         :host {
             display: block;
+            position: relative;
         }
     `
 }

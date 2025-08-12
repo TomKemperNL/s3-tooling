@@ -1,12 +1,12 @@
 import { test, expect, beforeEach, afterAll } from 'vitest';
-import { Db } from '../src/main/db';
+import { Db } from '../../src/main/db';
 import { Database } from 'sqlite3';
 
 import { FakeCanvasClient } from './fakes/FakeCanvasClient';
 import { FakeGithubClient } from './fakes/FakeGithubClient';
 import { FakeFileSystem } from './fakes/FakeFileSystem';
-import { CourseConfig } from '../src/shared';
-import { StatisticsController } from '../src/main/statistics-controller';
+import { CourseConfig } from '../../src/shared';
+import { StatisticsController } from '../../src/main/statistics-controller';
 import { FakeReposController } from './fakes/FakeReposController';
 
 let db: Db = null;
@@ -57,20 +57,16 @@ test("canGetEmptyStats", async () => {
     someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" })
   expect(result).toStrictEqual({
     "aliases": {},
-    "authors": {},
-    "total": {
-      "added": 0,
-      "removed": 0,
-    },
-    "weekly": {
-      "authors": {},
-      "total": [
-        {
-          "added": 0,
-          "removed": 0,
-        },
-      ],
-    },
+    "authors": [ ],
+    "groups": [ "Backend", "Frontend", "Markup", "Docs", "Communication", "Other" ],
+    "week_group_author":[{
+      "Backend": {},
+      "Frontend": {},
+      "Markup": {},
+      "Docs": {},
+      "Communication": {},
+      "Other": {}
+    }]    
   });
 });
 
@@ -96,32 +92,16 @@ test("Can Get Merged Stats", async () => {
   expect(result).toStrictEqual(
     {
       "aliases": {},
-      "authors": {
-        "Bob": {
-          "added": 14,
-          "removed": 2,
-        },
-      },
-      "total": {
-        "added": 14,
-        "removed": 2,
-      },
-      "weekly": {
-        "authors": {
-          "Bob": [
-            {
-              "added": 14,
-              "removed": 2,
-            },
-          ],
-        },
-        "total": [
-          {
-            "added": 14,
-            "removed": 2,
-          },
-        ],
-      },
+      "authors": [ "Bob" ],
+      "groups": [ "Backend", "Frontend", "Markup", "Docs", "Communication", "Other" ],
+      "week_group_author":[{
+        "Backend": { "Bob": { added: 0, removed: 0} },
+        "Frontend": { "Bob": { added: 10, removed: 2} },
+        "Markup": { "Bob": { added: 0, removed: 0} },
+        "Docs": { "Bob": { added: 0, removed: 0} },
+        "Communication": { "Bob": { added: 4, removed: 0} },
+        "Other": { "Bob": { added: 0, removed: 0} }
+      }]  
     }
   );
 
@@ -138,8 +118,8 @@ test("Can Get User Stats with only Commits", async () => {
   ];
 
   let result = await statisticsController.getStudentStats(
-  someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
-  
+    someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
+
   expect(result).toStrictEqual(
     {
       "aliases": {},
@@ -161,6 +141,10 @@ test("Can Get User Stats with only Commits", async () => {
           "removed": 0
         },
         "Communication": {
+          "added": 0,
+          "removed": 0
+        },
+        "Other": {
           "added": 0,
           "removed": 0
         }
@@ -186,7 +170,11 @@ test("Can Get User Stats with only Commits", async () => {
           "Communication": {
             "added": 0,
             "removed": 0
-          }
+          },
+          "Other": {
+          "added": 0,
+          "removed": 0
+        }
         }
       ]
     }
@@ -196,7 +184,7 @@ test("Can Get User Stats with only Commits", async () => {
 
 
 test("Can Get User Stats with only Project-stuff", async () => {
-  
+
   githubFake.pullRequests = [
     { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
   ];
@@ -205,7 +193,7 @@ test("Can Get User Stats with only Project-stuff", async () => {
   ];
 
   let result = await statisticsController.getStudentStats(
-  someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
+    someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
   expect(result).toStrictEqual(
     {
       "aliases": {},
@@ -229,7 +217,11 @@ test("Can Get User Stats with only Project-stuff", async () => {
         "Communication": {
           "added": 4,
           "removed": 0
-        }
+        },
+        "Other": {
+          "added": 0,
+          "removed": 0
+        },
       },
       "weekly": [
         {
@@ -251,6 +243,10 @@ test("Can Get User Stats with only Project-stuff", async () => {
           },
           "Communication": {
             "added": 4,
+            "removed": 0
+          },
+          "Other": {
+            "added": 0,
             "removed": 0
           }
         }

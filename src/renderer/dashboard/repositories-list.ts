@@ -10,6 +10,12 @@ export class RepoSelectedEvent extends Event {
     }
 }
 
+export class RepoClearedEvent extends Event {
+    constructor() {
+        super('repo-cleared')
+    }
+}
+
 @customElement('repositories-list')
 export class RepositoriesList extends LitElement {
 
@@ -29,6 +35,8 @@ export class RepositoriesList extends LitElement {
             if (repo) {
                 this.selectRepo(repo)();
             }
+        }else{
+            this.dispatchEvent(new RepoClearedEvent());
         }
     }
 

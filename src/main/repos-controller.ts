@@ -1,6 +1,7 @@
+import { url } from "inspector";
 import { RepoApi } from "../backend-api";
 import { ipc } from "../electron-setup";
-import { Assignment, BlameStatisticsDTO, BranchInfo, combineStats, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
+import { Assignment, PieDTO, BranchInfo, combineStats, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
 import { CanvasClient, getUsernameFromName, SimpleDict, StringDict } from "./canvas-client";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
@@ -116,7 +117,8 @@ export class ReposController implements RepoApi{
             courseId: savedCourse.canvasId,
             assignment: assignment.githubAssignment,
             groupRepo: assignment.groupAssignment,
-            name: r.name
+            name: r.name,
+            url: r.http_url,
         }));
     }
 

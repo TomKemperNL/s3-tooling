@@ -1,7 +1,7 @@
 import { test, expect } from 'vitest';
-import { ProjectStatistics } from '../src/main/project-statistics';
-import { Issue, PullRequest } from '../src/shared';
-import { ExportingArray, GroupedCollection } from '../src/main/statistics';
+import { ProjectStatistics } from '../../src/main/project-statistics';
+import { Issue, PullRequest } from '../../src/shared';
+import { ExportingArray, GroupedCollection } from '../../src/main/statistics';
 
 
 test('CanSumLinesPerAuthor', {}, () => {

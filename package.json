@@ -19,7 +19,8 @@
     "electron": "^35.1.5",
     "typescript": "^5.2.2",
     "vite": "^6.2.6",
-    "vitest": "^3.1.1"
+    "vitest": "^3.1.1",
+    "jsdom": "^26.1.0"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.39.1",
@@ -28,7 +29,6 @@
     "chart.js": "^4.4.9",
     "express": "^5.1.0",
     "lit": "^3.1.4",
-    "sequelize": "^6.37.7",
     "sqlite3": "^5.1.7"
   }
 }

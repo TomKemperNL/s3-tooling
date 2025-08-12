@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { AuthorStatisticsDTO, BlameStatisticsDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO } from "../../shared";
+import { AuthorStatisticsDTO, PieDTO, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsPerWeekDTO, GroupPieDTO } from "../../shared";
 import { when } from "lit/directives/when.js";
 import { map } from "lit/directives/map.js";
 import { BackendApi } from "../../backend-api";
@@ -10,6 +10,7 @@ import { consume } from "@lit/context";
 import { HTMLInputEvent } from "../events";
 import { a } from "vitest/dist/chunks/suite.d.FvehnV49.js";
 import { AuthorMappedEvent, EnabledAuthorsChanged, RemoveAliasEvent } from "./author-list";
+import { EnabledItemsChanged } from "./group-list";
 
 export class AuthorSelectedEvent extends Event {
     static eventName = 'author-selected';
@@ -38,16 +39,15 @@ export class RepositoryDetails extends LitElement {
     currentBranch: string = '';
     @property({ type: Array, state: true })
     branches: string[] = [];
+    
     @property({ type: Object, state: true })
-    repoStats?: RepoStatisticsDTO;
+    repoStats: RepoStatisticsDTO;
+
     @property({ type: Object, state: true })
-    blameStats?: BlameStatisticsDTO;
+    groupPie?: GroupPieDTO;
+
     @property({ type: Boolean, state: true })
     loading: boolean = false;
-    @property({ type: String, state: true })
-    selectedAuthorName: string = '';
-    @property({ type: Object, state: true })
-    selectedAuthor: AuthorStatisticsDTO;
 
     @property({ type: Array, state: true })
     allAuthors: string[] = [];
@@ -55,6 +55,11 @@ export class RepositoryDetails extends LitElement {
     @property({ type: Array, state: true })
     enabledAuthors: string[] = [];
 
+    @property({ type: Array, state: true })
+    allGroups: string[] = [];
+
+    @property({ type: Array, state: true })
+    enabledGroups: string[] = [];
 
     
     protected updated(_changedProperties: PropertyValues): void {
@@ -64,30 +69,31 @@ export class RepositoryDetails extends LitElement {
             this.currentBranch = '';
             this.branches = [];
             this.repoStats = undefined;
-            this.blameStats = undefined;
-            this.selectedAuthorName = '';
-            this.selectedAuthor = undefined;
+            this.groupPie = undefined;
             this.allAuthors = [];
             this.enabledAuthors = [];
 
 
             let gettingBranchInfo = this.ipc.getBranchInfo(this.repo.courseId, this.repo.assignment, this.repo.name);
             let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
-            let gettingBlameStats = this.ipc.getBlameStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
-            Promise.all([gettingBranchInfo, gettingRepos, gettingBlameStats]).then(([branchInfo, repoStats, blamestats]) => {
+            let gettingGroupPie = this.ipc.getGroupPie(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
+
+            Promise.all([gettingBranchInfo, gettingRepos, gettingGroupPie]).then(([branchInfo, repoStats, groupPie]) => {
 
                 this.currentBranch = branchInfo.currentBranch;
                 this.branches = branchInfo.availableBranches;
-                this.repoStats = repoStats;
-                this.blameStats = blamestats;
+                this.repoStats = repoStats;                
+                this.groupPie = groupPie;
                 this.loading = false;
+                
             });
         }
-        if (_changedProperties.has('repoStats')) {
-            console.log('setting authors');
+        if (_changedProperties.has('repoStats')) {            
             if(this.repoStats){
-                this.allAuthors = Object.keys(this.repoStats.authors);
-                this.enabledAuthors = Object.keys(this.repoStats.authors);
+                this.allAuthors = this.repoStats.authors;
+                this.enabledAuthors = this.repoStats.authors;
+                this.allGroups = this.repoStats.groups;
+                this.enabledGroups = this.repoStats.groups;
             }            
         }
     }
@@ -96,18 +102,10 @@ export class RepositoryDetails extends LitElement {
         this.enabledAuthors = e.enabledAuthors;
     }
         
-    selectAuthor(e: AuthorSelectedEvent) {
-        this.selectedAuthorName = e.authorName;
-        this.ipc.getStudentStats(
-            this.repo.courseId,
-            this.repo.assignment,
-            this.repo.name,
-            { authorName: e.authorName }).then(
-                authorStats => {
-                    this.selectedAuthor = authorStats;
-                });
-
-    };
+    
+    toggleGroups(e: EnabledItemsChanged){
+        this.enabledGroups = e.enabledGroups;
+    }
 
     async mapAuthors(e: AuthorMappedEvent) {
         await this.ipc.updateAuthorMapping(this.repo.courseId, this.repo.name, e.mapping);
@@ -138,6 +136,16 @@ export class RepositoryDetails extends LitElement {
         "rgba(223,159,191,1)"
     ]
 
+    //TODO: Copy-pasta van author-details fixen
+    groupColors = [        
+        "rgba(255, 99, 132, 0.8)",
+        "rgba(54, 162, 235, 0.8)",
+        "rgba(255, 206, 86, 0.8)",
+        "rgba(75, 192, 192, 0.8)",
+        "rgba(153, 102, 255, 0.8)",
+        "rgba(88, 88, 88, 0.8)",
+    ]
+
     authorToColor(author: string): string {
         let authors = this.allAuthors;
         if (authors.indexOf(author) === -1) {
@@ -147,16 +155,53 @@ export class RepositoryDetails extends LitElement {
         }
     }
 
-    toDatasets(statsByWeek: RepoStatisticsPerWeekDTO): any[] {
-        let datasets: any[] = [];
+    groupToColor(group: string): string {
+        let groups = Object.keys(this.groupPie?.groupedPie || []);
+        if (groups.indexOf(group) === -1) {
+            return 'rgba(0,0,0,1)';
+        } else {
+            return this.groupColors[groups.indexOf(group) % this.groupColors.length];
+        }
+    }
 
-        for (let a of this.enabledAuthors) {            
-            let addedNumbers = statsByWeek.authors[a].map(w => w.added);
-            let removedNumbers = statsByWeek.authors[a].map(w => w.removed * -1);
+    toAuthorPie(pie: Record<string, Record<string, number>>) : Record<string, number>{
+        let result: Record<string, number> = {};
+        for(let group of Object.keys(pie)){
+            if( this.enabledGroups.indexOf(group) === -1) {
+                continue;
+            }
+            for(let author of Object.keys(pie[group])){
+                result[author] = (result[author] || 0) + pie[group][author];
+            }
+        }
+        return result;
+    }
+
+    toGroupBarchart(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {
+        let dataPerWeek: Record<string, LinesStatistics>[] = [];
+        for(let week of statsByWeek){
+            let weekData : Record<string, LinesStatistics> = {};
+            for (let group of Object.keys(week)) {
+                let groupData = { added: 0, removed: 0 };
+                for(let author of Object.keys(week[group])) {
+                    if( this.enabledAuthors.indexOf(author) === -1) {
+                        continue;
+                    }
+                    groupData.added += week[group][author].added;
+                    groupData.removed -= week[group][author].removed;
+                }
+                weekData[group] = groupData;
+            }
+            dataPerWeek.push(weekData);
+        }
+        let datasets: any[] = [];
+        for(let group of this.enabledGroups) {
+            let addedNumbers = dataPerWeek.map(w => w[group]?.added || 0);
+            let removedNumbers = dataPerWeek.map(w => w[group]?.removed || 0);
             let options = {
-                label: a,
-                backgroundColor: this.authorToColor(a),
-                borderColor: this.authorToColor(a),
+                label: group,
+                backgroundColor: this.groupToColor(group),
+                borderColor: this.groupToColor(group),
                 borderWidth: 1
             }
 
@@ -174,8 +219,50 @@ export class RepositoryDetails extends LitElement {
         return datasets;
     }
 
-    async refresh(e: Event){
-        console.log('Refreshing repository', this.repo);
+    toAuthorBarchart(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {        
+        let dataPerWeek: Record<string, LinesStatistics>[] = [];
+        for(let week of statsByWeek){
+            let weekData : Record<string, LinesStatistics> = {};
+            for (let group of Object.keys(week)){
+                if( this.enabledGroups.indexOf(group) === -1) {
+                    continue;
+                }
+                let groupStats = week[group];
+                for(let author of Object.keys(groupStats)){                   
+                    weekData[author] = weekData[author] || { added: 0, removed: 0 };
+                    weekData[author].added += groupStats[author].added;
+                    weekData[author].removed -= groupStats[author].removed;
+                }
+            }
+            dataPerWeek.push(weekData);
+        }
+        
+        let datasets: any[] = [];
+        for(let author of this.enabledAuthors) {
+            let addedNumbers = dataPerWeek.map(w => w[author]?.added || 0);
+            let removedNumbers = dataPerWeek.map(w => w[author]?.removed || 0);
+            let options = {
+                label: author,
+                backgroundColor: this.authorToColor(author),
+                borderColor: this.authorToColor(author),
+                borderWidth: 1
+            }
+
+            datasets.push({
+                data: addedNumbers,
+                ...options
+            });
+
+            datasets.push({
+                data: removedNumbers,
+                ...options
+            });
+        }
+
+        return datasets;
+    }
+
+    async refresh(e: Event){        
         this.loading = true;
         await this.ipc.refreshRepo(this.repo.courseId, this.repo.assignment, this.repo.name);
         this.repo = {...this.repo};
@@ -195,12 +282,12 @@ export class RepositoryDetails extends LitElement {
     :host {
         display: grid;
         grid-template-areas:
-            "title title"
-            "pie     bar"
-            "numbers student";
+            "title   title     title"
+            "authors pieA      barA"
+            "groups  pieG      barG"            
             ;
-        grid-template-columns: 1fr 2fr;
-        grid-template-rows: min-content minmax(25%, 50%) 1fr;
+        grid-template-columns: 1fr 1fr 3fr;
+        /* grid-template-rows: min-content minmax(25%, 50%) 1fr; */
     }
 
     /* :host > div {
@@ -217,28 +304,52 @@ export class RepositoryDetails extends LitElement {
 
     render() {
         let labels: string[] = [];
-        let datasets: any[] = [];
+        let authorBarcharts: any[] = [];
+        let groupBarcharts: any[] = [];
 
         let blameLabels: string[] = [];
         let blameValues: number[] = [];
         let blameColors: string[] = [];
 
+        let groupLabels: string[] = [];
+        let groupValues: number[] = [];
+        let groupColors: string[] = [];
+
+
         if (this.repoStats) {
 
-            for (let i = 0; i < this.repoStats.weekly.total.length; i++) {
+            for (let i = 0; i < this.repoStats.week_group_author.length; i++) {
                 labels.push('Week ' + (i + 1));
             }
-            datasets = this.toDatasets(this.repoStats.weekly!);
+            authorBarcharts = this.toAuthorBarchart(this.repoStats.week_group_author);
+            groupBarcharts = this.toGroupBarchart(this.repoStats.week_group_author);
         }
 
-        if (this.blameStats) {
-            for (let a of Object.keys(this.blameStats?.blamePie)) {
+        if(this.groupPie){
+            let authorPie = this.toAuthorPie(this.groupPie.groupedPie);
+            for (let a of Object.keys(authorPie)) {
                 if (this.enabledAuthors.indexOf(a) === -1) {
                     continue;
                 }
                 blameLabels.push(a);
-                blameValues.push(this.blameStats.blamePie[a]);
+                blameValues.push(authorPie[a]);
                 blameColors.push(this.authorToColor(a));
+            }
+
+            for (let g of Object.keys(this.groupPie?.groupedPie)) {
+                if( this.enabledGroups.indexOf(g) === -1) {
+                    continue;
+                }
+                groupLabels.push(g);
+
+                let authorTotals = 0;
+                for( let a of Object.keys(this.groupPie.groupedPie[g])) {
+                    if( this.enabledAuthors.indexOf(a) !== -1) {
+                        authorTotals += this.groupPie.groupedPie[g][a];
+                    }
+                }
+                groupValues.push(authorTotals);
+                groupColors.push(this.groupToColor(g));
             }
         }
 
@@ -247,58 +358,99 @@ export class RepositoryDetails extends LitElement {
             member: this.repo.members.indexOf(a) !== -1,
             color: this.authorToColor(a),
             enabled: this.enabledAuthors.indexOf(a) !== -1,
-            aliases: this.repoStats?.aliases[a] || []
+            aliases: this.repoStats?.aliases[a] || [],
+            // added: this.repoStats?.authors[a]?.added || 0,
+            // removed: this.repoStats?.authors[a]?.removed || 0
+        }));
+
+        let groupList = this.allGroups.map(g => ({
+            name: g,
+            enabled: this.enabledGroups.indexOf(g) !== -1,
+            color: this.groupToColor(g),
         }));
 
         return html`
         <div style="grid-area: title">
-            <h3>${this.repo.name}</h3>
-            <p><select ?disabled=${this.loading} @change=${this.switchBranch}>
+            <h3><a href=${this.repo.url.replace("https", "external")}>${this.repo.name}</a></h3>
+            <select ?disabled=${this.loading} @change=${this.switchBranch}>
                 ${map(this.branches, b => html`
                     <option value=${b} ?selected=${b === this.currentBranch}>${b}</option>
                 `)}
-            </select><button type="button" ?disabled=${this.loading} @click=${this.refresh}>Refresh</button></p>
+            </select><button type="button" ?disabled=${this.loading} @click=${this.refresh}>Refresh</button>
         </div>        
         
-        <div style="grid-area: numbers;" class=${classMap({ loading: this.loading })}>
-            <ul>
-                ${when(this.repoStats, () => html`
-                    <li>Added: ${this.repoStats!.total.added} / Removed: ${this.repoStats!.total.removed}</li>
-                    <li>Authors:
-                        <author-list 
-                            .authors=${authorList} 
-                            @author-selected=${this.selectAuthor} 
-                            @enabled-authors-changed=${this.toggleAuthors} 
-                            @author-mapped=${this.mapAuthors}
-                            @remove-alias=${this.removeAlias}></author-list>
-                    </li>
-                    `)}                
-            </ul>
-            
-        </div>
-        <div style="grid-area: bar">
+        <div style="grid-area: pieA">
         ${when(this.repoStats, () => html`
-            <stacked-bar-chart 
-                class=${classMap({ loading: this.loading })} 
-                
-                .labels=${labels} 
-                .datasets=${datasets}></stacked-bar-chart>
-        `)}
-        </div>
-        <div style="grid-area: pie">
-        ${when(this.repoStats, () => html`
+            <h4>Regels code in eindproduct per auteur</h4>
             <pie-chart 
-                class=${classMap({ loading: this.loading })} 
+                class=${classMap({ loading: this.loading, chart: true })} 
                 
                 .labels=${blameLabels}
                 .values=${blameValues}
                 .colors=${blameColors}></pie-chart>
+                
+        `)}        
+        </div>
+        <div style="grid-area: pieG">        
+        ${when(this.groupPie, () => html`
+            <h4>Regels code in eindproduct per groepering</h4>
+            <pie-chart 
+                class=${classMap({ loading: this.loading, chart: true })} 
+                
+                .labels=${groupLabels}
+                .values=${groupValues}
+                .colors=${groupColors}></pie-chart>
         `)}
         </div>
-        <div style="grid-area: student">
-        ${when(this.selectedAuthor, () => html`
-                <student-details  .authorName=${this.selectedAuthorName} .authorStats=${this.selectedAuthor}></student-details>
-            `)}    
+
+        <div style="grid-area: authors;" class=${classMap({ loading: this.loading })}>
+            <ul>
+                ${when(this.allAuthors.length > 0, () => html`                    
+                    <h4>Auteurs</h4>
+                        <author-list 
+                            .authors=${authorList}
+                            @enabled-authors-changed=${this.toggleAuthors} 
+                            @author-mapped=${this.mapAuthors}
+                            @remove-alias=${this.removeAlias}></author-list>
+                    
+                    `)}                
+            </ul>
+            
+        </div>
+
+        <div style="grid-area: groups;" class=${classMap({ loading: this.loading })}>
+            <ul>
+                ${when(this.allGroups.length > 0, () => html`                    
+                    <h4>Groeperingen</h4>
+                        <group-list 
+                            .groups=${groupList}
+                            @enabled-items-changed=${this.toggleGroups}                             
+                            ></group-list>                
+                    `)}                
+            </ul>
+            
+        </div>
+
+        <div style="grid-area: barA">
+        ${when(this.repoStats, () => html`
+            <h4>Changes per week per auteur</h4>
+            <stacked-bar-chart 
+                class=${classMap({ loading: this.loading, chart: true  })} 
+                
+                .labels=${labels} 
+                .datasets=${authorBarcharts}></stacked-bar-chart>
+                
+        `)}
+        </div>
+        <div style="grid-area: barG">
+        ${when(this.repoStats, () => html`
+            <h4>Changes per week per groepering</h4>
+            <stacked-bar-chart 
+                class=${classMap({ loading: this.loading, chart: true  })} 
+                
+                .labels=${labels} 
+                .datasets=${groupBarcharts}></stacked-bar-chart>           
+        `)}
         </div>
         `;
     }

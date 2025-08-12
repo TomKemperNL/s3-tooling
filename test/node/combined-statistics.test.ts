@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest';
-import { CombinedStats } from '../src/main/statistics';
-import { RepositoryStatistics } from '../src/main/repository-statistics';
+import { CombinedStats } from '../../src/main/statistics';
+import { RepositoryStatistics } from '../../src/main/repository-statistics';
 
 test('Combined Statistics show both groups when exported even when no commits', () => {
     let repo1 = new RepositoryStatistics([]);

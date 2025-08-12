@@ -1,5 +1,5 @@
-import { LoggedCommit } from "../../src/main/filesystem-client";
-import { Repo } from "../../src/shared";
+import { LoggedCommit } from "../../../src/main/filesystem-client";
+import { Repo } from "../../../src/shared";
 
 export class FakeFileSystem{
     cloneRepo(paths: string[], repo: Repo) {
