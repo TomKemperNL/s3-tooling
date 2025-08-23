@@ -71,7 +71,8 @@ export async function setupWebHandlers(app: S3App) {
 
     let apiRouter = express.Router();
 
-    expressApp.use('/assets', express.static('dist/src/renderer/assets'));
+    expressApp.use('/assets', express.static('dist/src/web/assets'));
+    
     expressApp.use(session({
         store: new SQLiteStore({ db: 'sessions.sqlite3' }),
         secret: 's3-tooling-secret??',
@@ -98,7 +99,7 @@ export async function setupWebHandlers(app: S3App) {
 
     expressApp.use('/api', apiRouter);
     expressApp.get('{/*spa}', (req, res) => {    
-        res.sendFile(fspath.resolve(process.cwd(), 'dist', 'src', 'renderer', 'web.html'));
+        res.sendFile(fspath.resolve(process.cwd(), 'dist', 'src', 'web', 'web.html'));
     });
 
     let appAsAny = <any> app;
@@ -134,7 +135,12 @@ export async function setupWebHandlers(app: S3App) {
                     console.log('used key', key);
                     value = req.params[key];
                 }
-                params[param.parameterIndex] = parseInt(value);
+                if(/^\d+$/.test(value)){
+                    params[param.parameterIndex] = parseInt(value);
+                }else{
+                    params[param.parameterIndex] = value;
+                }
+                
             }
             console.log('calling ', owningObject.constructor.name, entry.propertyKey, 'with params', params);
             

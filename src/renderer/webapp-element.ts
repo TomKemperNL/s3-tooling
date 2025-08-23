@@ -1,49 +1,37 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { when } from "lit/directives/when.js";
+import createRouter from './web/router'
+import { provide } from "@lit/context";
+import { ipcContext } from "./contexts";
+import { BackendApi } from "../backend-api";
+import { WebBackend } from "./web/web-backend";
 
 @customElement("webapp-element")
 export class WebAppElement extends LitElement {
-    @property({ type: String })
-    username: string;
+
+    @provide({ context: ipcContext})
+    ipc: BackendApi;
         
     constructor() {
         super();
-        this.username = null; 
+        this.ipc = new WebBackend();
     }
 
-    static styles = css`
-        `;
-
-    refresh(){
-        return fetch('/auth/session').then(r => r.json()).then((data: any) => {
-            this.username = data.user ? data.user.username : null;
-        });  
+    connectedCallback(): void {
+        super.connectedCallback();
+     
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
-        this.refresh();
-    }
-
-    logout(){
-        return fetch('/auth/session', {
-            method: 'DELETE'          
-        }).then(() => {
-            this.refresh();
-        })      
+        let outlet = this.shadowRoot.getElementById('outlet');
+        console.log('creating router with ', outlet)
+        createRouter(outlet);
     }
 
     render() {
         return html`
-        ${when(this.username, () => html`
-            Hello ${this.username}
-            <button @click=${this.logout}>Logout</button>
-        `, () => html`
-            Hello guest
-            <button @click=${() => window.location.href = '/auth/github'}>Login with GitHub</button>
-        `)}
-        
-        
+        <login-element></login-element>
+        <div id="outlet"></div>
         `
     }
 }

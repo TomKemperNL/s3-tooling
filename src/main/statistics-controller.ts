@@ -9,6 +9,7 @@ import { ReposController } from "./repos-controller";
 import { CombinedStats, GroupDefinition, ProjectContent, StatsBuilder } from "./statistics";
 import { ipc } from "../electron-setup";
 import { StatsApi } from "../backend-api";
+import { get, path } from "../web-setup";
 
 function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: number }): { [name: string]: number } {
     let merged: { [name: string]: number } = {};
@@ -205,7 +206,8 @@ export class StatisticsController implements StatsApi {
     }
 
     @ipc("repostats:get")
-    async getRepoStats(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
+    @get('/stats/:cid/:assignment/:name/weekly')
+    async getRepoStats(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);        
 
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
@@ -249,8 +251,9 @@ export class StatisticsController implements StatsApi {
         await this.db.removeAliases(savedCourseConfig.githubStudentOrg, name, aliases);
     }
 
+    @get('/stats/:cid/:assignment/:name/pie')
     @ipc("repostats-group-pie:get")
-    async getGroupPie(courseId: number, assignment: string, name: string, filter: StatsFilter): Promise<GroupPieDTO> {
+    async getGroupPie(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter: StatsFilter): Promise<GroupPieDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name)
         let [gitPie, projectStats] = await Promise.all([

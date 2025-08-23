@@ -1,4 +1,4 @@
-import { PieDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO } from "./shared";
+import { PieDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO, BranchInfo } from "./shared";
 import { Settings } from "./shared"
 
 
@@ -23,7 +23,7 @@ export interface CourseApi {
 
 export interface RepoApi {
     loadRepos: (courseId: number, assignment: string, filter: RepoFilter) => Promise<RepoDTO[]>
-    getBranchInfo: (courseId: number, assignment: string, name: string) => Promise<any>
+    getBranchInfo: (courseId: number, assignment: string, name: string) => Promise<BranchInfo>
     refreshRepo: (courseId: number, assignment: string, name: string) => Promise<void>
     switchBranch: (courseId: number, assignment: string, name: string, newBranch: string) => Promise<void>
 }
