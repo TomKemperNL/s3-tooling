@@ -1,4 +1,4 @@
-import { LitElement } from "lit";
+import { html, LitElement } from "lit";
 import { customElement } from "lit/decorators.js";
 
 
@@ -9,10 +9,10 @@ export class HomeElement extends LitElement {
     }
 
     render() {
-        return `
+        return html`
             <div>
                 <h1>S3 tooling</h1>
-                <p>Heavily under construction;)</p>
+                <p>Heavily under construction :)</p>
             </div>
         `;
     }

@@ -58,6 +58,10 @@ export class S3App {
         this.coursesController = new CoursesController(db, this.canvasClient),
             this.statisticsController = new StatisticsController(db, this.githubClient, this.fileSystem, this.repoController);
     }
+
+    async isAuthorized(user: string, org: string, repo: string){ //TODO: dit moet op org/repo niveau, niet op hardcoded setting niveau
+        return this.#settings.authorizedUsers.indexOf(user) !== -1;
+    }
 }
 
 export async function main() {

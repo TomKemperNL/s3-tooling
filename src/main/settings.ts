@@ -36,6 +36,7 @@ function readEnv(result: any = {}): any{
     if(dataPath){
         result['dataPath'] = dataPath;
     }
+    result['authorizedUsers'] = result['authorizedUsers'] || [];
     return result;
 }
 

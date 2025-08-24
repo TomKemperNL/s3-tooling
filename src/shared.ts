@@ -134,6 +134,7 @@ export type RepoStatisticsPerWeekDTOPerGroup = {
 }
 
 export type Settings = {
+    authorizedUsers: string[];
     githubToken: string;
     canvasToken: string;
     keepDB: boolean;

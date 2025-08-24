@@ -88,9 +88,45 @@ export async function setupWebHandlers(app: S3App) {
             res.sendStatus(201);
         });
     });
-    expressApp.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email' ] }));      
-    expressApp.get('/auth/github/callback', passport.authenticate('github', { failureRedirect: '/login' }), function(req, res) {        
+
+    expressApp.get('/auth/github', (req, res, next) => {
+        console.log('setting returnurl to', req.query.returnUrl);
+        (<any>req).session.returnUrl = req.query.returnUrl || '';
+        next();
+    });
+    expressApp.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email' ] }));
+    expressApp.get('/auth/github/callback', function(req, res, next){
+        console.log('setting succesredirect to', ((<any>req).session.returnUrl));
+        passport.authenticate('github', { 
+            successRedirect: '/' + ((<any>req).session.returnUrl || ''),
+            failureRedirect: '/login'
+         })(req, res, next);
+    }, function(req, res) {        
         res.redirect('/');
+    });
+
+    expressApp.get('/login', (req, res) => {    
+        res.sendFile(fspath.resolve(process.cwd(), 'dist', 'src', 'web', 'web.html'));
+    });
+
+    expressApp.use(async (req, res, next) => {
+        console.log('Current user:', req.user);
+        let requestedPathWithoutLeadingSlash = req.path.substring(1);
+        if(req.user && await app.isAuthorized((<any>req.user).username, '', '')){
+            next();
+        }else if(req.user){
+            if(req.accepts('html')){
+                res.redirect('/login?returnUrl=' + requestedPathWithoutLeadingSlash);            
+            }else{
+                res.status(403).send('You are not authorized to access this resource');
+            }
+        }else{
+            if(req.accepts('html')){
+                res.redirect('/login?returnUrl=' + requestedPathWithoutLeadingSlash);
+            }else{
+                res.status(401).send('You must log in to access this resource');
+            }            
+        }
     });
 
     expressApp.use('/api', apiRouter);

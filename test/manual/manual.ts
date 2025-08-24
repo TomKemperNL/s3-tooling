@@ -11,7 +11,8 @@ let settings : Settings = {
     canvasToken: process.env.CANVAS_TOKEN,
     dataPath: 'C:/s3-tooling-data2',
     keepDB: true,
-    ignoreAuthors: []
+    ignoreAuthors: [],
+    authorizedUsers: []
 }
 
 async function main(){

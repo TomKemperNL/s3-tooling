@@ -18,11 +18,20 @@ export class LoginElement extends LitElement {
     refresh(){
         return fetch('/auth/session').then(r => r.json()).then((data: any) => {
             this.username = data.user ? data.user.username : null;
-        });  
+        });
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
-        this.refresh();
+        this.refresh().then(() => {
+            if(window.location.search){
+                let params = new URLSearchParams(window.location.search);
+                if(params.has('returnUrl') && this.username){
+                    let returnUrl = params.get('returnUrl');
+                    window.location.href = '/' + returnUrl;
+                }
+            }
+        })
+
     }
 
     logout(){
@@ -34,13 +43,24 @@ export class LoginElement extends LitElement {
     }
 
     render() {
+        let returnUrl = '/';
+        if(window.location.search){
+            let params = new URLSearchParams(window.location.search);
+            if(params.has('returnUrl')){
+                returnUrl = params.get('returnUrl');                
+            }
+        }
+
         return html`
         ${when(this.username, () => html`
             Hello ${this.username}
             <button @click=${this.logout}>Logout</button>
         `, () => html`
             Hello guest
-            <button @click=${() => window.location.href = '/auth/github'}>Login with GitHub</button>
+            <button @click=${() => {
+                console.log('login with github clicked', returnUrl);
+                window.location.href = `/auth/github?returnUrl=${returnUrl}`
+            }}>Login with GitHub</button>
         `)}
         `
     }
