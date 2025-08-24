@@ -19,16 +19,12 @@ export class StatsContainer extends LitElement {
     repoName: string;
 
     onAfterEnter(location: RouterLocation, commands: {}, router: Router){
-        console.log('StatsContainer.onAfterEnter', location, commands, router);
-
         this.courseId = location.params.cid ? parseInt((<any>location.params).cid) : null;
         this.assignment = location.params.assignment ? (<any>location.params).assignment : null;
-        this.repoName = location.params.name ? (<any>location.params).name : null;
-        
+        this.repoName = location.params.name ? (<any>location.params).name : null;        
     }
 
     render() {
-
         let repo : RepoDTO = {
             name: this.repoName,
             courseId: this.courseId,
@@ -39,7 +35,7 @@ export class StatsContainer extends LitElement {
         }
         return html`
             <div>
-                <repository-details .repo=${repo}></repository-details>
+                <repository-details .repo=${repo} readonly></repository-details>
             </div>
         `;
     }

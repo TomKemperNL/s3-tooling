@@ -9,15 +9,13 @@ export class CoursesController implements CourseApi {
     constructor(private db: Db, private canvasClient: CanvasClient){
         
     }
-
-    @get('/courses')
+    
     @ipc('courses:get')
     async getCourses(): Promise<CourseConfig[]> {
         return this.db.getCourseConfigs();
     }
 
     @ipc('course:load')
-    @get('/courses/:id')
     async loadCourse(@path(":id") id: number): Promise<CourseDTO> {
         console.log('Loading course with id', id);
         let savedCourse = await this.db.getCourse(id);

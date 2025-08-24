@@ -35,6 +35,9 @@ export class RepositoryDetails extends LitElement {
     @property({ type: Object })
     repo: RepoDTO;
 
+    @property({ type: Boolean})
+    readonly: boolean = false;
+
     @property({ type: String, state: true })
     currentBranch: string = '';
     @property({ type: Array, state: true })
@@ -372,11 +375,13 @@ export class RepositoryDetails extends LitElement {
         return html`
         <div style="grid-area: title">
             <h3><a href=${this.repo.url.replace("https", "external")}>${this.repo.name}</a></h3>
-            <select ?disabled=${this.loading} @change=${this.switchBranch}>
-                ${map(this.branches, b => html`
-                    <option value=${b} ?selected=${b === this.currentBranch}>${b}</option>
-                `)}
-            </select><button type="button" ?disabled=${this.loading} @click=${this.refresh}>Refresh</button>
+            ${when(!this.readonly, () => html`
+                <select ?disabled=${this.loading} @change=${this.switchBranch}>
+                    ${map(this.branches, b => html`
+                        <option value=${b} ?selected=${b === this.currentBranch}>${b}</option>
+                    `)}
+                </select><button type="button" ?disabled=${this.loading} @click=${this.refresh}>Refresh</button>
+            `)}
         </div>        
         
         <div style="grid-area: pieA">
@@ -407,12 +412,11 @@ export class RepositoryDetails extends LitElement {
             <ul>
                 ${when(this.allAuthors.length > 0, () => html`                    
                     <h4>Auteurs</h4>
-                        <author-list 
+                        <author-list readonly
                             .authors=${authorList}
                             @enabled-authors-changed=${this.toggleAuthors} 
                             @author-mapped=${this.mapAuthors}
-                            @remove-alias=${this.removeAlias}></author-list>
-                    
+                            @remove-alias=${this.removeAlias}></author-list>                    
                     `)}                
             </ul>
             

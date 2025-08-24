@@ -66,6 +66,9 @@ export class AuthorList extends LitElement {
     authors: AuthorItem[] = [];
     @property({ type: Object })
     authorMapping: Record<string, string> = {};
+    @property({ type: Boolean })
+    readonly: boolean = false;
+
 
     @property({ type: Boolean, state: true })
     dragging: boolean;
@@ -105,7 +108,7 @@ export class AuthorList extends LitElement {
     dropAuthor(author: AuthorItem) {
         return (e: DragEvent) => {
             e.preventDefault();
-            const draggedAuthorName = e.dataTransfer!.getData('text/plain');            
+            const draggedAuthorName = e.dataTransfer!.getData('text/plain');
             let mapping: Record<string, string> = {};
             mapping[draggedAuthorName] = author.name;
 
@@ -147,12 +150,12 @@ export class AuthorList extends LitElement {
     render() {
         let styles = (a: AuthorItem) => ({ //De VSCode formatter wordt helemaal gek als je dit inline probeert te doen:)
             color: a.color,
-            "font-style": a.member ? 'normal' : 'italic',
-            "cursor": a.member ? 'default' : 'grab',
+            "font-style": a.member && !this.readonly ? 'normal' : 'italic',
+            "cursor": this.readonly? 'default' : (a.member ? 'default' : 'grab'),
             "border": this.dragging && a.member ? '1px dashed black' : 'none'
         });
 
-        let item =  (a: AuthorItem) => html`
+        let item = (a: AuthorItem) => html`
             <span class="author"
                 draggable=${a.member ? 'false' : 'true'} 
                 style=${styleMap(styles(a))}
@@ -176,7 +179,7 @@ export class AuthorList extends LitElement {
                             </summary>
                                 <ul>
                                     ${map(a.aliases, (alias: string) => html`
-                                        <li>${alias} <button @click=${this.removeAlias(a, alias)}>Unlink</button></li>
+                                        <li>${alias} ${when(!this.readonly, () => html`<button @click=${this.removeAlias(a, alias)}>Unlink</button>`)}</li>
                                     `)}
                                 </ul>
                             </details>                            
