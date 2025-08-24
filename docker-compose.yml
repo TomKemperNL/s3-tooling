@@ -4,10 +4,10 @@ services:
     volumes:
       - ./settings.json:/app/settings.json
       - ./s3-tooling.sqlite3:/app/s3-tooling.sqlite3
-      - /mnt/c/s3-tooling-data2:/s3-tooling-data
+      # En nog een data volume voor de repos
     ports:
       - "127.0.0.1:3000:3000"
     env_file:
       - .container.env
-    
+ 
 
