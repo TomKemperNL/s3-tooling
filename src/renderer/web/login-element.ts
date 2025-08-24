@@ -22,16 +22,7 @@ export class LoginElement extends LitElement {
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
-        this.refresh().then(() => {
-            if(window.location.search){
-                let params = new URLSearchParams(window.location.search);
-                if(params.has('returnUrl') && this.username){
-                    let returnUrl = params.get('returnUrl');
-                    window.location.href = '/' + returnUrl;
-                }
-            }
-        })
-
+        this.refresh();
     }
 
     logout(){
