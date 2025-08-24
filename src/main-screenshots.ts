@@ -1,7 +1,8 @@
 import { config } from "@dotenvx/dotenvx";
 import * as path from "path";
 import { app, BrowserWindow, shell } from 'electron'
-import { main as nodeMain } from "./main/index"
+import { createApp } from "./main/index"
+import { setupIpcMainHandlers } from "./electron-setup";
 import "./electron-setup";
 
 
@@ -23,7 +24,8 @@ async function createWindow(ix: number) {
 
 
 async function main() {
-    await nodeMain();
+    let s3App = await createApp();
+    await setupIpcMainHandlers(s3App);
 
     app.whenReady().then(async () => {        
         for (let i = 0; i < 30; i++) {

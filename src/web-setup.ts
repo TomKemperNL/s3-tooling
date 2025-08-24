@@ -58,9 +58,7 @@ export async function setupWebHandlers(app: S3App) {
         callbackURL: process.env.OAUTH_GITHUB_CALLBACK
 
       },
-      function(accessToken: string, refreshToken: string, profile: any, done: any) {
-        console.log('GitHub profile received:', profile);
-        
+      function(accessToken: string, refreshToken: string, profile: any, done: any) {   
         return done(null, { token: accessToken, id: profile.id, username: profile.username});
       }
     ));
@@ -90,13 +88,11 @@ export async function setupWebHandlers(app: S3App) {
     });
 
     expressApp.get('/auth/github', (req, res, next) => {
-        console.log('setting returnurl to', req.query.returnUrl);
         (<any>req).session.returnUrl = req.query.returnUrl || '';
         next();
     });
     expressApp.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email' ] }));
     expressApp.get('/auth/github/callback', function(req, res, next){
-        console.log('setting succesredirect to', ((<any>req).session.returnUrl));
         passport.authenticate('github', { 
             successRedirect: '/' + ((<any>req).session.returnUrl || ''),
             failureRedirect: '/login'
@@ -110,7 +106,6 @@ export async function setupWebHandlers(app: S3App) {
     });
 
     expressApp.use(async (req, res, next) => {
-        console.log('Current user:', req.user);
         let requestedPathWithoutLeadingSlash = req.path.substring(1);
         if(req.user && await app.isAuthorized((<any>req.user).username, '', '')){
             next();
@@ -164,7 +159,6 @@ export async function setupWebHandlers(app: S3App) {
                 let value = undefined;
                 if(param.pathPart){
                     let key = param.pathPart.replace(':', '');
-                    console.log('used key', key);
                     value = req.params[key];
                 }
                 if(/^\d+$/.test(value)){
@@ -185,8 +179,6 @@ export async function setupWebHandlers(app: S3App) {
         });        
     }
     
-
-
     
     console.log(`Listening on port ${PORT}`);
     await listen(PORT);

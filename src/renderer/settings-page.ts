@@ -45,14 +45,12 @@ export class SettingsPage extends LitElement {
 
     async saveSettings() {
         this.loading = true;
-        console.log("Saving settings:", this.settings);
         await this.ipc.saveSettings(this.settings);
         this.dispatchEvent(new SettingsChanged());
         this.loading = false;
     }
 
     openDirBrowser() {
-        console.log("Opening directory browser for data path:", this.settings.dataPath);
         this.ipc.openDirectory(this.settings.dataPath).then((path: string) => {
             if (path) {
                 this.settings.dataPath = path;

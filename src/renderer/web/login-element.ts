@@ -49,7 +49,6 @@ export class LoginElement extends LitElement {
         `, () => html`
             Hello guest
             <button @click=${() => {
-                console.log('login with github clicked', returnUrl);
                 window.location.href = `/auth/github?returnUrl=${returnUrl}`
             }}>Login with GitHub</button>
         `)}

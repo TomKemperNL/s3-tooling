@@ -24,7 +24,6 @@ export class WebAppElement extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         let outlet = this.shadowRoot.getElementById('outlet');
-        console.log('creating router with ', outlet)
         createRouter(outlet);
     }
 

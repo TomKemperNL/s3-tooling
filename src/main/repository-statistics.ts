@@ -12,8 +12,6 @@ if (ignoredAuthorsEnv) {
     ignoredAuthors = ignoredAuthors.concat(ignoredAuthorsEnv.split(',').map(a => a.trim()));
 }
 
-console.log('Ignored authors:', ignoredAuthors);
-
 function partition<T>(array: T[], predicate: (value: T) => boolean): [T[], T[]] {
     return array.reduce((acc, item) => {
         if(predicate(item)) {

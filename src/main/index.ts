@@ -8,12 +8,8 @@ import { CoursesController } from "./courses-controller";
 
 import { saveSettings, loadSettings } from "./settings";
 import { StatisticsController } from "./statistics-controller";
-import { setupIpcMainHandlers } from "../electron-setup";
 import { Settings } from "../shared";
-import { setupWebHandlers } from "../web-setup";
 import { ScreenshotController } from "./screenshot-controller";
-
-console.log('cwd:', process.cwd());
 
 export class S3App {
     githubClient: GithubClient;
@@ -39,7 +35,7 @@ export class S3App {
         } catch (e) {
             console.error('Error initializing app:', e);
         }
-        console.log(this.settings)
+        // console.log(this.settings)
         if (!this.settings.keepDB) {
             await db.reset().then(() => db.test());
         } else {
@@ -59,20 +55,14 @@ export class S3App {
             this.statisticsController = new StatisticsController(db, this.githubClient, this.fileSystem, this.repoController);
     }
 
-    async isAuthorized(user: string, org: string, repo: string){ //TODO: dit moet op org/repo niveau, niet op hardcoded setting niveau
+    async isAuthorized(user: string, org: string, repo: string) { //TODO: dit moet op org/repo niveau, niet op hardcoded setting niveau
         return this.#settings.authorizedUsers.indexOf(user) !== -1;
     }
 }
 
-export async function main() {
+export async function createApp() {
     let settings = await loadSettings();
     let app = new S3App(settings);
     await app.init();
-
-    if(process.argv.indexOf('webonly') !== -1){
-        setupWebHandlers(app);
-    }else{
-        setupWebHandlers(app);
-        setupIpcMainHandlers(app);
-    }
+    return app;
 }

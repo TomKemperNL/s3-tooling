@@ -17,7 +17,6 @@ export class CoursesController implements CourseApi {
 
     @ipc('course:load')
     async loadCourse(@path(":id") id: number): Promise<CourseDTO> {
-        console.log('Loading course with id', id);
         let savedCourse = await this.db.getCourse(id);
         if (Object.keys(savedCourse.sections).length === 0) {
             let sections = await this.canvasClient.getSections({ course_id: id });

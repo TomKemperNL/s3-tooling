@@ -145,6 +145,7 @@ export class FileSystem {
     }
 
     async cloneRepo(prefix: string[], repo: Repo) {
+        console.log('Cloning repo', repo.name, 'to', path.join(this.#basePath, ...prefix, repo.name));
         let target = path.join(this.#basePath, ...prefix);
         let fullTarget = path.join(this.#basePath, ...prefix, repo.name);
 

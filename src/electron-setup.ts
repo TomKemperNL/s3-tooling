@@ -30,7 +30,7 @@ export function setupIpcPreloadHandlers(){
     return result;
 }
 
-export function setupIpcMainHandlers(app: S3App ) {
+export async function setupIpcMainHandlers(app: S3App ) {
     let appAsAny = <any> app;
 
     for(let channel of Object.keys(decoratorRegistry)){        
