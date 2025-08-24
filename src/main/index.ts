@@ -65,7 +65,10 @@ export async function main() {
     let app = new S3App(settings);
     await app.init();
 
-    setupIpcMainHandlers(app);
-    setupWebHandlers(app);
-
+    if(process.argv.indexOf('webonly') !== -1){
+        setupWebHandlers(app);
+    }else{
+        setupWebHandlers(app);
+        setupIpcMainHandlers(app);
+    }
 }

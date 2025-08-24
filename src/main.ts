@@ -5,6 +5,7 @@ import { app, BrowserWindow, shell } from 'electron'
 import "./electron-setup";
 
 config();
+console.log('starting with: ', process.argv)
 
 async function main() {
     
@@ -50,4 +51,9 @@ async function main() {
 
 
 }
-main();
+
+if(process.argv.indexOf('webonly') !== -1){    
+    nodeMain();
+}else{
+    main();
+}

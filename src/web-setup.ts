@@ -31,11 +31,7 @@ export function path(value: string) {
             target: target.constructor,
             propertyKey: propertyKey,
             parameterIndex: parameterIndex
-        })
-        console.log(`\t\tParameter Decorator called with value: ${value}`);
-        console.log(`\t\tPTarget: ${target.constructor.name}`);
-        console.log(`\t\tPProperty Key: ${propertyKey}`);
-        console.log(`\t\tPParameter Index: ${parameterIndex}`);
+        });
     }
 }
 
