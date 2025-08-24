@@ -412,7 +412,7 @@ export class RepositoryDetails extends LitElement {
             <ul>
                 ${when(this.allAuthors.length > 0, () => html`                    
                     <h4>Auteurs</h4>
-                        <author-list readonly
+                        <author-list ?readonly=${this.readonly}
                             .authors=${authorList}
                             @enabled-authors-changed=${this.toggleAuthors} 
                             @author-mapped=${this.mapAuthors}

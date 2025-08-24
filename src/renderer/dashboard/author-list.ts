@@ -150,8 +150,8 @@ export class AuthorList extends LitElement {
     render() {
         let styles = (a: AuthorItem) => ({ //De VSCode formatter wordt helemaal gek als je dit inline probeert te doen:)
             color: a.color,
-            "font-style": a.member && !this.readonly ? 'normal' : 'italic',
-            "cursor": this.readonly? 'default' : (a.member ? 'default' : 'grab'),
+            "font-style": this.readonly ? 'normal' : (a.member ? 'normal' : 'italic'),
+            "cursor": this.readonly ? 'default' : (a.member ? 'default' : 'grab'),
             "border": this.dragging && a.member ? '1px dashed black' : 'none'
         });
 

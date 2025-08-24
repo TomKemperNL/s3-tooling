@@ -2,6 +2,7 @@
 node_modules
 dist
 .dev.env
+.container.env
 data
 *.sqlite3
 *.sqlite3-journal
