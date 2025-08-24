@@ -8,3 +8,4 @@ data
 *.sqlite3-journal
 result*.json
 settings*.json
+*.tar
