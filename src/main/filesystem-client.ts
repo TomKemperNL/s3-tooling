@@ -252,6 +252,7 @@ export class FileSystem {
 
     async switchBranch(targetBranch: string, ...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
+        delete this.branchCache[repoPath.join('/')];
         //checkout -f, want in principe hebben we geen changes,
         //maar mac/linux/windows kunnen issues hebben met line endings,
         //en dat soort ellende. Dat negeren we maar...
