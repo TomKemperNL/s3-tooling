@@ -13,6 +13,28 @@ export interface StudentResponse {
     login_id: string;
 }
 
+export interface AssignmentResponse {
+    id: number;
+    name: string;
+    created_at: string;
+    updated_at: string;
+    due_at: string;
+    locked_at: string;
+}
+
+export interface SubmissionCommentResponse {
+    id: number;
+    author_id: number;    
+    comment: string;
+    created_at: string;
+}
+
+export interface SubmissionResponse {
+    id: number, 
+    user_id: number,
+    submission_comments: SubmissionCommentResponse[],
+}
+
 export interface SectionResponse {
     id: number;
     name: string;
@@ -36,7 +58,7 @@ export type SimpleDict = { [key: string]: string | number };
 export type StringDict = { [key: string]: string };
 
 function parseLinkHeader(header: string): SimpleDict {
-    const links : {[key: string]: string} = {};
+    const links: { [key: string]: string } = {};
     const parts = header.split(',');
     for (const part of parts) {
         const section = part.split(';');
@@ -49,39 +71,47 @@ function parseLinkHeader(header: string): SimpleDict {
 }
 
 function formatQueryString(params: SimpleDict) {
+    function formatValue(key: string, value: string | number | string[] | number[]) {
+        if (Array.isArray(value)) {
+            return value.map(v => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`).join('&');
+        } else {
+            return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+        }
+    }
+
     return Object.entries(params)
-        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .map(([key, value]) => formatValue(key, value))
         .join('&');
 }
 
-export function getUsernameFromName(repoName: string, assignmentName: string){
-    return repoName.slice(assignmentName.length +1);
+export function getUsernameFromName(repoName: string, assignmentName: string) {
+    return repoName.slice(assignmentName.length + 1);
 }
 
-export function getUsernameFromUrl(url: string, assignmentName: string){
-    if(!url){
+export function getUsernameFromUrl(url: string, assignmentName: string) {
+    if (!url) {
         return null;
     }
 
-    if(url.indexOf('github.com') === -1){
+    if (url.indexOf('github.com') === -1) {
         return null;
     }
 
     //Https url
-    if(url.startsWith('https://github.com')){
+    if (url.startsWith('https://github.com')) {
         const exp = `https\:\/\/github\.com\/(.+?)\/${assignmentName}-(.+)`;
         const match = url.match(exp);
-        if(match && match.length > 2){ 
+        if (match && match.length > 2) {
             let username = match[2].replace('.git', '').split('/')[0];
             return username;
         }
     }
 
     //SSH url
-    if(url.startsWith('git@github.com')){
+    if (url.startsWith('git@github.com')) {
         const exp = `git\@github\.com\:(.+?)\/${assignmentName}-(.+)`;
         const match = url.match(exp);
-        if(match && match.length > 2){ 
+        if (match && match.length > 2) {
             let username = match[2].replace('.git', '').split('/')[0];
             return username;
         }
@@ -94,7 +124,7 @@ export class CanvasClient {
     #baseUrl = "https://canvas.hu.nl/api/v1";
 
     constructor(canvasToken: string) {
-        if(!canvasToken) {
+        if (!canvasToken) {
             throw new Error("Canvas token is required");
         }
         this.#token = canvasToken;
@@ -136,7 +166,7 @@ export class CanvasClient {
         if (hasNext && isLast) {
             hasNext = false;
         }
-        let data : any = await response.json();
+        let data: any = await response.json();
         return {
             data: data,
             hasNext: hasNext
@@ -165,21 +195,66 @@ export class CanvasClient {
     }
 
     async getGroups(course: { course_id: number }, category_name: string): Promise<GroupResponse[]> {
-        let categories : any[] = await this.getPages(`courses/${course.course_id}/group_categories`);
+        let categories: any[] = await this.getPages(`courses/${course.course_id}/group_categories`);
         let category = categories.find(c => c.name === category_name);
         if (!category) {
             throw new Error(`Category ${category_name} not found`);
         }
-        let groups : any = await this.getPages(`group_categories/${category.id}/groups`);
-        for(let g of groups){
+        let groups: any = await this.getPages(`group_categories/${category.id}/groups`);
+        for (let g of groups) {
             g.students = await this.getPages(`groups/${g.id}/users`);
         }
         return groups;
     }
 
+    async getAssignments(course: { course_id: number }): Promise<AssignmentResponse[]> {
+        return this.getPages(`courses/${course.course_id}/assignments`);
+    }
+
+    async getSubmissions(params: { course_id: number, assignment_id: number, student_id: number }): Promise<any[]> {
+        try {
+            return this.getPages(`courses/${params.course_id}/assignments/${params.assignment_id}/submissions/${params.student_id}`, { 'include[]': ['submission_comments', 'rubric_assessment'] });
+        } catch (e) {
+            console.log(`Error fetching submission for course ${params.course_id}, assignment ${params.assignment_id}, student ${params.student_id}: ${e}`);
+            return [];
+        }
+    }
+
+    async getUsers(params: { course_id: number }): Promise<StudentResponse[]> {
+        return this.getPages(`courses/${params.course_id}/users`);
+    }
+
+    // Performance too shitty
+    // async getAllSubmissions(params: { course_id: number }) {
+    //     let studentsP = this.getUsers({ course_id: params.course_id });
+    //     let assignmentsP = this.getAssignments({ course_id: params.course_id });
+    //     let [students, assignments] = await Promise.all([studentsP, assignmentsP]);
+    //     let submisisonPs: Promise<any[]>[] = [];
+    //     for (let student of students) {
+    //         for (let assignment of assignments) {
+    //             submisisonPs.push(this.getSubmissions({ course_id: params.course_id, assignment_id: assignment.id, student_id: student.id }));
+    //         }
+    //     }
+    //     let submissions = await Promise.all(submisisonPs);
+    //     return submissions.flat();
+    // }
+
+    async getAllSubmissionsForStudent(params: { course_id: number, student_id: number }) : Promise<SubmissionResponse[]> {
+        let studentsP = this.getUsers({ course_id: params.course_id });
+        let assignmentsP = this.getAssignments({ course_id: params.course_id });
+        let [students, assignments] = await Promise.all([studentsP, assignmentsP]);
+        let submisisonPs: Promise<any[]>[] = [];
+
+        for (let assignment of assignments) {
+            submisisonPs.push(this.getSubmissions({ course_id: params.course_id, assignment_id: assignment.id, student_id: params.student_id }));
+        }
+
+        let submissions = await Promise.all(submisisonPs);
+        return submissions.flat();
+    }
 
     async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string): Promise<StringDict> {
-        let mapping : {[key: string]: string} = {};
+        let mapping: { [key: string]: string } = {};
         let result: any = await this.getPages(`courses/${course.course_id}/assignments/${assignment.assignment_id}/submissions`, { 'include[]': 'user' });
         for (let r of result) {
             let user = r.user;
