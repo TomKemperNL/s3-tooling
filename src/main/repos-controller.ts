@@ -90,20 +90,21 @@ export class ReposController implements RepoApi{
         if (!assignment) {
             throw new Error(`Assignment ${assignmentName} not found in course ${courseId}`);
         }
-        let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        let usermapping: SimpleDict = await this.#getUserMapping(savedCourseConfig);
-
-        let logins = filter.sections
-            .flatMap(s => savedCourse.sections[s])
-            .map(s => s.email)
-            .map(e => usermapping[e])
-            .filter(l => l !== undefined);
-
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);        
         let repos = await this.#getRepos(savedCourseConfig)
         repos = repos.filter(r => r.matchesAssignment(assignment));
 
         await this.#updateMembers(repos, assignment);
         if (filter.sections.length > 0) {
+            let usermapping: SimpleDict = await this.#getUserMapping(savedCourseConfig);
+
+            let logins = filter.sections
+                .flatMap(s => savedCourse.sections[s])
+                .map(s => s.email)
+                .map(e => usermapping[e])
+                .filter(l => l !== undefined);
+
+
             repos = repos.filter(r => r.members.some(m => logins.some(l => m.login === l)));
         } //if there is no filter, return all repos
 
