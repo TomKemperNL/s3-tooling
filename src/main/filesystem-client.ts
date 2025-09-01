@@ -264,7 +264,7 @@ export class FileSystem {
     async getRepoStats(...repoPath: string[]) {
         let target = path.join(this.#basePath, ...repoPath);
         if (this.repoCache[target]) {
-            console.log('cache-hit: repo for', target);
+            // console.log('cache-hit: repo for', target);
             return this.repoCache[target];
         }
         let result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });

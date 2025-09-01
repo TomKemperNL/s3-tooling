@@ -2,7 +2,7 @@ import { GithubClient } from "./github-client";
 import { FileSystem } from "./filesystem-client";
 import { CanvasClient } from "./canvas-client";
 
-import { db } from "./db";
+import { Db, db } from "./db";
 import { ReposController } from "./repos-controller";
 import { CoursesController } from "./courses-controller";
 
@@ -19,6 +19,7 @@ export class S3App {
     coursesController: CoursesController;
     statisticsController: StatisticsController;
     screenshotController: ScreenshotController;
+    db: Db = db;
     #settings: Settings;
 
     constructor(settings: Settings) {
