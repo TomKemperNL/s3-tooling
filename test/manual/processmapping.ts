@@ -1,11 +1,15 @@
-import importMapping from './../../usermappingS2.json';
+import { readFile } from "fs/promises";
 import { db } from "./../../src/main/db";
 import { StatisticsController } from "./../../src/main/statistics-controller";
 import { StringDict } from '../../src/main/canvas-client';
 
 
-const mapping = <any>importMapping;
+
 async function main() {
+    const importMapping = await readFile('./import-mapping.json', 'utf-8');
+    const mapping = JSON.parse(importMapping);
+
+
     let controller = new StatisticsController(db, null, null, null);
 
     for(let klas in mapping){
