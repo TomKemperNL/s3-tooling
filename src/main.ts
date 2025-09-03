@@ -16,10 +16,7 @@ async function main() {
         let assignmentName = process.argv[process.argv.indexOf('load') + 2];
         await s3App.coursesController.loadCourse(courseId);
         await s3App.repoController.loadRepos(courseId, assignmentName, { sections: [] });
-
-
-    } else {
-        await setupWebHandlers(s3App);
+    } else {        
         await setupIpcMainHandlers(s3App);
         const createWindow = () => {
             const win = new BrowserWindow({
