@@ -1,5 +1,6 @@
 import { Octokit } from "@octokit/rest";
 import { Issue, PullRequest, Repo } from "../shared";
+import { response } from "express";
 
 export type RepoResponse = {
     name: string,
@@ -53,6 +54,20 @@ export class GithubClient {
         });
         return response.data;
     }
+
+    async getMembersThroughTeams(org: string, repo: string): Promise<MemberResponse[]> {
+      let teamsResponse = await this.#kit.repos.listTeams({
+          repo: repo,
+          owner: org
+      });
+
+      let members = await Promise.all(teamsResponse.data.map(team => this.#kit.teams.listMembersInOrg({
+        org: org,
+        team_slug: team.slug
+      }))).then(responses => responses.flatMap(r => r.data));
+      
+      return members;
+  }
 
     async listRepos(org: string): Promise<RepoResponse[]> {
         let pagination = this.#kit.paginate.iterator(this.#kit.repos.listForOrg,

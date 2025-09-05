@@ -12,7 +12,7 @@ export class FakeGithubClient {
     members: {[repo: string]: {login: string}[]} = {};
     async getMembers(org: string, repo: string){
         this.apiCalls++;
-        return this.members[repo];
+        return this.members[repo] || [];
     }
 
     issues: Issue[] = [];
@@ -25,5 +25,10 @@ export class FakeGithubClient {
     async listPullRequests(org: string, repo: string) : Promise<PullRequest[]> {
         this.apiCalls++;
         return this.pullRequests;
+    }
+
+    async getMembersThroughTeams(org: string, repo: string) {
+        this.apiCalls++;
+        return this.members[repo] || [];
     }
 }

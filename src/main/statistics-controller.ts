@@ -221,7 +221,15 @@ export class StatisticsController implements StatsApi {
         
         let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
         combinedStats.mapAuthors(authorMapping);
+
+        let members = await this.githubClient.getMembersThroughTeams(savedCourseConfig.githubStudentOrg, name);
         let allAuthors = combinedStats.getDistinctAuthors();
+        members.map(m => m.login).forEach(login => {
+            if(allAuthors.indexOf(login) === -1){
+                allAuthors.push(login);
+            }
+        });
+
 
         let builder = new StatsBuilder(combinedStats);
 
