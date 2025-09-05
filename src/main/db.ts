@@ -1,9 +1,9 @@
 import { Database } from "sqlite3";
 import fs from 'fs/promises';
-import { bep1, bep2, cisq1, cisq2, s2 } from '../temp'
-import { Author, CourseConfig, CourseDTO, StudentDTO } from "../shared";
+import { s2, s3 } from '../temp'
+import { CourseConfig, CourseDTO, StudentDTO } from "../shared";
 import { MemberResponse, RepoResponse } from "./github-client";
-import { SimpleDict, StringDict } from "./canvas-client";
+import { StringDict } from "./canvas-client";
 
 type CourseDb = {
     canvasId: number,
@@ -395,10 +395,7 @@ export class Db {
 
     async initData() {
         await this.addCourse(s2);
-        await this.addCourse(cisq1);
-        await this.addCourse(cisq2);
-        await this.addCourse(bep2);
-        await this.addCourse(bep1);
+        await this.addCourse(s3);
     }
 
     async delete() {

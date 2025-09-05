@@ -26,6 +26,31 @@ export let s2: CourseConfig = {
     ]
 }
 
+export let s3: CourseConfig = {
+    name: 'Advanced Software Development',
+    canvasId: 50055,
+    canvasGroupsName: 'Project Groups',
+    startDate: new Date(Date.parse('2025-09-01')),
+    githubStudentOrg: 'HU-SD-S3-Studenten-S2526',
+    lastMappingCheck: null,
+    lastRepoCheck: null,
+    lastSectionCheck: null,
+    assignments: [
+        {
+            githubAssignment: 's3-portfolio',
+            groupAssignment: false,
+            canvasId: 373167
+
+        },
+        {
+            githubAssignment: 's3-project',
+            groupAssignment: true,
+            canvasId: 373168
+
+        },
+    ]
+}
+
 export function importUserMappingTemp() {
     if (existsSync("C://s3-tooling-data/usermappingS2.json")) {
         console.log("Using local user mapping file");
