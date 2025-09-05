@@ -205,14 +205,23 @@ export class StatisticsController implements StatsApi {
         };
     }
 
+    @ipc("repostats-mapping:update")
+    async updateAuthorMapping(courseId: number, name: string, mapping: { [author: string]: string }) {
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        await this.db.updateAuthorMapping(savedCourseConfig.githubStudentOrg, name, mapping);
+    }
+
+    @ipc("repostats-aliases:remove")
+    async removeAlias(courseId: number, name: string, aliases: { [canonical: string]: string[]; }) :Promise<void> {
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
+        await this.db.removeAliases(savedCourseConfig.githubStudentOrg, name, aliases);
+    }
+
     @ipc("repostats:get")
     @get('/stats/:cid/:assignment/:name/weekly')
     async getRepoStats(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);        
-
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
-
-        
 
         let firstDate = savedCourseConfig.startDate;
         let lastDate = combinedStats.getDateRange().end;
@@ -222,14 +231,13 @@ export class StatisticsController implements StatsApi {
         let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
         combinedStats.mapAuthors(authorMapping);
 
-        let members = await this.githubClient.getMembersThroughTeams(savedCourseConfig.githubStudentOrg, name);
+        let members = await this.githubClient.getMembers(savedCourseConfig.githubStudentOrg, name);
         let allAuthors = combinedStats.getDistinctAuthors();
         members.map(m => m.login).forEach(login => {
             if(allAuthors.indexOf(login) === -1){
                 allAuthors.push(login);
             }
         });
-
 
         let builder = new StatsBuilder(combinedStats);
 
@@ -245,18 +253,6 @@ export class StatisticsController implements StatsApi {
             week_group_author: week_group_author
         }
 
-    }
-
-    @ipc("repostats-mapping:update")
-    async updateAuthorMapping(courseId: number, name: string, mapping: { [author: string]: string }) {
-        let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        await this.db.updateAuthorMapping(savedCourseConfig.githubStudentOrg, name, mapping);
-    }
-
-    @ipc("repostats-aliases:remove")
-    async removeAlias(courseId: number, name: string, aliases: { [canonical: string]: string[]; }) :Promise<void> {
-        let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        await this.db.removeAliases(savedCourseConfig.githubStudentOrg, name, aliases);
     }
 
     @get('/stats/:cid/:assignment/:name/pie')
@@ -287,30 +283,5 @@ export class StatisticsController implements StatsApi {
             aliases: mappingToAliases(authorMapping),
             groupedPie: pie
         };
-    }
-
-    @ipc("repostats-student:get")
-    async getStudentStats(courseId: number, assignment: string, name: string, filter: StudentFilter) {
-        let savedCourseConfig = await this.db.getCourseConfig(courseId);
-        let groups = this.#getGroups(savedCourseConfig);
-        let stats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
-        let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
-        stats.mapAuthors(authorMapping);
-        authorMapping = filterAuthors(authorMapping, filter.authorName);
-
-        let endDate = stats.getDateRange().end;
-        let byAuthor = stats.groupByAuthor([filter.authorName]);
-
-        let studentStats = byAuthor.get(filter.authorName);
-
-        let builder = new StatsBuilder(studentStats);
-
-        return {
-            aliases: mappingToAliases(authorMapping),
-            total: builder.groupBy(groups).build(),
-            weekly: builder
-                .groupByWeek(savedCourseConfig.startDate, endDate)
-                .thenBy(groups).build(),
-        }
     }
 }

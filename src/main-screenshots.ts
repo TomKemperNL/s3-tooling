@@ -8,7 +8,7 @@ import "./electron-setup";
 
 config();
 
-async function createWindow(ix: number) {
+async function createWindow(org: string, repo: string, user: string) {
     const win = new BrowserWindow({
         width: 800,
         height: 600,
@@ -19,7 +19,7 @@ async function createWindow(ix: number) {
     });
 
     await win.loadFile('./renderer/screenshot.html');
-    win.webContents.send('load-user-stats', { organisation: "Test", repository: "Test", user: "Test" + ix})
+    win.webContents.send('load-user-stats', { organisation: org, repository: repo, user: user})
 }
 
 
@@ -28,8 +28,21 @@ async function main() {
     await setupIpcMainHandlers(s3App);
 
     app.whenReady().then(async () => {        
-        for (let i = 0; i < 30; i++) {
-            createWindow(i);
+
+        let repos = await s3App.db.selectReposByCourse(50055);
+        repos = repos.filter(r => r.name.startsWith('s3-project'));
+
+        for(let repo of repos){
+            if(repo.name !== 's3-project-team-relentless'){
+                continue;
+            }
+
+            let members = await s3App.db.getCollaborators(repo.organization.login, repo.name);
+            // let members = await s3App.githubClient.getMembersThroughTeams(repo.organization.login, repo.name);
+            for(let member of members){
+                console.log(`\t${member.login}`);
+                createWindow(repo.organization.login, repo.name, member.login);
+            }
         }
     });
 

@@ -13,6 +13,18 @@ export class ProjectStatistics implements Statistics {
         }
     }
 
+    filterAuthors(authors: string[]): void {
+        this.issues = this.issues.filter(i => authors.includes(i.author));
+        this.issues.forEach(i => {
+            i.comments = i.comments.filter(c => authors.includes(c.author));
+        });
+        this.prs = this.prs.filter(pr => authors.includes(pr.author));
+        this.prs.forEach(pr => {
+            pr.comments = pr.comments.filter(c => authors.includes(c.author));
+        });
+        this.comments = this.comments.filter(c => authors.includes(c.author));
+    }
+
     getDistinctAuthors(): string[] {
         let authors = new Set<string>();
         for (let i of this.issues) {

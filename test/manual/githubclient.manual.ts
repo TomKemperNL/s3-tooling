@@ -8,7 +8,7 @@ async function main() {
     let projects = ['s3-project-team-relentless']
     for(let p of projects) {
       console.log(p);
-      let result = await client.getMembersThroughTeams('HU-SD-S3-studenten-S2526', p);      
+      let result = await client.getMembers('HU-SD-S3-studenten-S2526', p);      
       
       console.log(result);      
     }

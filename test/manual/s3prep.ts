@@ -46,15 +46,7 @@ async function main() {
     for (let r of repos) {
         console.log(`Repo: ${r.name}`);
         let teamStats = await app.statisticsController.getRepoStats(courseId, assignment, r.name, { filterString: '' });
-        for (let a of teamStats.authors) {
-            let studentStats = await app.statisticsController.getStudentStats(courseId, assignment, r.name, { authorName: a });
-            let username = a;
-            if(loginUserMapping[a]){
-                username = loginUserMapping[a];
-            }
-            console.log("--" + username + "--");
-            console.log(studentStats.total);
-        }
+      
     }
 
 

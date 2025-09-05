@@ -26,9 +26,4 @@ export class FakeGithubClient {
         this.apiCalls++;
         return this.pullRequests;
     }
-
-    async getMembersThroughTeams(org: string, repo: string) {
-        this.apiCalls++;
-        return this.members[repo] || [];
-    }
 }

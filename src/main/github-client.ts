@@ -47,15 +47,8 @@ export class GithubClient {
         return this.#kit.request('GET /user').then(response => response.data);
     }
 
-    async getMembers(org: string, repo: string): Promise<MemberResponse[]> {
-        let response = await this.#kit.repos.listCollaborators({
-            repo: repo,
-            owner: org
-        });
-        return response.data;
-    }
 
-    async getMembersThroughTeams(org: string, repo: string): Promise<MemberResponse[]> {
+    async getMembers(org: string, repo: string): Promise<MemberResponse[]> {
       let teamsResponse = await this.#kit.repos.listTeams({
           repo: repo,
           owner: org

@@ -126,6 +126,10 @@ export class RepositoryStatistics implements Statistics {
         return result;
     }
 
+    filterAuthors(authors: string[]): void {
+        this.data = this.data.filter(c => authors.includes(c.author));
+    }
+
     mapAuthors(authorMapping: StringDict){
         this.data.forEach(commit => {
             if (authorMapping[commit.author]) {

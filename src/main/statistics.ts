@@ -107,6 +107,7 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
 
 export interface Statistics {
     mapAuthors(authorMapping: StringDict) : void;
+    filterAuthors(authors: string[]): void;
 
     getDistinctAuthors(): string[];
     getLinesTotal(): LinesStatistics;
@@ -119,6 +120,12 @@ export interface Statistics {
 
 export class CombinedStats implements Statistics {
     constructor(private stats: Statistics[]) {
+    }
+
+    filterAuthors(authors: string[]): void {
+         for (let stat of this.stats) {
+            stat.filterAuthors(authors);
+         }
     }
     
     getDistinctAuthors(): string[] {

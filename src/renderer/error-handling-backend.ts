@@ -135,15 +135,5 @@ export class ErrorHandlingBackendApi implements BackendApi {
             return {} as RepoStatisticsDTO; // Return an empty object on error
         }
     }
-
-    async getStudentStats(courseId: number, assignment: string, name: string, filter: StudentFilter): Promise<any> {
-        try {
-            return await this.ipc.getStudentStats(courseId, assignment, name, filter);
-        } catch (error) {
-            console.error("Error fetching student stats:", error);
-            alert("Failed to load student stats:" + error.message);
-            return {}; // Return an empty object on error
-        }
-    }
     test: string = "ErrorHandlingIPC";
 }
