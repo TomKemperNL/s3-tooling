@@ -7,7 +7,12 @@ export class FakeFileSystem{
     }
 
     commits: LoggedCommit[] = [];
+    blame: Record<string, Record<string, number>> = {};
     async getRepoStats(...paths: string[]) : Promise<LoggedCommit[]> {
         return this.commits;
+    }
+
+    async getLinesByGroupThenAuthor() : Promise<Record<string, Record<string, number>>>{
+        return this.blame;
     }
 }

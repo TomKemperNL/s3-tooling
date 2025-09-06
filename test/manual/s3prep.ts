@@ -45,7 +45,7 @@ async function main() {
 
     for (let r of repos) {
         console.log(`Repo: ${r.name}`);
-        let teamStats = await app.statisticsController.getRepoStats(courseId, assignment, r.name, { filterString: '' });
+        let teamStats = await app.statisticsController.getRepoStats(courseId, assignment, r.name);
       
     }
 

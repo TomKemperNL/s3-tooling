@@ -294,3 +294,34 @@ test('Can mapAuthors', {}, () => {
     // expect(perAuthorResult['Job'][3].added).toBe(0);
     // expect(perAuthorResult['Job'][4]).toBe(undefined);
 });
+
+
+
+test('Can filter Authors', {}, () => {
+    let someCommit = {
+        subject: 'Enter Commit Message Here',
+        hash: '1234567890abcdef',
+        changes: [
+            { added: 1, removed: 0, path: 'test.txt' }
+        ]
+    }
+
+    let stats = new RepositoryStatistics([
+        { author: 'Bob', date: new Date('2023-10-01'), ...someCommit },
+        { author: 'Bob2', date: new Date('2023-10-02'), ...someCommit },
+        { author: 'Job', date: new Date('2023-10-08'), ...someCommit },
+        { author: 'Bob@Home', date: new Date('2023-10-25'), ...someCommit },
+    ].reverse());
+
+    stats.filterAuthors(['Bob', 'Job']);
+
+    let perAuthorResult = stats.groupByAuthor(stats.getDistinctAuthors())
+        .map(as => as.groupByWeek(new Date('2023-10-01'))
+            .map(w => w.getLinesTotal())).export();
+
+    expect(perAuthorResult['Bob'][0].added).toBe(1);
+    expect(perAuthorResult['Bob2']).toBeUndefined();
+    expect(perAuthorResult['Bob@Home']).toBeUndefined();
+    expect(perAuthorResult['Job'][0].added).toBe(0);
+    expect(perAuthorResult['Job'][1].added).toBe(1);
+});

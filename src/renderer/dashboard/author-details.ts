@@ -50,8 +50,8 @@ export class RepositoryDetails extends LitElement {
             this.groupPie = undefined;
 
 
-            let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
-            let gettingGroupPie = this.ipc.getGroupPie(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
+            let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name);
+            let gettingGroupPie = this.ipc.getGroupPie(this.repo.courseId, this.repo.assignment, this.repo.name);
 
             Promise.all([gettingRepos, gettingGroupPie]).then(([repoStats, groupPie]) => {
                 this.repoStats = repoStats;                

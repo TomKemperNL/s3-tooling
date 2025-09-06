@@ -31,7 +31,7 @@ export class ScreenShotElement extends LitElement {
         setTimeout(async () => {
             this.message += 'After';
             await this.ipc.requestScreenshot(`${this.user}-screenshot`);
-            window.close();
+            // window.close();
         }, 3500)
     }
 

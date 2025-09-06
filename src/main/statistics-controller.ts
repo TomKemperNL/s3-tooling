@@ -31,16 +31,6 @@ function mergeAuthors(pie: { [name: string]: number }, mapping: { [name: string]
     return merged;
 }
 
-function filterAuthors(mapping: { [name: string]: string}, target: string){
-    let filtered: { [name: string]: string } = {};
-    for (let key in mapping) {
-        if (mapping[key] && mapping[key].trim() === target) {
-            filtered[key] = mapping[key];
-        }
-    }
-    return filtered;
-}
-
 function mappingToAliases(mapping: { [name: string]: string}) : { [canonical: string]: string[] } {
     let aliases: { [canonical: string]: string[] } = {};
     for (let alias in mapping) {
@@ -219,7 +209,7 @@ export class StatisticsController implements StatsApi {
 
     @ipc("repostats:get")
     @get('/stats/:cid/:assignment/:name/weekly')
-    async getRepoStats(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter: StatsFilter): Promise<RepoStatisticsDTO> {
+    async getRepoStats(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter?: StatsFilter): Promise<RepoStatisticsDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);        
         let combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
 
@@ -230,6 +220,10 @@ export class StatisticsController implements StatsApi {
         
         let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
         combinedStats.mapAuthors(authorMapping);
+
+        if(filter && filter.authors){
+            combinedStats.filterAuthors(filter.authors);
+        }
 
         let members = await this.githubClient.getMembers(savedCourseConfig.githubStudentOrg, name);
         let allAuthors = combinedStats.getDistinctAuthors();
@@ -257,13 +251,17 @@ export class StatisticsController implements StatsApi {
 
     @get('/stats/:cid/:assignment/:name/pie')
     @ipc("repostats-group-pie:get")
-    async getGroupPie(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter: StatsFilter): Promise<GroupPieDTO> {
+    async getGroupPie(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter?: StatsFilter): Promise<GroupPieDTO> {
         let savedCourseConfig = await this.db.getCourseConfig(courseId);
         let authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name)
         let [gitPie, projectStats] = await Promise.all([
             this.fileSystem.getLinesByGroupThenAuthor(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
         ]);
+
+        if(filter && filter.authors){
+            projectStats.filterAuthors(filter.authors);
+        }
 
         let groups = this.#getGroups(savedCourseConfig);
         let comGroup = groups.find(g => g.extensions === undefined);
@@ -277,6 +275,19 @@ export class StatisticsController implements StatsApi {
             let groupPie = pie[group];
             groupPie = mergeAuthors(groupPie, authorMapping);
             pie[group] = groupPie;
+        }
+
+        if(filter && filter.authors){
+            for(let group of Object.keys(pie)) {
+                let groupPie = pie[group];
+                let filteredGroupPie: { [name: string]: number } = {};
+                for(let author of Object.keys(groupPie)){
+                    if(filter.authors.indexOf(author) !== -1){
+                        filteredGroupPie[author] = groupPie[author];
+                    }
+                }
+                pie[group] = filteredGroupPie;
+            }
         }
 
         return {            

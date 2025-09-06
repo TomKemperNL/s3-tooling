@@ -39,6 +39,36 @@ test('CanSumLinesPerAuthor', {}, () => {
     expect(results["Bob"].added).toBe(4); //1 title, +1 body + 2 comments
 });
 
+
+
+test('Can Filter authors', {}, () => {
+    let stats = new ProjectStatistics([
+        {
+            author: 'Bob@Home',
+            title: 'Some stuff is broken',
+            body: 'This is a test issue',
+            createdAt: new Date(),
+            comments: [
+            ]
+        }
+    ], [{
+        author: 'Fred',
+        title: 'This should be implemented',
+        body: 'This is a test request.\nWith a new line',
+        createdAt: new Date(),
+        comments: [
+            {
+                author: 'Bob2',
+                body: "I want it now!\nAnd it better be good.",
+                createdAt: new Date()
+            }
+        ]
+    }]);
+    stats.filterAuthors(['Fred']);
+
+    expect(stats.getDistinctAuthors().length, 'Can filter authors').toBe(1);
+});
+
 test('Can Group ProjectItems Per Week', {}, () => {
     let someIssueOrPr: any = {
         title: 'Some stuff is broken',

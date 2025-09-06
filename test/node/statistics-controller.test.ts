@@ -54,7 +54,7 @@ const someCourse: CourseConfig = {
 
 test("canGetEmptyStats", async () => {
   let result = await statisticsController.getRepoStats(
-    someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" })
+    someCourse.canvasId, projectAssignmentName, "someRepo")
   expect(result).toStrictEqual({
     "aliases": {},
     "authors": [ ],
@@ -88,7 +88,7 @@ test("Can Get Merged Stats", async () => {
   ];
 
   let result = await statisticsController.getRepoStats(
-    someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" });
+    someCourse.canvasId, projectAssignmentName, "someRepo");
   expect(result).toStrictEqual(
     {
       "aliases": {},
@@ -104,5 +104,52 @@ test("Can Get Merged Stats", async () => {
       }]  
     }
   );
+});
 
+
+
+test("Can Get Merged Group-Pie", async () => {
+  fsFake.blame = {
+    "Backend": {
+      "Bob": 10
+    }
+  }
+  githubFake.pullRequests = [
+    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
+  ];
+  githubFake.issues = [
+    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
+  ];
+
+  let result = await statisticsController.getGroupPie(
+    someCourse.canvasId, projectAssignmentName, "someRepo");
+  expect(result).toStrictEqual(
+    {
+      "aliases": {},
+      "groupedPie": {
+        "Backend": { "Bob": 10 },
+        "Communication": { "Bob": 4 }
+      }
+    }
+  );
+});
+
+
+test("Can Filter Authors", async () => {
+  fsFake.blame = {
+    "Backend": {
+      "Bob": 10,
+      "Fred": 33
+    }
+  }
+  githubFake.pullRequests = [
+    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
+  ];
+  githubFake.issues = [
+    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
+  ];
+
+  let result = await statisticsController.getGroupPie(
+    someCourse.canvasId, projectAssignmentName, "someRepo", { authors: ["Bob"] });
+  expect(result.groupedPie["Backend"]["Fred"]).toBe(undefined);
 });
