@@ -168,6 +168,23 @@ export class RepositoryDetails extends LitElement {
     }
     `
 
+    #barsDone: boolean = false;
+    #pieDone: boolean = false;
+
+    barsRendered() {
+        this.#barsDone = true;
+        if(this.#pieDone){
+            this.dispatchEvent(new CustomEvent('author-details-rendered'));
+        }
+        
+    }
+    pieRendered() {
+        this.#pieDone = true;
+        if(this.#barsDone){
+            this.dispatchEvent(new CustomEvent('author-details-rendered'));
+        }
+    }
+
     render() {
         let labels: string[] = [];
         let groupBarcharts: any[] = [];
@@ -218,7 +235,8 @@ export class RepositoryDetails extends LitElement {
                 
                 .labels=${groupLabels}
                 .values=${groupValues}
-                .colors=${groupColors}></pie-chart>
+                .colors=${groupColors}
+                @chart-rendered=${this.pieRendered}></pie-chart>
         `)}
         </div>
 
@@ -241,7 +259,8 @@ export class RepositoryDetails extends LitElement {
                 class=${classMap({ loading: this.loading, chart: true  })} 
                 
                 .labels=${labels} 
-                .datasets=${groupBarcharts}></stacked-bar-chart>           
+                .datasets=${groupBarcharts}
+                @chart-rendered=${this.barsRendered}></stacked-bar-chart>           
         `)}
         </div>
         `;

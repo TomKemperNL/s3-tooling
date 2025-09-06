@@ -2,6 +2,7 @@ import { Chart } from "chart.js";
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ref, createRef } from 'lit/directives/ref.js';
+import { ChartRenderedEvent } from "./events";
 
 @customElement('bar-chart')
 export class BarChart extends LitElement {
@@ -42,6 +43,11 @@ export class BarChart extends LitElement {
                     }]
                 },
                 options: {
+                    animation: {
+                        onComplete: (c) => {
+                            this.dispatchEvent(new ChartRenderedEvent())
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true

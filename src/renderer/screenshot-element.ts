@@ -35,18 +35,18 @@ export class ScreenShotElement extends LitElement {
 
     }
 
-
-    protected firstUpdated(_changedProperties: PropertyValues): void {
-        setTimeout(async () => {            
+    async takeScreenshot(){
+        setTimeout(async () => {
             await this.ipc.requestScreenshot(`${this.author}-screenshot`);
-            // window.close();
-        }, 10000)
+            window.close();    
+        }, 0); //Hmm, hij heeft toch nog een wait nodig, om niet midden in een render te screenshotten of zoiets?
+        
     }
 
     render() {
         if(this.repo){
             return html`
-            <author-details readonly .repo=${this.repo} .author=${this.author} ></author-details>            
+            <author-details @author-details-rendered=${this.takeScreenshot} readonly .repo=${this.repo} .author=${this.author} ></author-details>            
             `;    
         }else{
             return html`            

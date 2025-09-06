@@ -2,6 +2,7 @@ import { Chart } from "chart.js";
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ref, createRef } from 'lit/directives/ref.js';
+import { ChartRenderedEvent } from "./events";
 
 @customElement('pie-chart')
 export class PieChart extends LitElement {
@@ -46,6 +47,11 @@ export class PieChart extends LitElement {
                     }]
                 },
                 options: {
+                    animation: {
+                        onComplete: (c) => {
+                            this.dispatchEvent(new ChartRenderedEvent())
+                        }
+                    },
                     plugins: {
                         legend: {
                             display: false
