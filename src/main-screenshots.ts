@@ -14,7 +14,8 @@ async function createWindow(courseId: number, assignment: string, organisation: 
         height: 600,
         webPreferences: {
             sandbox: false, //We gebruiken nu imports & requires in de reload, (vanwege de decorators)... voorlopig een goede deal, maar misschien kan dit beter?
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, 'preload.js'),
+            offscreen: true
         }
     });
 
