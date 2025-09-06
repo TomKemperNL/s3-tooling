@@ -97,7 +97,7 @@ export class RepositoryDetails extends LitElement {
         }
         if (_changedProperties.has('repoStats')) {            
             if(this.repoStats){
-                this.allAuthors = this.repoStats.authors;
+                this.allAuthors = this.repoStats.authors;                
                 this.enabledAuthors = this.repoStats.authors;
                 this.allGroups = this.repoStats.groups;
                 this.enabledGroups = this.repoStats.groups;

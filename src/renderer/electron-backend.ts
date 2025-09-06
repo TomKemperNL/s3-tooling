@@ -1,7 +1,7 @@
-import { BackendApi, BackendEvents } from "../backend-api";
+import { BackendApi, ScreenshotApi } from "../backend-api";
 
 declare global {
     interface Window {
-        electron: BackendApi & BackendEvents;
+        electron: BackendApi & ScreenshotApi;
     }
 }

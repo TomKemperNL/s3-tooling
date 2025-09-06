@@ -9,6 +9,15 @@ export class ErrorHandlingBackendApi implements BackendApi {
     constructor(ipc: BackendApi) {
         this.ipc = ipc;
     }
+    async loadRepo(courseId: number, assignment: string, name: string) : Promise<RepoDTO>{
+        try {
+            return await this.ipc.loadRepo(courseId, assignment, name);
+        } catch (error) {
+            console.error("Error loading repository:", error);
+            alert("Failed to load repository:" + error.message);
+            return {} as RepoDTO; // Return an empty object on error
+        }
+    }
 
     async getGroupPie(courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<GroupPieDTO>{
         try {

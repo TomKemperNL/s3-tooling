@@ -83,6 +83,26 @@ export class ReposController implements RepoApi{
         }
     }
 
+    @ipc("repos:loadSingle")
+    async loadRepo(courseId: number, assignmentName: string, name: string): Promise<RepoDTO> {
+        let savedCourse = await this.db.getCourse(courseId);
+        let assignment = savedCourse.assignments.find(a => a.githubAssignment === assignmentName);
+        if (!assignment) {
+            throw new Error(`Assignment ${assignmentName} not found in course ${courseId}`);
+        }
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);        
+        let repos = await this.db.selectReposByCourse(savedCourseConfig.canvasId)
+        let r = repos.map(toRepo).find(r => r.name === name);
+        return {
+            members: r.members.map(m => m.login),
+            courseId: savedCourse.canvasId,
+            assignment: assignment.githubAssignment,
+            groupRepo: assignment.groupAssignment,
+            name: r.name,
+            url: r.http_url,
+        }
+    }
+
     @ipc('repos:load')
     async loadRepos(courseId: number, assignmentName: string, filter: RepoFilter): Promise<RepoDTO[]> {
         let savedCourse = await this.db.getCourse(courseId);

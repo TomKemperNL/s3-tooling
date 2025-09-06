@@ -6,8 +6,17 @@ export interface BackendApi extends CourseApi, RepoApi, StatsApi, AppApi, Settin
     
 }
 
-export interface BackendEvents {
-    onLoadUserStats: (callback: any) => void
+export interface ScreenshotArgs {
+    courseId: number,
+    assignment: string,
+    organisation: string, 
+    repository: string, 
+    user: string 
+}
+
+export interface ScreenshotApi {
+    onLoadUserStats: (callback: (data: ScreenshotArgs) => void) => void;
+    requestScreenshot: (author: string) => Promise<void>;
 }
 
 export interface AppApi {
@@ -26,6 +35,7 @@ export interface CourseApi {
 }
 
 export interface RepoApi {
+    loadRepo: (courseId: number, assignment: string, name: string) => Promise<RepoDTO>
     loadRepos: (courseId: number, assignment: string, filter: RepoFilter) => Promise<RepoDTO[]>
     getBranchInfo: (courseId: number, assignment: string, name: string) => Promise<BranchInfo>
     refreshRepo: (courseId: number, assignment: string, name: string) => Promise<void>

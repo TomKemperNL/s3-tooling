@@ -229,7 +229,13 @@ export class StatisticsController implements StatsApi {
         let allAuthors = combinedStats.getDistinctAuthors();
         members.map(m => m.login).forEach(login => {
             if(allAuthors.indexOf(login) === -1){
-                allAuthors.push(login);
+                if(filter && filter.authors){
+                    if(filter.authors.indexOf(login) !== -1){
+                        allAuthors.push(login);
+                    }
+                }else{
+                    allAuthors.push(login);
+                }                
             }
         });
 
