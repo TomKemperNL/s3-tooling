@@ -1,10 +1,15 @@
+import { provide } from "@lit/context";
 import { html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { ipcContext } from "./contexts";
+import { BackendApi, BackendEvents } from "../backend-api";
 
 @customElement('screenshot-element')
 export class ScreenShotElement extends LitElement {
 
-    ipc: any;
+    
+    @provide({ context: ipcContext})    
+    ipc: BackendApi & BackendEvents;
     
 
     constructor(){
@@ -37,6 +42,7 @@ export class ScreenShotElement extends LitElement {
 
     render() {
         return html`
+        <repository-details .repo=${this.repo} .authorFilter=${[this.author]} ></repository-details>
         Hello ${this.message}
         `;
         

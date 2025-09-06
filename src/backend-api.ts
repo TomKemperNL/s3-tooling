@@ -6,6 +6,10 @@ export interface BackendApi extends CourseApi, RepoApi, StatsApi, AppApi, Settin
     
 }
 
+export interface BackendEvents {
+    onLoadUserStats: (callback: any) => void
+}
+
 export interface AppApi {
     startup: () => Promise<Startup>
     openDirectory: (currentPath?: string) => Promise<string>
