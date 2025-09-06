@@ -316,8 +316,14 @@ export class FileSystem {
         }
     }
 
+
+    
+    pieCache: { [repoPath: string]: Record<string, Record<string, number>> } = {};
     async getLinesByGroupThenAuthor(groups: GroupDefinition[], ...repoPath: string[]): Promise<Record<string, Record<string, number>>> {
         let target = path.join(this.#basePath, ...repoPath);
+        if (this.pieCache[target]) {            
+            return this.pieCache[target];
+        }
         let files = await this.gitCli.listFiles(target);
         let repoGroups = groups.filter(g => g.extensions && g.extensions.length > 0);
 
@@ -361,6 +367,8 @@ export class FileSystem {
                 orderedReport[group.name] = {};
             }
         }
+
+        this.pieCache[target] = orderedReport;
         return orderedReport;
     }
 }

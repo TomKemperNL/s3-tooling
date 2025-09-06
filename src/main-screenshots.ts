@@ -1,9 +1,10 @@
 import { config } from "@dotenvx/dotenvx";
 import * as path from "path";
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import { createApp } from "./main/index"
 import { setupIpcMainHandlers } from "./electron-setup";
 import "./electron-setup";
+import { s3 } from "./temp";
 
 
 config();
@@ -29,24 +30,38 @@ async function main() {
     let s3App = await createApp();
     await setupIpcMainHandlers(s3App);
 
-    app.whenReady().then(async () => {        
+    ipcMain.handle("request:screenshot", async (e, fileName: string) => {
+        await s3App.screenshotController.requestScreenshot(e.sender, fileName);
+    });
+
+    app.whenReady().then(async () => {
 
         let courseId = 50055;
         let assignment = 's3-project';
-        let repos = await s3App.db.selectReposByCourse(courseId);
-        repos = repos.filter(r => r.name.startsWith(assignment));
+        let organization = 'HU-SD-S3-Studenten-S2526';
+        let repo = process.argv[2];
 
-        for(let repo of repos){
-            if(repo.name !== 's3-project-team-lamp'){
-                continue;
-            }
+        console.log(process.argv);
 
-            let members = await s3App.db.getCollaborators(repo.organization.login, repo.name);
-            for(let member of members){
-                console.log(`\t${member.login}`);
-                createWindow(courseId, assignment, repo.organization.login, repo.name, member.login);
-            }
+        // let repos = await s3App.db.selectReposByCourse(courseId);
+        // repos = repos.filter(r => r.name.startsWith(assignment));
+        // repos.sort((a, b) => a.name.localeCompare(b.name));
+
+        // console.log(repos.map(r => r.name).join('\n'));
+
+        // for (let repo of repos) {
+        //     console.log(`Repo: ${repo.name}`);
+            //prefill cache once per repo:
+        
+        await s3App.statisticsController.getRepoStats(courseId, assignment, repo);
+        await s3App.statisticsController.getGroupPie(courseId, assignment, repo);
+    
+        let members = await s3App.db.getCollaborators(organization, repo);
+        for (let member of members) {
+            console.log(`\tMember: ${member.login}`);
+            createWindow(courseId, assignment, organization, repo, member.login);
         }
+    
     });
 
     //Om op Linux/Windows lekkende processen te voorkomen:
