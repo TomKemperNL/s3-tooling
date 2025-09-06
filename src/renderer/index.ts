@@ -3,6 +3,7 @@ import './app-element'
 import './dashboard/course-details'
 import './dashboard/repositories-list'
 import './dashboard/repository-details'
+import './dashboard/author-details'
 import './dashboard/author-list'
 import './dashboard/group-list'
 

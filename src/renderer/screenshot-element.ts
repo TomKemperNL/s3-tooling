@@ -46,7 +46,7 @@ export class ScreenShotElement extends LitElement {
     render() {
         if(this.repo){
             return html`
-            <repository-details readonly .repo=${this.repo} .authorFilter=${[this.author]} ></repository-details>            
+            <author-details readonly .repo=${this.repo} .author=${this.author} ></author-details>            
             `;    
         }else{
             return html`            

@@ -10,13 +10,14 @@ config();
 
 async function createWindow(courseId: number, assignment: string, organisation: string, repository: string, user: string) {
     const win = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: 1200,
+        height: 500,
         webPreferences: {
             sandbox: false, //We gebruiken nu imports & requires in de reload, (vanwege de decorators)... voorlopig een goede deal, maar misschien kan dit beter?
             preload: path.join(__dirname, 'preload.js'),
             offscreen: true
-        }
+        },
+        frame: false,
     });
 
     await win.loadFile('./renderer/screenshot.html');
@@ -36,7 +37,7 @@ async function main() {
         repos = repos.filter(r => r.name.startsWith(assignment));
 
         for(let repo of repos){
-            if(repo.name !== 's3-project-team-relentless'){
+            if(repo.name !== 's3-project-team-lamp'){
                 continue;
             }
 
