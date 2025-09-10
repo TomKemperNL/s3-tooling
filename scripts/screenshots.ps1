@@ -1,1 +1,1 @@
-cat ./projects.txt | %{ npm start screenshots $_ }
+cat ./projects.txt | %{ npm run screenshots $_ }
