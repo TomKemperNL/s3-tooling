@@ -8,7 +8,9 @@
     "test": "vitest",
     "start": "dotenvx run -f .dev.env -- electron .",
     "start:web": "dotenvx run -f .dev.env -- node ./dist/src/main.js webonly",
-    "screenshots": "dotenvx run -f .dev.env -- electron ./dist/src/main-screenshots.js"
+    "screenshots": "dotenvx run -f .dev.env -- electron ./dist/src/main-screenshots.js",
+    "screenshots2": "dotenvx run -f .dev.env -- node ./dist/src/main-screenshots2.js",
+    "screenshots3": "dotenvx run -f .dev.env -- node ./dist/src/main-screenshots3.js"
   },
   "author": "",
   "license": "ISC",

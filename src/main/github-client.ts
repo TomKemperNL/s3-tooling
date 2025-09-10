@@ -47,6 +47,17 @@ export class GithubClient {
         return this.#kit.request('GET /user').then(response => response.data);
     }
 
+    
+    createPr(org:string, repo: string, title: string, body: string, head: string, base: string) {
+        return this.#kit.pulls.create({
+            owner: org,
+            repo: repo,
+            title: title,
+            body: body,
+            head: head,
+            base: base
+        }).then(response => response.data);
+    }
 
     async getMembers(org: string, repo: string): Promise<MemberResponse[]> {
       let teamsResponse = await this.#kit.repos.listTeams({
@@ -261,4 +272,5 @@ export class GithubClient {
             delete this.cachedPrs[org][repo];
         }
     }
+
 }

@@ -144,6 +144,7 @@ export class FileSystem {
         this.#basePath = basePath;
     }
 
+
     async cloneRepo(prefix: string[], repo: Repo) {
         console.log('Cloning repo', repo.name, 'to', path.join(this.#basePath, ...prefix, repo.name));
         let target = path.join(this.#basePath, ...prefix);
@@ -165,6 +166,26 @@ export class FileSystem {
         }
 
         return fullTarget;
+    }
+
+    async runCommands(commands: string[], ...repoPath: string[]) {
+        let target = path.join(this.#basePath, ...repoPath);
+        let result = [];
+        for(let command of commands){
+            let commandResult = await exec(command, { cwd: target, encoding: 'utf8' });
+            result.push({ command, result: commandResult.stdout});
+        }
+        
+        return result;
+    }
+
+    async getRepoPath(org: string, assignment: string, repoName: string) {
+        let target = path.join(this.#basePath, org, assignment, repoName);
+        if(fs.existsSync(target)){
+            return target;
+        }else{
+            return null;
+        }
     }
 
     async getRepoPaths(...prefPath: string[]) {
