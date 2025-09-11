@@ -29,19 +29,20 @@ async function main() {
         let members = await s3App.db.getCollaborators(organization, repo.name);
         for (let member of members) {            
             let portfolioRepo = portfolio + '-' + member.login;
-           
-            s3App.fileSystem.runCommands([
+            console.log('\t' + portfolioRepo);
+            await s3App.fileSystem.runCommands([
                 "git pull",
                 "git checkout -b sprint-0-stats",
                 "git add .",
                 `git commit -m "Added stats screenshot for sprint 0"`,
+                "git checkout sprint-0-stats",
                 "git push origin sprint-0-stats",
                 "git checkout main"
             ],
                 organization, portfolio, portfolioRepo
             )
 
-            s3App.githubClient.createPr(organization, repo.name, "Stats toevoegen voor Sprint 0", "Deze PR voegt de stats screenshot toe voor sprint 0... Hoop ik.", "sprint-0-stats", "main");
+            await s3App.githubClient.createPr(organization, portfolioRepo, "Stats toevoegen voor Sprint 0", "Deze PR voegt de stats screenshot toe voor sprint 0... Hoop ik.", "sprint-0-stats", "main");
 
         }
     }
