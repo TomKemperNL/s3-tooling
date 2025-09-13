@@ -170,12 +170,19 @@ export async function setupWebHandlers(app: S3App) {
             }
             console.log('calling ', owningObject.constructor.name, entry.propertyKey, 'with params', params);
             
-            const result = entry.handler.apply(owningObject, params)
-            if(result.then){
-                result.then((r: any) => res.send(r));
-            }else{
-                res.send(result);
-            }            
+            try{
+                const result = entry.handler.apply(owningObject, params);
+                if(result.then){
+                    result.then((r: any) => res.send(r)).catch((e: any) => {
+                        console.error('Error in ', owningObject.constructor.name, entry.propertyKey, 'with args:', params, ':', e);                        
+                    });
+                }else{
+                    res.send(result);
+                }    
+
+            }catch(e){
+                console.error('Error in ', owningObject.constructor.name, entry.propertyKey, 'with args:', params, ':', e);                
+            }
         });        
     }
     
