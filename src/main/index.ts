@@ -6,7 +6,7 @@ import { Db, db } from "./db";
 import { ReposController } from "./repos-controller";
 import { CoursesController } from "./courses-controller";
 
-import { saveSettings, loadSettings } from "./settings";
+import { loadSettings } from "./settings";
 import { StatisticsController } from "./statistics-controller";
 import { Settings } from "../shared";
 import { ScreenshotController } from "./screenshot-controller";
@@ -44,6 +44,7 @@ export class S3App {
         }
     }
 
+    /* eslint @typescript-eslint/require-await: "off" */
     async reload(settings: Settings) { //Nog niet async, maar ik vermoed dat dit wel ooit nodig gaat zijn... (en dan is retroactief async maken vaak vrij ingrijpend)
         this.#settings = settings;
         this.screenshotController = new ScreenshotController();
@@ -52,8 +53,8 @@ export class S3App {
         this.canvasClient = new CanvasClient(this.settings.canvasToken);
 
         this.repoController = new ReposController(db, this.canvasClient, this.githubClient, this.fileSystem);
-        this.coursesController = new CoursesController(db, this.canvasClient),
-            this.statisticsController = new StatisticsController(db, this.githubClient, this.fileSystem, this.repoController);
+        this.coursesController = new CoursesController(db, this.canvasClient);
+        this.statisticsController = new StatisticsController(db, this.githubClient, this.fileSystem, this.repoController);
     }
 
     async isAuthorized(user: string, org: string, repo: string) { //TODO: dit moet op org/repo niveau, niet op hardcoded setting niveau

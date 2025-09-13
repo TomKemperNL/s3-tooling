@@ -69,7 +69,7 @@ export function getUsernameFromUrl(url: string, assignmentName: string){
 
     //Https url
     if(url.startsWith('https://github.com')){
-        const exp = `https\:\/\/github\.com\/(.+?)\/${assignmentName}-(.+)`;
+        const exp = `https://github.com/(.+?)/${assignmentName}-(.+)`;
         const match = url.match(exp);
         if(match && match.length > 2){ 
             const username = match[2].replace('.git', '').split('/')[0];
@@ -79,7 +79,7 @@ export function getUsernameFromUrl(url: string, assignmentName: string){
 
     //SSH url
     if(url.startsWith('git@github.com')){
-        const exp = `git\@github\.com\:(.+?)\/${assignmentName}-(.+)`;
+        const exp = `git@github.com:(.+?)/${assignmentName}-(.+)`;
         const match = url.match(exp);
         if(match && match.length > 2){ 
             const username = match[2].replace('.git', '').split('/')[0];

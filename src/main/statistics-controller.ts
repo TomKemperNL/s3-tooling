@@ -1,26 +1,14 @@
-import { group } from "console";
-import { PieDTO, combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, RepoStatisticsDTOPerGroup, StatsFilter, StudentFilter, GroupPieDTO } from "../shared";
+import { combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, StatsFilter, GroupPieDTO } from "../shared";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient } from "./github-client";
 import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 import { ReposController } from "./repos-controller";
-import { CombinedStats, GroupDefinition, ProjectContent, StatsBuilder } from "./statistics";
+import { CombinedStats, GroupDefinition, StatsBuilder } from "./statistics";
 import { ipc } from "../electron-setup";
 import { StatsApi } from "../backend-api";
 import { get, path } from "../web-setup";
-
-function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: number }): { [name: string]: number } {
-    const merged: { [name: string]: number } = {};
-    for (const key in pie1) {
-        merged[key] = (merged[key] || 0) + pie1[key];
-    }
-    for (const key in pie2) {
-        merged[key] = (merged[key] || 0) + pie2[key];
-    }
-    return merged;
-}
 
 function mergeAuthors(pie: { [name: string]: number }, mapping: { [name: string]: string}){
     const merged: { [name: string]: number } = {};

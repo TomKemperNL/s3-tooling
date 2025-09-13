@@ -86,7 +86,7 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
             return statObj.getLinesTotal();
         }
         if (statObj instanceof ExportingArray || statObj instanceof GroupedCollection) {
-            return statObj.map(StatsBuilder.#flatten).export();
+            return statObj.map(o => StatsBuilder.#flatten(o)).export();
         } else {
             throw new Error('Unsupported type for export: ' + typeof statObj);
         }

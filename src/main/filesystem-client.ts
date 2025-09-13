@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as proc from 'child_process';
 import * as path from 'path';
-import { readdir, readFile } from 'fs/promises'
+import { readdir } from 'fs/promises'
 
 import { promisify } from 'util';
 import { ignoredAuthors } from './repository-statistics';
@@ -84,25 +84,6 @@ export function parseBlame(blameLines: string[]): Record<string, number> {
     return report;
 }
 
-
-function combineRecords(rep1: Record<string, number>, rep2: Record<string, number>) {
-    const result: Record<string, number> = {};
-    function addToReport(key: string, value: number) {
-        if (!result[key]) {
-            result[key] = 0;
-        }
-        result[key] += value;
-    }
-
-    for (const k of Object.keys(rep1)) {
-        addToReport(k, rep1[k]);
-    }
-    for (const k of Object.keys(rep2)) {
-        addToReport(k, rep2[k]);
-    }
-    return result;
-}
-
 export type CloneStyle = 'https' | 'ssh'
 
 export interface GitCommands {
@@ -119,14 +100,14 @@ class GitCli implements GitCommands {
     }
 
     async getFileLog(target: string, file: string): Promise<LoggedCommit[]> {
-        const log = await exec(`git log -10 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' }); //Deze -10 is een beetje een lelijke gok
+        const log = await exec(`git log -10 ${logFormat} "${file}"`, { cwd: target, encoding: 'utf8' }); //Deze -10 is een beetje een lelijke gok
         const logLines = log.stdout.split('\n');
         const parsedLog = parseLog(logLines);
         return parsedLog;
     }
 
     async getBlame(target: string, file: string): Promise<string[]> {
-        const blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
+        const blame = await exec(`git blame "${file}"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
         return blame.stdout.split('\n');
     }
 
@@ -181,12 +162,13 @@ export class FileSystem {
 
     async getRepoPath(org: string, assignment: string, repoName: string) {
         const target = path.join(this.#basePath, org, assignment, repoName);
-        if(fs.existsSync(target)){
+        if(await exists(target)){
             return target;
         }else{
             return null;
         }
     }
+    
 
     async getRepoPaths(...prefPath: string[]) {
         const target = path.join(this.#basePath, ...prefPath);

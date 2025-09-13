@@ -1,12 +1,10 @@
-import { url } from "inspector";
 import { RepoApi } from "../backend-api";
 import { ipc } from "../electron-setup";
-import { Assignment, PieDTO, BranchInfo, combineStats, CourseConfig, Repo, RepoDTO, RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from "../shared";
+import { Assignment, BranchInfo, CourseConfig, Repo, RepoDTO, RepoFilter } from "../shared";
 import { CanvasClient, getUsernameFromName, SimpleDict, StringDict } from "./canvas-client";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient, MemberResponse, RepoResponse, toRepo } from "./github-client";
-import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
