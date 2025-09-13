@@ -27,7 +27,7 @@ async function createWindow(courseId: number, assignment: string, organisation: 
 
 
 async function main() {
-    let s3App = await createApp();
+    const s3App = await createApp();
     await setupIpcMainHandlers(s3App);
 
     ipcMain.handle("request:screenshot", async (e, fileName: string) => {
@@ -36,10 +36,10 @@ async function main() {
 
     app.whenReady().then(async () => {
 
-        let courseId = 50055;
-        let assignment = 's3-project';
-        let organization = 'HU-SD-S3-Studenten-S2526';
-        let repo = process.argv[2];
+        const courseId = 50055;
+        const assignment = 's3-project';
+        const organization = 'HU-SD-S3-Studenten-S2526';
+        const repo = process.argv[2];
 
         console.log(process.argv);
 
@@ -56,8 +56,8 @@ async function main() {
         await s3App.statisticsController.getRepoStats(courseId, assignment, repo);
         await s3App.statisticsController.getGroupPie(courseId, assignment, repo);
     
-        let members = await s3App.db.getCollaborators(organization, repo);
-        for (let member of members) {
+        const members = await s3App.db.getCollaborators(organization, repo);
+        for (const member of members) {
             console.log(`\tMember: ${member.login}`);
             createWindow(courseId, assignment, organization, repo, member.login);
         }

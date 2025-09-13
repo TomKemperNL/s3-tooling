@@ -9,26 +9,26 @@ config();
 
 
 async function main() {
-    let s3App = await createApp();
+    const s3App = await createApp();
 
 
-    let courseId = s3.canvasId;
-    let assignment = 's3-project';
-    let portfolio = 's3-portfolio';
-    let organization = 'HU-SD-S3-Studenten-S2526';
+    const courseId = s3.canvasId;
+    const assignment = 's3-project';
+    const portfolio = 's3-portfolio';
+    const organization = 'HU-SD-S3-Studenten-S2526';
     let repos = await s3App.db.selectReposByCourse(courseId);
     repos = repos.filter(r => r.name.startsWith(assignment));
 
-    for (let repo of repos) {
+    for (const repo of repos) {
         console.log(`Repo: ${repo.name}`);
         if(['s3-project-teachers-united', 's3-project-docent-test'].includes(repo.name)) {
             console.log('Skipping' + repo.name);
             continue;
         }
 
-        let members = await s3App.db.getCollaborators(organization, repo.name);
-        for (let member of members) {            
-            let portfolioRepo = portfolio + '-' + member.login;
+        const members = await s3App.db.getCollaborators(organization, repo.name);
+        for (const member of members) {            
+            const portfolioRepo = portfolio + '-' + member.login;
             console.log('\t' + portfolioRepo);
             await s3App.fileSystem.runCommands([
                 "git pull",

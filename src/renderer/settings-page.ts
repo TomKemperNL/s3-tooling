@@ -34,7 +34,7 @@ export class SettingsPage extends LitElement {
 
     async loadSettings() {
         this.loading = true;
-        let settings = await this.ipc.loadSettings();
+        const settings = await this.ipc.loadSettings();
         this.settings = settings;
         this.loading = false;
     }

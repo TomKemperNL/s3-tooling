@@ -8,12 +8,12 @@ import "./electron-setup";
 
 config();
 async function main() {
-    let s3App = await createApp();
+    const s3App = await createApp();
     if (process.argv.indexOf('webonly') !== -1) {
         await setupWebHandlers(s3App);
     } else if (process.argv.indexOf('load') !== -1) {
-        let courseId = parseInt(process.argv[process.argv.indexOf('load') + 1]);
-        let assignmentName = process.argv[process.argv.indexOf('load') + 2];
+        const courseId = parseInt(process.argv[process.argv.indexOf('load') + 1]);
+        const assignmentName = process.argv[process.argv.indexOf('load') + 2];
         await s3App.coursesController.loadCourse(courseId);
         await s3App.repoController.loadRepos(courseId, assignmentName, { sections: [] });
     } else {        
@@ -30,7 +30,7 @@ async function main() {
 
             win.webContents.addListener('will-navigate', (event, url) => {
                 if (url.startsWith('external://')) {
-                    let newUrl = url.replace('external://', 'https://');
+                    const newUrl = url.replace('external://', 'https://');
                     shell.openExternal(newUrl);
                     event.preventDefault();
                 }

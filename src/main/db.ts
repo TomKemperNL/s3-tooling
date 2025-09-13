@@ -71,7 +71,7 @@ export class Db {
         try {
             await this.#runProm("begin transaction;")
 
-            let result = await func();
+            const result = await func();
 
             await this.#runProm("commit transaction;")
 
@@ -90,16 +90,16 @@ export class Db {
     }
 
     async getCourseConfig(id: number): Promise<CourseConfig> {
-        let r = await this.#getProm<CourseDb>("select * from courses where canvasId = ?;", id);
-        let as = await this.#allProm<AssignmentDb>("select * from course_assignments where courseId = ?", id)
+        const r = await this.#getProm<CourseDb>("select * from courses where canvasId = ?;", id);
+        const as = await this.#allProm<AssignmentDb>("select * from course_assignments where courseId = ?", id)
         if (r) {
             return courseDbToConfig(r, as);
         }
     }
 
     async getCourseConfigs(): Promise<CourseConfig[]> {
-        let rows = await this.#allProm<CourseDb>("select * from courses;");
-        let results: CourseConfig[] = rows.map(c => courseDbToConfig(c, [])); //hacky hackmans
+        const rows = await this.#allProm<CourseDb>("select * from courses;");
+        const results: CourseConfig[] = rows.map(c => courseDbToConfig(c, [])); //hacky hackmans
         return results;
     }
 
@@ -118,7 +118,7 @@ export class Db {
                 courseConfig.githubStudentOrg
             ]);
 
-            for (let as of courseConfig.assignments) {
+            for (const as of courseConfig.assignments) {
                 await this.#runProm(`insert into course_assignments(
                     courseId, githubAssignment, canvasId, groupAssignment) values(
                     ?,?,?,?
@@ -139,8 +139,8 @@ export class Db {
 
     async updateAuthorMapping(org: string, repo: string, mapping: StringDict) {
         await this.#inTransaction(async () => {
-            for (let authorName of Object.keys(mapping)) {
-                let username = mapping[authorName];
+            for (const authorName of Object.keys(mapping)) {
+                const username = mapping[authorName];
                 await this.#runProm(
                     `insert into githubCommitNames(name, githubUsername, organization, repository)
                      values(?,?,?,?);`,
@@ -150,11 +150,11 @@ export class Db {
     }
 
     async getAuthorMapping(org: string, repo: string): Promise<StringDict> {
-        let rows = await this.#allProm<{ name: string, githubUsername: string }>(`
+        const rows = await this.#allProm<{ name: string, githubUsername: string }>(`
             select name, githubUsername from githubCommitNames 
             where organization = ? and repository = ?`, [org, repo]);
-        let result: { [key: string]: string } = {};
-        for (let r of rows) {
+        const result: { [key: string]: string } = {};
+        for (const r of rows) {
             result[r.name] = r.githubUsername;
         }
         return result;
@@ -162,9 +162,9 @@ export class Db {
 
     async removeAliases(githubStudentOrg: string, name: string, aliases: { [canonical: string]: string[]; }) {
         await this.#inTransaction(async () => {
-            for (let canonical of Object.keys(aliases)) {
-                let aliasList = aliases[canonical];
-                for (let alias of aliasList) {
+            for (const canonical of Object.keys(aliases)) {
+                const aliasList = aliases[canonical];
+                for (const alias of aliasList) {
                     await this.#runProm(
                         `delete from githubCommitNames where organization = ? and repository = ? and name = ? and githubUsername = ?;`,
                         [githubStudentOrg, name, alias, canonical]);
@@ -175,9 +175,9 @@ export class Db {
 
     async updateUserMapping(courseId: number, usermapping: StringDict) {
         await this.#inTransaction(async () => {
-            for (let k of Object.keys(usermapping)) {
-                let v = usermapping[k];
-                let student = await this.getStudentByEmail(k);
+            for (const k of Object.keys(usermapping)) {
+                const v = usermapping[k];
+                const student = await this.getStudentByEmail(k);
                 if (student) { //Canvas heeft soms ook een 'testcursist' die elke opdracht een inlevering doet, en dus in deze lijst komt...
                     await this.#runProm('insert into githubAccounts(username, studentId) values(?, ?) on conflict do nothing;', [v, student.id]);
                 }
@@ -188,30 +188,30 @@ export class Db {
     }
 
     async getUserMapping(courseId: number): Promise<StringDict> {
-        let rows = await this.#allProm<{ email: string, username: string }>(`
+        const rows = await this.#allProm<{ email: string, username: string }>(`
             select s.email, gha.username from courses c 
                 join sections sec on c.canvasid = sec.courseId
                 join students_sections ss on ss.sectionId = sec.id
                 join students s on ss.studentid = s.id
                 join githubAccounts gha on s.id = gha.studentId
                 where c.canvasId = ?`, [courseId]);
-        let result: StringDict = {};
-        for (let r of rows) {
+        const result: StringDict = {};
+        for (const r of rows) {
             result[r.email] = r.username;
         }
         return result;
     }
 
     async getUserMappingRev(courseId: number): Promise<StringDict> {
-        let rows = await this.#allProm<{ email: string, username: string }>(`
+        const rows = await this.#allProm<{ email: string, username: string }>(`
             select s.email, gha.username from courses c 
                 join sections sec on c.canvasid = sec.courseId
                 join students_sections ss on ss.sectionId = sec.id
                 join students s on ss.studentid = s.id
                 join githubAccounts gha on s.id = gha.studentId
                 where c.canvasId = ?`, [courseId]);
-        let result: StringDict = {};
-        for (let r of rows) {
+        const result: StringDict = {};
+        for (const r of rows) {
             result[r.username] = r.email;
         }
         return result;
@@ -235,7 +235,7 @@ export class Db {
     async updateRepoMapping(courseId: number, repos: RepoResponse[]) {
 
         await this.#inTransaction(async () => {
-            for (let repo of repos) {
+            for (const repo of repos) {
                 await this.#runProm(`
                     insert into repositories(
                         courseId, 
@@ -271,7 +271,7 @@ export class Db {
     }
 
     async getCollaborators(organization: string, name: string): Promise<MemberResponse[]> {
-        let result = await this.#allProm<{ organization: string, name: string, username: string }>(
+        const result = await this.#allProm<{ organization: string, name: string, username: string }>(
             'select organization, name, username from repository_members where organization = ? and name = ?', organization, name);
         return result.map(r => ({
             login: r.username
@@ -324,18 +324,18 @@ export class Db {
     }
 
     async updateSections(courseDTO: CourseDTO) {
-        let savedCourse = await this.getCourse(courseDTO.canvasId);
+        const savedCourse = await this.getCourse(courseDTO.canvasId);
 
         await this.#inTransaction(async () => {
             await this.#runProm('delete from sections where courseId=?', [savedCourse.canvasId]);
 
-            let sections = Object.keys(courseDTO.sections);
+            const sections = Object.keys(courseDTO.sections);
 
             async function insertSection(k: string) {
-                let runResult = await this.#runProm('insert into sections(name, courseid) values (?,?)', [k, savedCourse.canvasId]);
-                let sectionId = runResult.lastID
+                const runResult = await this.#runProm('insert into sections(name, courseid) values (?,?)', [k, savedCourse.canvasId]);
+                const sectionId = runResult.lastID
                 async function upsertStudent(s: StudentDTO) {
-                    let existingStudent = await this.#getProm('select * from students where id = ?', [s.studentId]);
+                    const existingStudent = await this.#getProm('select * from students where id = ?', [s.studentId]);
                     if (existingStudent === undefined) {
                         await this.#runProm('insert into students(id, email, name) values(?,?,?) on conflict do nothing;', [s.studentId, s.email, s.name]);
                     }
@@ -350,7 +350,7 @@ export class Db {
     }
 
     async getCourse(canvasId: number) {
-        let rows = await this.#allProm<any>(`
+        const rows = await this.#allProm<any>(`
                 select c.name as courseName, sec.name as sectionName, stu.name as studentName, stu.id as studentId, * from courses c 
                     left join sections sec on sec.courseId = c.canvasid
                     left join students_sections ss on ss.sectionId = sec.id
@@ -359,9 +359,9 @@ export class Db {
                     order by sec.name
                 `, [canvasId]);
 
-        let as = await this.#allProm<AssignmentDb>("select * from course_assignments where courseId = ?", canvasId)
+        const as = await this.#allProm<AssignmentDb>("select * from course_assignments where courseId = ?", canvasId)
 
-        let courseDTO: CourseDTO = {
+        const courseDTO: CourseDTO = {
             name: rows[0].courseName,
             canvasId: rows[0].canvasId,
             assignments: as.map(a => ({
@@ -372,7 +372,7 @@ export class Db {
             sections: {}
         };
 
-        for (let r of rows) {
+        for (const r of rows) {
             if (r.studentName) {
                 if (!courseDTO.sections[r.sectionName]) {
                     courseDTO.sections[r.sectionName] = [];

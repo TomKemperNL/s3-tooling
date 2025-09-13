@@ -46,7 +46,7 @@ export class CoursesList extends LitElement {
     async loadCourse(c: CourseConfig) {
         this.loading = true;
         try {
-            let result = await this.ipc.loadCourse(c.canvasId);
+            const result = await this.ipc.loadCourse(c.canvasId);
             if (result) {
                 this.dispatchEvent(new CourseLoadedEvent(result));
             }
@@ -55,9 +55,9 @@ export class CoursesList extends LitElement {
     };
 
     dropdownChange(e: HTMLInputEvent) {
-        let selected = e.target.value;
+        const selected = e.target.value;
         if (selected) {
-            let course = this.courses.find(c => c.name === selected);
+            const course = this.courses.find(c => c.name === selected);
             if (course) {
                 this.loadCourse(course);
             }

@@ -23,7 +23,7 @@ export class WebAppElement extends LitElement {
     }
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
-        let outlet = this.shadowRoot.getElementById('outlet');
+        const outlet = this.shadowRoot.getElementById('outlet');
         createRouter(outlet);
     }
 

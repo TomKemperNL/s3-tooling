@@ -109,7 +109,7 @@ export class AuthorList extends LitElement {
         return (e: DragEvent) => {
             e.preventDefault();
             const draggedAuthorName = e.dataTransfer!.getData('text/plain');
-            let mapping: Record<string, string> = {};
+            const mapping: Record<string, string> = {};
             mapping[draggedAuthorName] = author.name;
 
             this.dispatchEvent(new AuthorMappedEvent(mapping));
@@ -148,14 +148,14 @@ export class AuthorList extends LitElement {
     `;
 
     render() {
-        let styles = (a: AuthorItem) => ({ //De VSCode formatter wordt helemaal gek als je dit inline probeert te doen:)
+        const styles = (a: AuthorItem) => ({ //De VSCode formatter wordt helemaal gek als je dit inline probeert te doen:)
             color: a.color,
             "font-style": this.readonly ? 'normal' : (a.member ? 'normal' : 'italic'),
             "cursor": this.readonly ? 'default' : (a.member ? 'default' : 'grab'),
             "border": this.dragging && a.member ? '1px dashed black' : 'none'
         });
 
-        let item = (a: AuthorItem) => html`
+        const item = (a: AuthorItem) => html`
             <span class="author"
                 draggable=${a.member ? 'false' : 'true'} 
                 style=${styleMap(styles(a))}

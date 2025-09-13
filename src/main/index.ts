@@ -62,8 +62,8 @@ export class S3App {
 }
 
 export async function createApp() {
-    let settings = await loadSettings();
-    let app = new S3App(settings);
+    const settings = await loadSettings();
+    const app = new S3App(settings);
     await app.init();
     return app;
 }

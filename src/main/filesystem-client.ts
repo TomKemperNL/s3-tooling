@@ -35,11 +35,11 @@ export type LoggedCommit = {
 }
 
 export function parseLog(logLines: string[]): LoggedCommit[] {
-    let commits = [];
+    const commits = [];
     let currentCommit: LoggedCommit = null;
 
-    for (let line of logLines) {
-        let newCommitMatch = line.match(newCommitPattern);
+    for (const line of logLines) {
+        const newCommitMatch = line.match(newCommitPattern);
 
         if (newCommitMatch) {
             if (currentCommit != null) {
@@ -53,7 +53,7 @@ export function parseLog(logLines: string[]): LoggedCommit[] {
                 changes: []
             }
         } else {
-            let changeMatch = line.match(changePattern)
+            const changeMatch = line.match(changePattern)
             if (changeMatch) {
                 currentCommit.changes.push({
                     added: changeMatch[1] === '-' ? '-' : parseInt(changeMatch[1]),
@@ -69,11 +69,11 @@ export function parseLog(logLines: string[]): LoggedCommit[] {
 }
 
 export function parseBlame(blameLines: string[]): Record<string, number> {
-    let report: { [author: string]: number } = {};
-    for (let line of blameLines) {
-        let blameMatch = line.match(blamePattern);
+    const report: { [author: string]: number } = {};
+    for (const line of blameLines) {
+        const blameMatch = line.match(blamePattern);
         if (blameMatch && blameMatch[2]) {
-            let author = blameMatch[2].trim();
+            const author = blameMatch[2].trim();
 
             if (!report[author]) {
                 report[author] = 0;
@@ -86,7 +86,7 @@ export function parseBlame(blameLines: string[]): Record<string, number> {
 
 
 function combineRecords(rep1: Record<string, number>, rep2: Record<string, number>) {
-    let result: Record<string, number> = {};
+    const result: Record<string, number> = {};
     function addToReport(key: string, value: number) {
         if (!result[key]) {
             result[key] = 0;
@@ -94,10 +94,10 @@ function combineRecords(rep1: Record<string, number>, rep2: Record<string, numbe
         result[key] += value;
     }
 
-    for (let k of Object.keys(rep1)) {
+    for (const k of Object.keys(rep1)) {
         addToReport(k, rep1[k]);
     }
-    for (let k of Object.keys(rep2)) {
+    for (const k of Object.keys(rep2)) {
         addToReport(k, rep2[k]);
     }
     return result;
@@ -113,20 +113,20 @@ export interface GitCommands {
 
 class GitCli implements GitCommands {
     async listFiles(target: string) {
-        let filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
-        let files = filesRaw.stdout.split('\n').map(f => f.trim()).filter(f => f.length > 0);
+        const filesRaw = await exec(`git ls-files`, { cwd: target, encoding: 'utf8' });
+        const files = filesRaw.stdout.split('\n').map(f => f.trim()).filter(f => f.length > 0);
         return files
     }
 
     async getFileLog(target: string, file: string): Promise<LoggedCommit[]> {
-        let log = await exec(`git log -10 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' }); //Deze -10 is een beetje een lelijke gok
-        let logLines = log.stdout.split('\n');
-        let parsedLog = parseLog(logLines);
+        const log = await exec(`git log -10 ${logFormat} \"${file}\"`, { cwd: target, encoding: 'utf8' }); //Deze -10 is een beetje een lelijke gok
+        const logLines = log.stdout.split('\n');
+        const parsedLog = parseLog(logLines);
         return parsedLog;
     }
 
     async getBlame(target: string, file: string): Promise<string[]> {
-        let blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
+        const blame = await exec(`git blame \"${file}\"`, { cwd: target, encoding: 'utf8', maxBuffer: 5 * 10 * 1024 * 1024 });
         return blame.stdout.split('\n');
     }
 
@@ -147,15 +147,15 @@ export class FileSystem {
 
     async cloneRepo(prefix: string[], repo: Repo) {
         console.log('Cloning repo', repo.name, 'to', path.join(this.#basePath, ...prefix, repo.name));
-        let target = path.join(this.#basePath, ...prefix);
-        let fullTarget = path.join(this.#basePath, ...prefix, repo.name);
+        const target = path.join(this.#basePath, ...prefix);
+        const fullTarget = path.join(this.#basePath, ...prefix, repo.name);
 
         if (await exists(fullTarget)) {
             return;
         }
 
         if (!await exists(target)) {
-            let options = { recursive: true };
+            const options = { recursive: true };
             await mkdir(target, options);
         }
 
@@ -169,10 +169,10 @@ export class FileSystem {
     }
 
     async runCommands(commands: string[], ...repoPath: string[]) {
-        let target = path.join(this.#basePath, ...repoPath);
-        let result = [];
-        for(let command of commands){
-            let commandResult = await exec(command, { cwd: target, encoding: 'utf8' });
+        const target = path.join(this.#basePath, ...repoPath);
+        const result = [];
+        for(const command of commands){
+            const commandResult = await exec(command, { cwd: target, encoding: 'utf8' });
             result.push({ command, result: commandResult.stdout});
         }
         
@@ -180,7 +180,7 @@ export class FileSystem {
     }
 
     async getRepoPath(org: string, assignment: string, repoName: string) {
-        let target = path.join(this.#basePath, org, assignment, repoName);
+        const target = path.join(this.#basePath, org, assignment, repoName);
         if(fs.existsSync(target)){
             return target;
         }else{
@@ -189,9 +189,9 @@ export class FileSystem {
     }
 
     async getRepoPaths(...prefPath: string[]) {
-        let target = path.join(this.#basePath, ...prefPath);
-        let result = await readdir(target, { withFileTypes: true });
-        let dirs = result.filter(dirent => dirent.isDirectory())
+        const target = path.join(this.#basePath, ...prefPath);
+        const result = await readdir(target, { withFileTypes: true });
+        const dirs = result.filter(dirent => dirent.isDirectory())
             .map(dirent => dirent.name);
 
         return dirs.map(d => prefPath.concat([d]));
@@ -199,7 +199,7 @@ export class FileSystem {
 
     //Dit is te sloom om altijd te doen    
     async refreshRepo(...repoPath: string[]) {
-        let target = path.join(this.#basePath, ...repoPath);
+        const target = path.join(this.#basePath, ...repoPath);
         await exec(`git reset HEAD --hard`, { cwd: target });
         await exec(`git fetch --all`, { cwd: target });
         try {
@@ -222,9 +222,9 @@ export class FileSystem {
             return this.branchCache[repoPath.join('/')].current;
         }
 
-        let target = path.join(this.#basePath, ...repoPath);
-        let result = await exec(`git branch --show-current`, { cwd: target, encoding: 'utf8' });
-        let output = result.stdout.trim();
+        const target = path.join(this.#basePath, ...repoPath);
+        const result = await exec(`git branch --show-current`, { cwd: target, encoding: 'utf8' });
+        const output = result.stdout.trim();
 
         this.branchCache[repoPath.join('/')] = this.branchCache[repoPath.join('/')] || {};
         this.branchCache[repoPath.join('/')].current = output;
@@ -236,13 +236,13 @@ export class FileSystem {
             return this.branchCache[repoPath.join('/')].default;
         }
 
-        let target = path.join(this.#basePath, ...repoPath);
-        let result = await exec(`git remote show origin`, { cwd: target, encoding: 'utf8' });
-        let lines = result.stdout.split('\n');
+        const target = path.join(this.#basePath, ...repoPath);
+        const result = await exec(`git remote show origin`, { cwd: target, encoding: 'utf8' });
+        const lines = result.stdout.split('\n');
 
-        let defaultBranchLine = lines.find(line => line.trim().startsWith('HEAD branch:'));
+        const defaultBranchLine = lines.find(line => line.trim().startsWith('HEAD branch:'));
         if (defaultBranchLine) {
-            let output = defaultBranchLine.replace('HEAD branch:', '').trim();
+            const output = defaultBranchLine.replace('HEAD branch:', '').trim();
 
             this.branchCache[repoPath.join('/')] = this.branchCache[repoPath.join('/')] || {};
             this.branchCache[repoPath.join('/')].default = output;
@@ -257,8 +257,8 @@ export class FileSystem {
             return this.branchCache[repoPath.join('/')].branches;
         }
 
-        let target = path.join(this.#basePath, ...repoPath);
-        let result = await exec(`git branch --all --remote --no-merge "${defaultBranch}"`, { cwd: target, encoding: 'utf8' });
+        const target = path.join(this.#basePath, ...repoPath);
+        const result = await exec(`git branch --all --remote --no-merge "${defaultBranch}"`, { cwd: target, encoding: 'utf8' });
         let branches = result.stdout.split('\n').filter(b => b.length > 0).map(b => b.trim());
         branches = branches.map(b => b.replace(/origin\//, ''));
         branches = branches.filter(b => b.indexOf('HEAD') === -1);
@@ -272,7 +272,7 @@ export class FileSystem {
 
 
     async switchBranch(targetBranch: string, ...repoPath: string[]) {
-        let target = path.join(this.#basePath, ...repoPath);
+        const target = path.join(this.#basePath, ...repoPath);
         delete this.branchCache[repoPath.join('/')];
         //checkout -f, want in principe hebben we geen changes,
         //maar mac/linux/windows kunnen issues hebben met line endings,
@@ -283,21 +283,21 @@ export class FileSystem {
     repoCache: { [repoPath: string]: LoggedCommit[] } = {};
 
     async getRepoStats(...repoPath: string[]) {
-        let target = path.join(this.#basePath, ...repoPath);
+        const target = path.join(this.#basePath, ...repoPath);
         if (this.repoCache[target]) {
             // console.log('cache-hit: repo for', target);
             return this.repoCache[target];
         }
-        let result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });
-        let logLines = result.stdout.split('\n');
+        const result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });
+        const logLines = result.stdout.split('\n');
 
-        let parsedLog = parseLog(logLines);
+        const parsedLog = parseLog(logLines);
         this.repoCache[target] = parsedLog;
         return parsedLog;
     }
 
     async #includeFileInBlames(path: string, file: string) {
-        let hardcodedBinaryExtensions = ['.pdf', '.png', '.jar', '.zip', '.jpeg', '.webp', '.pptx', '.docx', '.xslx'];
+        const hardcodedBinaryExtensions = ['.pdf', '.png', '.jar', '.zip', '.jpeg', '.webp', '.pptx', '.docx', '.xslx'];
 
         if (file.endsWith('.json')) { //TODO samentrekken met de core.ts Repostats class, maar hier hebben we het middenin IO nodig:S
             return false;;
@@ -341,26 +341,26 @@ export class FileSystem {
     
     pieCache: { [repoPath: string]: Record<string, Record<string, number>> } = {};
     async getLinesByGroupThenAuthor(groups: GroupDefinition[], ...repoPath: string[]): Promise<Record<string, Record<string, number>>> {
-        let target = path.join(this.#basePath, ...repoPath);
+        const target = path.join(this.#basePath, ...repoPath);
         if (this.pieCache[target]) {            
             return this.pieCache[target];
         }
-        let files = await this.gitCli.listFiles(target);
-        let repoGroups = groups.filter(g => g.extensions && g.extensions.length > 0);
+        const files = await this.gitCli.listFiles(target);
+        const repoGroups = groups.filter(g => g.extensions && g.extensions.length > 0);
 
-        let report = {} as Record<string, Record<string, number>>;
+        const report = {} as Record<string, Record<string, number>>;
 
-        let otherGroup = groups.find(g => g.other);
+        const otherGroup = groups.find(g => g.other);
 
         async function parseFile(file: string){
             if (await this.#includeFileInBlames(target, file)) {
-                let matchingGroup = repoGroups.find(g => g.extensions.some(ext => file.toLowerCase().endsWith(ext.toLowerCase())));
-                let blameLines: string[] = await this.gitCli.getBlame(target, file);
-                let fileResults = parseBlame(blameLines);
+                const matchingGroup = repoGroups.find(g => g.extensions.some(ext => file.toLowerCase().endsWith(ext.toLowerCase())));
+                const blameLines: string[] = await this.gitCli.getBlame(target, file);
+                const fileResults = parseBlame(blameLines);
 
                 if (matchingGroup) {
                     report[matchingGroup.name] = report[matchingGroup.name] || {};
-                    for (let author of Object.keys(fileResults)) {
+                    for (const author of Object.keys(fileResults)) {
                         if (!report[matchingGroup.name][author]) {
                             report[matchingGroup.name][author] = 0;
                         }
@@ -368,7 +368,7 @@ export class FileSystem {
                     }
                 } else if (otherGroup) {
                     report[otherGroup.name] = report[otherGroup.name] || {};
-                    for (let author of Object.keys(fileResults)) {
+                    for (const author of Object.keys(fileResults)) {
                         if (!report[otherGroup.name][author]) {
                             report[otherGroup.name][author] = 0;
                         }
@@ -380,8 +380,8 @@ export class FileSystem {
 
         await Promise.all(files.map(f => parseFile.apply(this, [f])));
         
-        let orderedReport = {} as Record<string, Record<string, number>>;
-        for (let group of groups) {
+        const orderedReport = {} as Record<string, Record<string, number>>;
+        for (const group of groups) {
             if (report[group.name]) {
                 orderedReport[group.name] = report[group.name];
             } else {

@@ -36,7 +36,7 @@ export class LoginElement extends LitElement {
     render() {
         let returnUrl = '/';
         if(window.location.search){
-            let params = new URLSearchParams(window.location.search);
+            const params = new URLSearchParams(window.location.search);
             if(params.has('returnUrl')){
                 returnUrl = params.get('returnUrl');                
             }

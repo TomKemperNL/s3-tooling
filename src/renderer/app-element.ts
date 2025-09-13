@@ -174,12 +174,12 @@ export class AppElement extends LitElement {
     }
 
     async onSettingsChanged(e: Event) {  
-        let startup = await this.ipc.startup();
+        const startup = await this.ipc.startup();
         this.reload(startup);
     }
 
     save(){
-        let memento = {
+        const memento = {
             activeRepo: this.activeRepo,
             activeCourse: this.activeCourse,
             availableRepos: this.availableRepos,
@@ -191,9 +191,9 @@ export class AppElement extends LitElement {
 
     load(){
         try{
-            let memento = window.localStorage.getItem('app-element-memento');
+            const memento = window.localStorage.getItem('app-element-memento');
             if(memento){
-                let parsed = JSON.parse(memento);
+                const parsed = JSON.parse(memento);
                 this.activeRepo = parsed.activeRepo;
                 this.activeCourse = parsed.activeCourse;
                 this.availableRepos = parsed.availableRepos;

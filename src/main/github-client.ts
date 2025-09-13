@@ -60,12 +60,12 @@ export class GithubClient {
     }
 
     async getMembers(org: string, repo: string): Promise<MemberResponse[]> {
-      let teamsResponse = await this.#kit.repos.listTeams({
+      const teamsResponse = await this.#kit.repos.listTeams({
           repo: repo,
           owner: org
       });
 
-      let members = await Promise.all(teamsResponse.data.map(team => this.#kit.teams.listMembersInOrg({
+      const members = await Promise.all(teamsResponse.data.map(team => this.#kit.teams.listMembersInOrg({
         org: org,
         team_slug: team.slug
       }))).then(responses => responses.flatMap(r => r.data));
@@ -74,7 +74,7 @@ export class GithubClient {
   }
 
     async listRepos(org: string): Promise<RepoResponse[]> {
-        let pagination = this.#kit.paginate.iterator(this.#kit.repos.listForOrg,
+        const pagination = this.#kit.paginate.iterator(this.#kit.repos.listForOrg,
             {
                 per_page: 100,
                 org: org
@@ -95,7 +95,7 @@ export class GithubClient {
         let comments : Comment[] = [];
 
         while (hasNextPage) {
-            let response: any = await this.#kit.graphql(`
+            const response: any = await this.#kit.graphql(`
                 query listComments($issueId: ID!, $cursor: String!) {
                   node(id: $issueId) {
                     ... on Issue {
@@ -135,7 +135,7 @@ export class GithubClient {
         let issues : any[] = [];
 
         while (hasNextPage) {
-            let response: any = await this.#kit.graphql(`
+            const response: any = await this.#kit.graphql(`
                 query listIssues($org: String!, $repo: String!, $cursor: String!) {
                   repository(owner: $org, name:$repo){
                     issues(first:50, after: $cursor){
@@ -173,12 +173,12 @@ export class GithubClient {
             nextCursor = response.repository.issues.pageInfo.endCursor;
         }
 
-        let issuesWithLotsOfComments = issues.filter(issue => issue.comments.totalCount > 20);
-        for (let issue of issuesWithLotsOfComments) {
+        const issuesWithLotsOfComments = issues.filter(issue => issue.comments.totalCount > 20);
+        for (const issue of issuesWithLotsOfComments) {
             issue.comments.nodes = await this.#fetchComments(issue.id);
         }
 
-        let result = issues.map(issue => ({
+        const result = issues.map(issue => ({
             ...issue,
             author: issue.author.login,
             createdAt: new Date(issue.createdAt),
@@ -205,7 +205,7 @@ export class GithubClient {
         let pullRequests : any[]= [];
 
         while (hasNextPage) {
-            let response: any = await this.#kit.graphql(`
+            const response: any = await this.#kit.graphql(`
                 query listPrs($org: String!, $repo: String!, $cursor: String!) {
                   repository(owner: $org, name:$repo){
                     pullRequests(first:50, after: $cursor){
@@ -243,12 +243,12 @@ export class GithubClient {
             nextCursor = response.repository.pullRequests.pageInfo.endCursor;
         }
 
-        let pullRequestsWithLotsOfComments = pullRequests.filter(issue => issue.comments.totalCount > 20);
-        for (let pullRequest of pullRequestsWithLotsOfComments) {
+        const pullRequestsWithLotsOfComments = pullRequests.filter(issue => issue.comments.totalCount > 20);
+        for (const pullRequest of pullRequestsWithLotsOfComments) {
             pullRequest.comments.nodes = await this.#fetchComments(pullRequest.id);
         }
 
-        let results = pullRequests.map(pullRequest => ({
+        const results = pullRequests.map(pullRequest => ({
             ...pullRequest,
             author: pullRequest.author.login,
             createdAt: new Date(pullRequest.createdAt),

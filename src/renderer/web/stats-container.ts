@@ -25,7 +25,7 @@ export class StatsContainer extends LitElement {
     }
 
     render() {
-        let repo : RepoDTO = {
+        const repo : RepoDTO = {
             name: this.repoName,
             courseId: this.courseId,
             assignment: this.assignment,
