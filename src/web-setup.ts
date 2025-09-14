@@ -105,9 +105,37 @@ export async function setupWebHandlers(app: S3App) {
         res.sendFile(fspath.resolve(process.cwd(), 'dist', 'src', 'web', 'web.html'));
     });
 
+    expressApp.param('cid', (req, res, next, cid) => {
+        req.parsedParams = req.parsedParams || {};
+        req.params['cid'] = parseInt(cid);
+        next(); 
+    });
+    
+    expressApp.get('/stats/:cid/:assignment/:name', (req, res, next) => { 
+        console.log('lalalaaa3', req.params);        
+        next() })
+
+    for(const path of Object.keys(getRegistry)) {
+        const fullPath = '/api' + path;
+        console.log('setting up parser for '  + fullPath)
+        expressApp.get(fullPath, (req, res, next) => {   
+            console.log('lalalalaaaa', req.params);
+            next();
+        });
+        expressApp.get(path, (req, res, next) => {   
+            console.log('lalalalaaaa2', req.params);
+            next();
+        });
+    }
+
+
     expressApp.use(async (req, res, next) => {
         const requestedPathWithoutLeadingSlash = req.path.substring(1);
-        if(req.user && await app.isAuthorized((<any>req.user).username, '', '')){
+        if(req.user && await app.isAuthorized((<any>req.user).username, (<any>req).session, {
+            courseId: req.params['cid'] ? parseInt(req.params['cid']) : undefined,
+            assignment: req.params['assignment'],
+            repository: req.params['name'] //...
+        })){
             next();
         }else if(req.user){
             if(req.accepts('html')){
@@ -141,7 +169,7 @@ export async function setupWebHandlers(app: S3App) {
 
 
     console.log('Setting up web handlers for ', Object.keys(getRegistry));
-
+    
     for(const path of Object.keys(getRegistry)) {
         const entry = getRegistry[path];
         let owningObject = app;
@@ -171,15 +199,12 @@ export async function setupWebHandlers(app: S3App) {
             console.log('calling ', owningObject.constructor.name, entry.propertyKey, 'with params', params);
             
             try{
-                const result = entry.handler.apply(owningObject, params);
+                let result = entry.handler.apply(owningObject, params);
                 if(result.then){
-                    result.then((r: any) => res.send(r)).catch((e: any) => {
-                        console.error('Error in ', owningObject.constructor.name, entry.propertyKey, 'with args:', params, ':', e);                        
-                    });
-                }else{
-                    res.send(result);
-                }    
-
+                    result = await result;
+                }
+                
+                res.send(result);
             }catch(e){
                 console.error('Error in ', owningObject.constructor.name, entry.propertyKey, 'with args:', params, ':', e);                
             }

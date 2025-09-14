@@ -238,7 +238,7 @@ export class StatisticsController implements StatsApi {
             authors: allAuthors,
             groups: groups.map(g => g.name),
             aliases: mappingToAliases(authorMapping),
-            week_group_author: week_group_author
+            week_group_author: week_group_author 
         }
 
     }
@@ -256,7 +256,7 @@ export class StatisticsController implements StatsApi {
         if(filter && filter.authors){
             projectStats.filterAuthors(filter.authors);
         }
-
+ 
         const groups = this.#getGroups(savedCourseConfig);
         const comGroup = groups.find(g => g.extensions === undefined);
         const pie = gitPie;
