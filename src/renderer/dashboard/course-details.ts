@@ -62,7 +62,7 @@ export class CourseDetails extends LitElement {
     async loadRepos() {
         try {
             this.loading = true;
-            let result = await this.ipc.loadRepos(this.course.canvasId, this.selectedAssignment, { sections: [ this.selectedSection] })
+            const result = await this.ipc.loadRepos(this.course.canvasId, this.selectedAssignment, { sections: [ this.selectedSection] })
             this.dispatchEvent(new ReposLoadedEvent(result));
         }
         catch (e) {

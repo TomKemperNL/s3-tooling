@@ -10,6 +10,8 @@
         "moduleResolution": "nodenext",
         "skipLibCheck": true,
         "noImplicitAny": true,
+        
+        "resolveJsonModule": true
     },    
     "include": [
         "src",

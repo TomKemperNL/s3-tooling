@@ -32,6 +32,10 @@ export class RepositoryDetails extends LitElement {
         this.repoStats = undefined;
     }
 
+    @property({ type: Array })
+    authorFilter?: string[] = undefined;
+
+
     @property({ type: Object })
     repo: RepoDTO;
 
@@ -77,9 +81,9 @@ export class RepositoryDetails extends LitElement {
             this.enabledAuthors = [];
 
 
-            let gettingBranchInfo = this.ipc.getBranchInfo(this.repo.courseId, this.repo.assignment, this.repo.name);
-            let gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
-            let gettingGroupPie = this.ipc.getGroupPie(this.repo.courseId, this.repo.assignment, this.repo.name, { filterString: '' });
+            const gettingBranchInfo = this.ipc.getBranchInfo(this.repo.courseId, this.repo.assignment, this.repo.name);
+            const gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { authors: this.authorFilter });
+            const gettingGroupPie = this.ipc.getGroupPie(this.repo.courseId, this.repo.assignment, this.repo.name, { authors: this.authorFilter });
 
             Promise.all([gettingBranchInfo, gettingRepos, gettingGroupPie]).then(([branchInfo, repoStats, groupPie]) => {
 
@@ -93,7 +97,7 @@ export class RepositoryDetails extends LitElement {
         }
         if (_changedProperties.has('repoStats')) {            
             if(this.repoStats){
-                this.allAuthors = this.repoStats.authors;
+                this.allAuthors = this.repoStats.authors;                
                 this.enabledAuthors = this.repoStats.authors;
                 this.allGroups = this.repoStats.groups;
                 this.enabledGroups = this.repoStats.groups;
@@ -116,7 +120,7 @@ export class RepositoryDetails extends LitElement {
     }
 
     async removeAlias(e: RemoveAliasEvent){
-        let aliases : Record<string, string[]> = {};
+        const aliases : Record<string, string[]> = {};
         aliases[e.author] = [e.alias];
 
         await this.ipc.removeAlias(this.repo.courseId, this.repo.name, aliases);
@@ -150,7 +154,7 @@ export class RepositoryDetails extends LitElement {
     ]
 
     authorToColor(author: string): string {
-        let authors = this.allAuthors;
+        const authors = this.allAuthors;
         if (authors.indexOf(author) === -1) {
             return 'rgba(0,0,0,1)';
         } else {
@@ -159,7 +163,7 @@ export class RepositoryDetails extends LitElement {
     }
 
     groupToColor(group: string): string {
-        let groups = Object.keys(this.groupPie?.groupedPie || []);
+        const groups = Object.keys(this.groupPie?.groupedPie || []);
         if (groups.indexOf(group) === -1) {
             return 'rgba(0,0,0,1)';
         } else {
@@ -168,12 +172,12 @@ export class RepositoryDetails extends LitElement {
     }
 
     toAuthorPie(pie: Record<string, Record<string, number>>) : Record<string, number>{
-        let result: Record<string, number> = {};
-        for(let group of Object.keys(pie)){
+        const result: Record<string, number> = {};
+        for(const group of Object.keys(pie)){
             if( this.enabledGroups.indexOf(group) === -1) {
                 continue;
             }
-            for(let author of Object.keys(pie[group])){
+            for(const author of Object.keys(pie[group])){
                 result[author] = (result[author] || 0) + pie[group][author];
             }
         }
@@ -181,12 +185,12 @@ export class RepositoryDetails extends LitElement {
     }
 
     toGroupBarchart(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {
-        let dataPerWeek: Record<string, LinesStatistics>[] = [];
-        for(let week of statsByWeek){
-            let weekData : Record<string, LinesStatistics> = {};
-            for (let group of Object.keys(week)) {
-                let groupData = { added: 0, removed: 0 };
-                for(let author of Object.keys(week[group])) {
+        const dataPerWeek: Record<string, LinesStatistics>[] = [];
+        for(const week of statsByWeek){
+            const weekData : Record<string, LinesStatistics> = {};
+            for (const group of Object.keys(week)) {
+                const groupData = { added: 0, removed: 0 };
+                for(const author of Object.keys(week[group])) {
                     if( this.enabledAuthors.indexOf(author) === -1) {
                         continue;
                     }
@@ -197,11 +201,11 @@ export class RepositoryDetails extends LitElement {
             }
             dataPerWeek.push(weekData);
         }
-        let datasets: any[] = [];
-        for(let group of this.enabledGroups) {
-            let addedNumbers = dataPerWeek.map(w => w[group]?.added || 0);
-            let removedNumbers = dataPerWeek.map(w => w[group]?.removed || 0);
-            let options = {
+        const datasets: any[] = [];
+        for(const group of this.enabledGroups) {
+            const addedNumbers = dataPerWeek.map(w => w[group]?.added || 0);
+            const removedNumbers = dataPerWeek.map(w => w[group]?.removed || 0);
+            const options = {
                 label: group,
                 backgroundColor: this.groupToColor(group),
                 borderColor: this.groupToColor(group),
@@ -223,15 +227,15 @@ export class RepositoryDetails extends LitElement {
     }
 
     toAuthorBarchart(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {        
-        let dataPerWeek: Record<string, LinesStatistics>[] = [];
-        for(let week of statsByWeek){
-            let weekData : Record<string, LinesStatistics> = {};
-            for (let group of Object.keys(week)){
+        const dataPerWeek: Record<string, LinesStatistics>[] = [];
+        for(const week of statsByWeek){
+            const weekData : Record<string, LinesStatistics> = {};
+            for (const group of Object.keys(week)){
                 if( this.enabledGroups.indexOf(group) === -1) {
                     continue;
                 }
-                let groupStats = week[group];
-                for(let author of Object.keys(groupStats)){                   
+                const groupStats = week[group];
+                for(const author of Object.keys(groupStats)){                   
                     weekData[author] = weekData[author] || { added: 0, removed: 0 };
                     weekData[author].added += groupStats[author].added;
                     weekData[author].removed -= groupStats[author].removed;
@@ -240,11 +244,11 @@ export class RepositoryDetails extends LitElement {
             dataPerWeek.push(weekData);
         }
         
-        let datasets: any[] = [];
-        for(let author of this.enabledAuthors) {
-            let addedNumbers = dataPerWeek.map(w => w[author]?.added || 0);
-            let removedNumbers = dataPerWeek.map(w => w[author]?.removed || 0);
-            let options = {
+        const datasets: any[] = [];
+        for(const author of this.enabledAuthors) {
+            const addedNumbers = dataPerWeek.map(w => w[author]?.added || 0);
+            const removedNumbers = dataPerWeek.map(w => w[author]?.removed || 0);
+            const options = {
                 label: author,
                 backgroundColor: this.authorToColor(author),
                 borderColor: this.authorToColor(author),
@@ -273,7 +277,7 @@ export class RepositoryDetails extends LitElement {
     }
 
     async switchBranch(e: HTMLInputEvent){
-        let selected = e.target.value;
+        const selected = e.target.value;
         if (selected && selected !== this.currentBranch) {
             this.currentBranch = selected;            
             await this.ipc.switchBranch(this.repo.courseId, this.repo.assignment, this.repo.name, selected);
@@ -306,17 +310,17 @@ export class RepositoryDetails extends LitElement {
     `
 
     render() {
-        let labels: string[] = [];
+        const labels: string[] = [];
         let authorBarcharts: any[] = [];
         let groupBarcharts: any[] = [];
 
-        let blameLabels: string[] = [];
-        let blameValues: number[] = [];
-        let blameColors: string[] = [];
+        const blameLabels: string[] = [];
+        const blameValues: number[] = [];
+        const blameColors: string[] = [];
 
-        let groupLabels: string[] = [];
-        let groupValues: number[] = [];
-        let groupColors: string[] = [];
+        const groupLabels: string[] = [];
+        const groupValues: number[] = [];
+        const groupColors: string[] = [];
 
 
         if (this.repoStats) {
@@ -329,8 +333,8 @@ export class RepositoryDetails extends LitElement {
         }
 
         if(this.groupPie){
-            let authorPie = this.toAuthorPie(this.groupPie.groupedPie);
-            for (let a of Object.keys(authorPie)) {
+            const authorPie = this.toAuthorPie(this.groupPie.groupedPie);
+            for (const a of Object.keys(authorPie)) {
                 if (this.enabledAuthors.indexOf(a) === -1) {
                     continue;
                 }
@@ -339,14 +343,14 @@ export class RepositoryDetails extends LitElement {
                 blameColors.push(this.authorToColor(a));
             }
 
-            for (let g of Object.keys(this.groupPie?.groupedPie)) {
+            for (const g of Object.keys(this.groupPie?.groupedPie)) {
                 if( this.enabledGroups.indexOf(g) === -1) {
                     continue;
                 }
                 groupLabels.push(g);
 
                 let authorTotals = 0;
-                for( let a of Object.keys(this.groupPie.groupedPie[g])) {
+                for( const a of Object.keys(this.groupPie.groupedPie[g])) {
                     if( this.enabledAuthors.indexOf(a) !== -1) {
                         authorTotals += this.groupPie.groupedPie[g][a];
                     }
@@ -356,7 +360,7 @@ export class RepositoryDetails extends LitElement {
             }
         }
 
-        let authorList = this.allAuthors.map(a => ({
+        const authorList = this.allAuthors.map(a => ({
             name: a,
             member: this.repo.members.indexOf(a) !== -1,
             color: this.authorToColor(a),
@@ -366,7 +370,7 @@ export class RepositoryDetails extends LitElement {
             // removed: this.repoStats?.authors[a]?.removed || 0
         }));
 
-        let groupList = this.allGroups.map(g => ({
+        const groupList = this.allGroups.map(g => ({
             name: g,
             enabled: this.enabledGroups.indexOf(g) !== -1,
             color: this.groupToColor(g),

@@ -3,7 +3,7 @@ import { CanvasClient } from "./canvas-client";
 import { Db } from "./db";
 import { ipc } from "../electron-setup";
 import { CourseApi } from "../backend-api";
-import { get, path } from "../web-setup";
+import { path } from "../web-setup";
 
 export class CoursesController implements CourseApi {
     constructor(private db: Db, private canvasClient: CanvasClient){
@@ -17,10 +17,10 @@ export class CoursesController implements CourseApi {
 
     @ipc('course:load')
     async loadCourse(@path(":id") id: number): Promise<CourseDTO> {
-        let savedCourse = await this.db.getCourse(id);
+        const savedCourse = await this.db.getCourse(id);
         if (Object.keys(savedCourse.sections).length === 0) {
-            let sections = await this.canvasClient.getSections({ course_id: id });
-            for (let section of sections) {
+            const sections = await this.canvasClient.getSections({ course_id: id });
+            for (const section of sections) {
                 if (section.name === savedCourse.name) {
                     continue; //Elke cursus heeft zo'n sectie waar 'iedereen' in zit. Die lijkt me niet handig?
                 }

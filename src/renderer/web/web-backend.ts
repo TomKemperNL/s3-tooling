@@ -4,6 +4,7 @@ import { CourseConfig, CourseDTO, RepoFilter, RepoDTO, StatsFilter, RepoStatisti
 export class WebBackend implements BackendApi {
     getCourses: () => Promise<CourseConfig[]>;
     loadCourse: (id: number) => Promise<CourseDTO>;
+    loadRepo: (courseId: number, assignment: string, name: string) => Promise<RepoDTO>;
     loadRepos: (courseId: number, assignment: string, filter: RepoFilter) => Promise<RepoDTO[]>;
     getBranchInfo(courseId: number, assignment: string, name: string){
         return Promise.resolve({

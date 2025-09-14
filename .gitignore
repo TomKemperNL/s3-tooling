@@ -9,3 +9,6 @@ data
 result*.json
 settings*.json
 *.tar
+
+usermapping*.json
+projects.txt

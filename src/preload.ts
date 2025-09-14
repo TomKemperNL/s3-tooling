@@ -1,3 +1,4 @@
+import { ScreenshotArgs } from "./backend-api";
 import { RepoFilter, Settings, StatsFilter } from "./shared";
 
 const { setupIpcPreloadHandlers } = require('./electron-setup');
@@ -19,7 +20,7 @@ contextBridge.exposeInMainWorld('electron', Object.assign(setupIpcPreloadHandler
     requestScreenshot: async (name: string) => {
         return ipcRenderer.invoke('request:screenshot', name);
     },
-    onLoadUserStats: (callback: any) => ipcRenderer.on('load-user-stats', (event: any, data: any) => {
+    onLoadUserStats: (callback: (data: ScreenshotArgs) => void) => ipcRenderer.on('load-user-stats', (event: any, data: ScreenshotArgs) => {
         callback(data);
     })
 }));

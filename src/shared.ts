@@ -76,7 +76,7 @@ export type RepoDTO = {
 }
 
 export type StatsFilter = {
-    filterString: string
+    authors?: string[],
 }
 
 export type StudentFilter = {

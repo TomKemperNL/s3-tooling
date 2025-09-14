@@ -6,6 +6,19 @@ export interface BackendApi extends CourseApi, RepoApi, StatsApi, AppApi, Settin
     
 }
 
+export interface ScreenshotArgs {
+    courseId: number,
+    assignment: string,
+    organisation: string, 
+    repository: string, 
+    user: string 
+}
+
+export interface ScreenshotApi {
+    onLoadUserStats: (callback: (data: ScreenshotArgs) => void) => void;
+    requestScreenshot: (author: string) => Promise<void>;
+}
+
 export interface AppApi {
     startup: () => Promise<Startup>
     openDirectory: (currentPath?: string) => Promise<string>
@@ -22,6 +35,7 @@ export interface CourseApi {
 }
 
 export interface RepoApi {
+    loadRepo: (courseId: number, assignment: string, name: string) => Promise<RepoDTO>
     loadRepos: (courseId: number, assignment: string, filter: RepoFilter) => Promise<RepoDTO[]>
     getBranchInfo: (courseId: number, assignment: string, name: string) => Promise<BranchInfo>
     refreshRepo: (courseId: number, assignment: string, name: string) => Promise<void>
@@ -29,9 +43,8 @@ export interface RepoApi {
 }
 
 export interface StatsApi {
-    getRepoStats: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<RepoStatisticsDTO>        
-    getGroupPie: (courseId: number, assignment: string, name: string, filter: StatsFilter) => Promise<GroupPieDTO>
-    getStudentStats: (courseId: number, assignment: string, name: string, filter: StudentFilter) => Promise<any>
+    getRepoStats: (courseId: number, assignment: string, name: string, filter?: StatsFilter) => Promise<RepoStatisticsDTO>        
+    getGroupPie: (courseId: number, assignment: string, name: string, filter?: StatsFilter) => Promise<GroupPieDTO>
     updateAuthorMapping: (courseId: number, name: string, mapping: { [author: string]: string }) => Promise<void>
     removeAlias: (courseId: number, name: string, aliases: { [canonical: string]: string[] }) => Promise<void>
 }

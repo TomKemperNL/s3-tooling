@@ -29,9 +29,9 @@ export class RepositoriesList extends LitElement {
     }
 
     dropdownChange(e: HTMLInputEvent) {
-        let selected = e.target.value;
+        const selected = e.target.value;
         if (selected) {
-            let repo = this.repos.find(r => r.name === selected);
+            const repo = this.repos.find(r => r.name === selected);
             if (repo) {
                 this.selectRepo(repo)();
             }

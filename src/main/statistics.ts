@@ -35,36 +35,36 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
     }    
 
     groupByWeek(startDate: Date, endDate: Date): StatsBuilderThenBy {
-        let result = new StatsBuilder(this.start);
+        const result = new StatsBuilder(this.start);
         result.#firstOp = (a: Statistics) => a.groupByWeek(startDate, endDate);
         return result;
     }
     groupByAuthor(authors: string[]): StatsBuilderThenBy {
-        let result = new StatsBuilder(this.start);
+        const result = new StatsBuilder(this.start);
         result.#firstOp = (a: Statistics) => a.groupByAuthor(authors);
         return result;
     }
     groupBy(groups: GroupDefinition[]): StatsBuilderThenBy {
-        let result = new StatsBuilder(this.start);
+        const result = new StatsBuilder(this.start);
         result.#firstOp = (a: Statistics) => a.groupBy(groups);
         return result;
     }
     thenByWeek(startDate: Date, endDate: Date = null): StatsBuilderThenBy {
-        let result = new StatsBuilder(this.start);
+        const result = new StatsBuilder(this.start);
         result.#firstOp = this.#firstOp;
         result.#otherOps = this.#otherOps.slice();
         result.#otherOps.push((a: Statistics) => a.groupByWeek(startDate, endDate));
         return result;
     }
     thenByAuthor(authors: string[]): StatsBuilderThenBy {
-        let result = new StatsBuilder(this.start);
+        const result = new StatsBuilder(this.start);
         result.#firstOp = this.#firstOp;
         result.#otherOps = this.#otherOps.slice();
         result.#otherOps.push((a: Statistics) => a.groupByAuthor(authors));
         return result;
     }
     thenBy(groups: GroupDefinition[]): StatsBuilderThenBy {
-        let result = new StatsBuilder(this.start);
+        const result = new StatsBuilder(this.start);
         result.#firstOp = this.#firstOp;
         result.#otherOps = this.#otherOps.slice();
         result.#otherOps.push((a: Statistics) => a.groupBy(groups));
@@ -86,7 +86,7 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
             return statObj.getLinesTotal();
         }
         if (statObj instanceof ExportingArray || statObj instanceof GroupedCollection) {
-            return statObj.map(StatsBuilder.#flatten).export();
+            return statObj.map(o => StatsBuilder.#flatten(o)).export();
         } else {
             throw new Error('Unsupported type for export: ' + typeof statObj);
         }
@@ -97,7 +97,7 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
         if(this.#firstOp){
             result = this.#firstOp(result)
         }
-        for(let op of this.#otherOps) {
+        for(const op of this.#otherOps) {
             result = StatsBuilder.#deepOp(result, op);
         }
         return StatsBuilder.#flatten(result);
@@ -107,6 +107,7 @@ export class StatsBuilder implements StatsBuilderInitial, StatsBuilderThenBy {
 
 export interface Statistics {
     mapAuthors(authorMapping: StringDict) : void;
+    filterAuthors(authors: string[]): void;
 
     getDistinctAuthors(): string[];
     getLinesTotal(): LinesStatistics;
@@ -120,11 +121,17 @@ export interface Statistics {
 export class CombinedStats implements Statistics {
     constructor(private stats: Statistics[]) {
     }
+
+    filterAuthors(authors: string[]): void {
+         for (const stat of this.stats) {
+            stat.filterAuthors(authors);
+         }
+    }
     
     getDistinctAuthors(): string[] {
-        let authors = new Set<string>();
-        for (let stat of this.stats) {
-            for (let author of stat.getDistinctAuthors()) {
+        const authors = new Set<string>();
+        for (const stat of this.stats) {
+            for (const author of stat.getDistinctAuthors()) {
                 authors.add(author);
             }
         }
@@ -137,7 +144,7 @@ export class CombinedStats implements Statistics {
 
     getLinesTotal(): LinesStatistics {
         return this.stats.reduce((acc, stat) => {
-            let lines = stat.getLinesTotal();
+            const lines = stat.getLinesTotal();
             acc.added += lines.added;
             acc.removed += lines.removed;
             return acc;
@@ -145,16 +152,16 @@ export class CombinedStats implements Statistics {
     }
 
     getDateRange(): { start: Date; end: Date; } {
-        let start = new Date(Math.min(...this.stats.map(stat => stat.getDateRange().start.getTime())));
-        let end = new Date(Math.max(...this.stats.map(stat => stat.getDateRange().end.getTime())));
+        const start = new Date(Math.min(...this.stats.map(stat => stat.getDateRange().start.getTime())));
+        const end = new Date(Math.max(...this.stats.map(stat => stat.getDateRange().end.getTime())));
         return { start, end };
     }
 
     #group(grouper: (stat: Statistics) => GroupedCollection<Statistics>) {
-        let tempResults: { [name: string]: Statistics[] } = {};
-        let groupedResult = this.stats.reduce((acc, stat) => {
-            let grouped = grouper(stat);
-            for (let key of grouped.keys) {
+        const tempResults: { [name: string]: Statistics[] } = {};
+        const groupedResult = this.stats.reduce((acc, stat) => {
+            const grouped = grouper(stat);
+            for (const key of grouped.keys) {
                 if (!acc[key]) {
                     acc[key] = [];
                 }
@@ -163,8 +170,8 @@ export class CombinedStats implements Statistics {
             return acc;
         }, tempResults);
 
-        let result: { [name: string]: Statistics } = {};
-        for (let key of Object.keys(groupedResult)) {
+        const result: { [name: string]: Statistics } = {};
+        for (const key of Object.keys(groupedResult)) {
             result[key] = new CombinedStats(groupedResult[key]);
         }
         return new GroupedCollection<Statistics>(result);
@@ -178,14 +185,14 @@ export class CombinedStats implements Statistics {
         if (!endDate) {
             endDate = this.getDateRange().end;
         }
-        let tempResults: Statistics[][] = [];
-        let groupedResult = this.stats.reduce((acc, stat) => {
-            let grouped = stat.groupByWeek(startDate, endDate);
+        const tempResults: Statistics[][] = [];
+        const groupedResult = this.stats.reduce((acc, stat) => {
+            const grouped = stat.groupByWeek(startDate, endDate);
             for (let ix = 0; ix < grouped.length; ix++) {
                 if (!acc[ix]) {
                     acc[ix] = [];
                 }
-                let flattened = grouped.export();
+                const flattened = grouped.export();
                 acc[ix].push(flattened[ix]);
             }
             return acc;
@@ -229,8 +236,8 @@ export class GroupedCollection<T> {
     }
 
     map<Y>(fn: (r: T) => Y): GroupedCollection<Y> {
-        let result: { [name: string]: Y } = {};
-        for (let key of Object.keys(this.content)) {
+        const result: { [name: string]: Y } = {};
+        for (const key of Object.keys(this.content)) {
             result[key] = fn(this.content[key]);
         }
 
@@ -238,8 +245,8 @@ export class GroupedCollection<T> {
     }
 
     filter(fn: (groupName: string, r: T) => boolean): GroupedCollection<T> {
-        let result: { [name: string]: T } = {};
-        for (let key of Object.keys(this.content)) {
+        const result: { [name: string]: T } = {};
+        for (const key of Object.keys(this.content)) {
             if (fn(key, this.content[key])) {
                 result[key] = this.content[key];
             }
@@ -247,15 +254,15 @@ export class GroupedCollection<T> {
         return new GroupedCollection(result);
     }
     combine(other: GroupedCollection<T>, merger: (t1: T, t2: T) => T): GroupedCollection<T> {
-        let result: { [name: string]: T } = {};
-        for (let key of Object.keys(this.content)) {
+        const result: { [name: string]: T } = {};
+        for (const key of Object.keys(this.content)) {
             if (other.content[key]) {
                 result[key] = merger(this.content[key], other.content[key]);
             } else {
                 result[key] = this.content[key];
             }
         }
-        for (let key of Object.keys(other.content)) {
+        for (const key of Object.keys(other.content)) {
             if (!this.content[key]) {
                 result[key] = other.content[key];
             }
@@ -265,8 +272,8 @@ export class GroupedCollection<T> {
 
     //TODO: not sure hoe we dit moeten typen...
     export(): any {
-        let result: { [name: string]: T } = {};
-        for (let key of Object.keys(this.content)) {
+        const result: { [name: string]: T } = {};
+        for (const key of Object.keys(this.content)) {
             if (isExportable(this.content[key])) {
                 result[key] = this.content[key].export();
             } else {
@@ -284,17 +291,17 @@ export class ExportingArray<T> {
     }
 
     map<Y>(fn: (r: T) => Y): ExportingArray<Y> {        
-        let result = this.items.map(fn);
+        const result = this.items.map(fn);
         return new ExportingArray(result);
     }
 
     filter(fn: (r: T) => boolean): ExportingArray<T> {
-        let result = this.items.filter(fn);
+        const result = this.items.filter(fn);
         return new ExportingArray(result);
     }
 
     combine(other: ExportingArray<T>, merger: (t1: T, t2: T) => T): ExportingArray<T> {
-        let result = [];
+        const result = [];
         for (let ix = 0; ix < Math.max(this.items.length, other.items.length); ix++) {
             if (this.items[ix] && other.items[ix]) {
                 result.push(merger(this.items[ix], other.items[ix]));
@@ -308,7 +315,7 @@ export class ExportingArray<T> {
     }
 
     pad(length: number, value: T): ExportingArray<T> {
-        let result = this.items.slice();
+        const result = this.items.slice();
         while (result.length < length) {
             result.push(value);
         }
@@ -324,8 +331,8 @@ export class ExportingArray<T> {
     }
 
     export() {
-        let result = [];
-        for (let item of this.items) {
+        const result = [];
+        for (const item of this.items) {
             if (isExportable(item)) {
                 result.push(item.export());
             } else {

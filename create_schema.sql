@@ -45,8 +45,8 @@ create table githubAccounts(
 );
 
 create table githubCommitNames(
-    organization text not null references repositories(organization),
-    repository text not null references repositories(name),
+    organization text not null,
+    repository text not null,
     name text not null,
     email text,
     githubUsername text not null references githubAccounts(username),

@@ -2,7 +2,7 @@ import { CourseConfig } from './shared';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 
-export let s2: CourseConfig = {
+export const s2: CourseConfig = {
     name: 'Software Development Fundamentals',
     canvasId: 44633,
     canvasGroupsName: 'Projectteams SD S2',
@@ -26,18 +26,43 @@ export let s2: CourseConfig = {
     ]
 }
 
+export const s3: CourseConfig = {
+    name: 'Advanced Software Development',
+    canvasId: 50055,
+    canvasGroupsName: 'Project Groups',
+    startDate: new Date(Date.parse('2025-09-01')),
+    githubStudentOrg: 'HU-SD-S3-Studenten-S2526',
+    lastMappingCheck: null,
+    lastRepoCheck: null,
+    lastSectionCheck: null,
+    assignments: [
+        {
+            githubAssignment: 's3-portfolio',
+            groupAssignment: false,
+            canvasId: 373167
+
+        },
+        {
+            githubAssignment: 's3-project',
+            groupAssignment: true,
+            canvasId: 373168
+
+        },
+    ]
+}
+
 export function importUserMappingTemp() {
     if (existsSync("C://s3-tooling-data/usermappingS2.json")) {
         console.log("Using local user mapping file");
         return readFile("C://s3-tooling-data/usermappingS2.json", { encoding: 'utf-8' })
             .then(data => JSON.parse(data))
             .then(allMapped => {
-                let result = {};
-                let classes = Object.keys(allMapped);
-                for (let c of classes) {
-                    let teams = Object.keys(allMapped[c]);
-                    for (let t of teams) {
-                        let teamMapped = allMapped[c][t].mapped;
+                const result = {};
+                const classes = Object.keys(allMapped);
+                for (const c of classes) {
+                    const teams = Object.keys(allMapped[c]);
+                    for (const t of teams) {
+                        const teamMapped = allMapped[c][t].mapped;
                         Object.assign(result, teamMapped);
                     }
                 }
@@ -53,7 +78,7 @@ export function importUserMappingTemp() {
 }
 
 
-export let cisq1: CourseConfig = {
+export const cisq1: CourseConfig = {
     name: 'Continuous Integration and Software Qua1',
     canvasId: 44760,
     canvasGroupsName: '',
@@ -72,7 +97,7 @@ export let cisq1: CourseConfig = {
     ]
 }
 
-export let bep2: CourseConfig = {
+export const bep2: CourseConfig = {
     name: 'Back-End Programming 2',
     canvasId: 44752,
     canvasGroupsName: '',
@@ -115,7 +140,7 @@ export let bep2: CourseConfig = {
     ]
 }
 
-export let bep1: CourseConfig = {
+export const bep1: CourseConfig = {
     name: 'Back-End Programming 1',
     canvasId: 39721,
     canvasGroupsName: '',
@@ -133,7 +158,7 @@ export let bep1: CourseConfig = {
     ]
 }
 
-export let cisq2: CourseConfig = {
+export const cisq2: CourseConfig = {
     name: 'Continuous Integration and Software Qua2',
     canvasId: 44762,
     canvasGroupsName: '',

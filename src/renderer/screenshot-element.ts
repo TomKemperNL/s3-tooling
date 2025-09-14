@@ -1,10 +1,19 @@
+import { provide } from "@lit/context";
 import { html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import { ipcContext } from "./contexts";
+import { BackendApi, ScreenshotApi, ScreenshotArgs } from "../backend-api";
+import { RepoDTO } from "../shared";
 
 @customElement('screenshot-element')
 export class ScreenShotElement extends LitElement {
 
-    ipc: any;
+    
+    @provide({ context: ipcContext})    
+    ipc: BackendApi & ScreenshotApi;
+
+    @property({ type: Object })
+    repo: RepoDTO;
     
 
     constructor(){
@@ -13,32 +22,36 @@ export class ScreenShotElement extends LitElement {
     }
 
     @property({ type: String })
-    message: string = 'Before';
-
-    user: string;
+    author: string;
 
     connectedCallback(): void {
         super.connectedCallback();
-        this.ipc.onLoadUserStats((data: { organisation: string, repository: string, user: string }) => {
-            this.message += ` ${data.organisation} - ${data.repository} - ${data.user}`; 
-            this.user = data.user;
+        this.ipc.onLoadUserStats((data: ScreenshotArgs) => {            
+            this.ipc.loadRepo(data.courseId, data.assignment, data.repository).then(repo => {
+                this.author = data.user;
+                this.repo = repo;
+            });            
         });
 
     }
 
-
-    protected firstUpdated(_changedProperties: PropertyValues): void {
+    async takeScreenshot(){
         setTimeout(async () => {
-            this.message += 'After';
-            await this.ipc.requestScreenshot(`${this.user}-screenshot`);
-            window.close();
-        }, 3500)
+            await this.ipc.requestScreenshot(`${this.author}-screenshot`);
+            window.close();    
+        }, 100); //Hmm, hij heeft toch nog een wait nodig, om niet midden in een render te screenshotten of zoiets?
+        
     }
 
     render() {
-        return html`
-        Hello ${this.message}
-        `;
-        
+        if(this.repo){
+            return html`
+            <author-details @author-details-rendered=${this.takeScreenshot} readonly .repo=${this.repo} .author=${this.author} ></author-details>            
+            `;    
+        }else{
+            return html`            
+            Loading...
+            `;
+        }
     }
 }

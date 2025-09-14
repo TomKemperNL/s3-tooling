@@ -9,6 +9,15 @@ export class ErrorHandlingBackendApi implements BackendApi {
     constructor(ipc: BackendApi) {
         this.ipc = ipc;
     }
+    async loadRepo(courseId: number, assignment: string, name: string) : Promise<RepoDTO>{
+        try {
+            return await this.ipc.loadRepo(courseId, assignment, name);
+        } catch (error) {
+            console.error("Error loading repository:", error);
+            alert("Failed to load repository:" + error.message);
+            return {} as RepoDTO; // Return an empty object on error
+        }
+    }
 
     async getGroupPie(courseId: number, assignment: string, name: string, filter: StatsFilter) : Promise<GroupPieDTO>{
         try {
@@ -133,16 +142,6 @@ export class ErrorHandlingBackendApi implements BackendApi {
             console.error("Error fetching repository stats:", error);
             alert("Failed to load repository stats:" + error.message);
             return {} as RepoStatisticsDTO; // Return an empty object on error
-        }
-    }
-
-    async getStudentStats(courseId: number, assignment: string, name: string, filter: StudentFilter): Promise<any> {
-        try {
-            return await this.ipc.getStudentStats(courseId, assignment, name, filter);
-        } catch (error) {
-            console.error("Error fetching student stats:", error);
-            alert("Failed to load student stats:" + error.message);
-            return {}; // Return an empty object on error
         }
     }
     test: string = "ErrorHandlingIPC";

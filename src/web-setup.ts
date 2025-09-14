@@ -2,7 +2,7 @@ import express from "express"
 import { promisify } from "util";
 import { S3App } from "./main/index";
 import * as fspath from "path";
-var passport = require('passport');
+const passport = require('passport');
 passport.serializeUser((user: any, done: any) => {
     done(null, user);
 });
@@ -15,7 +15,13 @@ passport.deserializeUser((user: any, done: any) => {
 import { Strategy as GitHubStrategy } from 'passport-github2';
 
 
-let expressApp = express();
+interface ExpressExtension {
+    parsedParams?: { [key: string]: any };
+}
+
+type ExtendedRequest = ExpressExtension & express.Request;
+
+const expressApp = express();
 const listen = promisify(expressApp.listen).bind(expressApp);
 
 const PORT = process.env.PORT || 3000;
@@ -63,9 +69,11 @@ export async function setupWebHandlers(app: S3App) {
       }
     ));
 
-    let apiRouter = express.Router();
+    const apiRouter = express.Router();
 
     expressApp.use('/assets', express.static('dist/src/web/assets'));
+    expressApp.use('/favicon.ico', express.static('dist/src/web/static'));
+    expressApp.use('/.well-known/*wtf', express.static('dist/src/web/static'));
     
     expressApp.use(session({
         store: new SQLiteStore({ db: 'sessions.sqlite3' }),
@@ -105,9 +113,42 @@ export async function setupWebHandlers(app: S3App) {
         res.sendFile(fspath.resolve(process.cwd(), 'dist', 'src', 'web', 'web.html'));
     });
 
-    expressApp.use(async (req, res, next) => {
-        let requestedPathWithoutLeadingSlash = req.path.substring(1);
-        if(req.user && await app.isAuthorized((<any>req.user).username, '', '')){
+    expressApp.param('cid', (req: ExtendedRequest, res, next, cid) => {
+        req.parsedParams = req.parsedParams || {};
+        req.parsedParams['cid'] = parseInt(cid);
+        next(); 
+    });
+
+    expressApp.param('assignment', (req: ExtendedRequest, res, next, assignment) => {
+        req.parsedParams = req.parsedParams || {};
+        req.parsedParams['assignment'] = assignment
+        next(); 
+    });
+
+    expressApp.param('name', (req: ExtendedRequest, res, next, name) => {
+        req.parsedParams = req.parsedParams || {};
+        req.parsedParams['name'] = name;
+        next(); 
+    });    
+
+    //Dit is lelijk as heck, en moet anders! 
+    expressApp.get('/stats/:cid/:assignment/:name', (req, res, next) => {
+        next()
+    });
+    expressApp.get('/api/stats/:cid/:assignment/:name/weekly', (req, res, next) => {
+        next()
+    });
+    expressApp.get('/api/stats/:cid/:assignment/:name/pie', (req, res, next) => {
+        next()
+    });
+    expressApp.use(async (req: ExtendedRequest, res, next) => {
+        const requestedPathWithoutLeadingSlash = req.path.substring(1);
+        // console.debug('Checking auth for ', req.path, req.parsedParams, req.user);
+        if(req.user && req.parsedParams && await app.isAuthorized((<any>req.user).username, (<any>req).session, {
+            courseId: req.parsedParams['cid'] ? parseInt(req.parsedParams['cid']) : undefined,
+            assignment: req.parsedParams['assignment'],
+            repository: req.parsedParams['name'] //...
+        })){
             next();
         }else if(req.user){
             if(req.accepts('html')){
@@ -129,10 +170,10 @@ export async function setupWebHandlers(app: S3App) {
         res.sendFile(fspath.resolve(process.cwd(), 'dist', 'src', 'web', 'web.html'));
     });
 
-    let appAsAny = <any> app;
-    for(let registeredParam of paramRegistry){
-        for(let key of Object.keys(getRegistry)){
-            let entry = getRegistry[key];
+    const appAsAny = <any> app;
+    for(const registeredParam of paramRegistry){
+        for(const key of Object.keys(getRegistry)){
+            const entry = getRegistry[key];
             if(entry.target.constructor === registeredParam.target && entry.propertyKey === registeredParam.propertyKey) {
                entry.params.push({ pathPart: registeredParam.pathPart, parameterIndex: registeredParam.parameterIndex });                
             }
@@ -141,12 +182,12 @@ export async function setupWebHandlers(app: S3App) {
 
 
     console.log('Setting up web handlers for ', Object.keys(getRegistry));
-
-    for(let path of Object.keys(getRegistry)) {
-        let entry = getRegistry[path];
+    
+    for(const path of Object.keys(getRegistry)) {
+        const entry = getRegistry[path];
         let owningObject = app;
         
-        for(let key of Object.keys(app)){
+        for(const key of Object.keys(app)){
             if(entry.target.constructor === appAsAny[key].constructor){
                 owningObject = appAsAny[key];
                 break;
@@ -154,11 +195,11 @@ export async function setupWebHandlers(app: S3App) {
         }
         console.log('Adding GET for ', path);
         apiRouter.get(path, async (req, res) => {            
-            let params : any[] = [];            
-            for(let param of entry.params){                
+            const params : any[] = [];            
+            for(const param of entry.params){                
                 let value = undefined;
                 if(param.pathPart){
-                    let key = param.pathPart.replace(':', '');
+                    const key = param.pathPart.replace(':', '');
                     value = req.params[key];
                 }
                 if(/^\d+$/.test(value)){
@@ -170,12 +211,16 @@ export async function setupWebHandlers(app: S3App) {
             }
             console.log('calling ', owningObject.constructor.name, entry.propertyKey, 'with params', params);
             
-            let result = entry.handler.apply(owningObject, params)
-            if(result.then){
-                result.then((r: any) => res.send(r));
-            }else{
+            try{
+                let result = entry.handler.apply(owningObject, params);
+                if(result.then){
+                    result = await result;
+                }
+                
                 res.send(result);
-            }            
+            }catch(e){
+                console.error('Error in ', owningObject.constructor.name, entry.propertyKey, 'with args:', params, ':', e);                
+            }
         });        
     }
     

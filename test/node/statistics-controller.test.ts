@@ -54,7 +54,7 @@ const someCourse: CourseConfig = {
 
 test("canGetEmptyStats", async () => {
   let result = await statisticsController.getRepoStats(
-    someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" })
+    someCourse.canvasId, projectAssignmentName, "someRepo")
   expect(result).toStrictEqual({
     "aliases": {},
     "authors": [ ],
@@ -88,7 +88,7 @@ test("Can Get Merged Stats", async () => {
   ];
 
   let result = await statisticsController.getRepoStats(
-    someCourse.canvasId, projectAssignmentName, "someRepo", { filterString: "" });
+    someCourse.canvasId, projectAssignmentName, "someRepo");
   expect(result).toStrictEqual(
     {
       "aliases": {},
@@ -104,87 +104,16 @@ test("Can Get Merged Stats", async () => {
       }]  
     }
   );
-
-});
-
-test("Can Get User Stats with only Commits", async () => {
-  fsFake.commits = [
-    {
-      author: "Bob", hash: "ABCD1234", subject: "Feature X", date: new Date('2023-10-01'),
-      changes: [
-        { added: 10, removed: 2, path: "file1.js" },
-      ]
-    }
-  ];
-
-  let result = await statisticsController.getStudentStats(
-    someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
-
-  expect(result).toStrictEqual(
-    {
-      "aliases": {},
-      "total": {
-        "Backend": {
-          "added": 0,
-          "removed": 0
-        },
-        "Frontend": {
-          "added": 10,
-          "removed": 2
-        },
-        "Markup": {
-          "added": 0,
-          "removed": 0
-        },
-        "Docs": {
-          "added": 0,
-          "removed": 0
-        },
-        "Communication": {
-          "added": 0,
-          "removed": 0
-        },
-        "Other": {
-          "added": 0,
-          "removed": 0
-        }
-      },
-      "weekly": [
-        {
-          "Backend": {
-            "added": 0,
-            "removed": 0
-          },
-          "Frontend": {
-            "added": 10,
-            "removed": 2
-          },
-          "Markup": {
-            "added": 0,
-            "removed": 0
-          },
-          "Docs": {
-            "added": 0,
-            "removed": 0
-          },
-          "Communication": {
-            "added": 0,
-            "removed": 0
-          },
-          "Other": {
-          "added": 0,
-          "removed": 0
-        }
-        }
-      ]
-    }
-  );
-
 });
 
 
-test("Can Get User Stats with only Project-stuff", async () => {
 
+test("Can Get Merged Group-Pie", async () => {
+  fsFake.blame = {
+    "Backend": {
+      "Bob": 10
+    }
+  }
   githubFake.pullRequests = [
     { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
   ];
@@ -192,66 +121,35 @@ test("Can Get User Stats with only Project-stuff", async () => {
     { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
   ];
 
-  let result = await statisticsController.getStudentStats(
-    someCourse.canvasId, projectAssignmentName, "someRepo", { authorName: "Bob" });
+  let result = await statisticsController.getGroupPie(
+    someCourse.canvasId, projectAssignmentName, "someRepo");
   expect(result).toStrictEqual(
     {
       "aliases": {},
-      "total": {
-        "Backend": {
-          "added": 0,
-          "removed": 0
-        },
-        "Frontend": {
-          "added": 0,
-          "removed": 0
-        },
-        "Markup": {
-          "added": 0,
-          "removed": 0
-        },
-        "Docs": {
-          "added": 0,
-          "removed": 0
-        },
-        "Communication": {
-          "added": 4,
-          "removed": 0
-        },
-        "Other": {
-          "added": 0,
-          "removed": 0
-        },
-      },
-      "weekly": [
-        {
-          "Backend": {
-            "added": 0,
-            "removed": 0
-          },
-          "Frontend": {
-            "added": 0,
-            "removed": 0
-          },
-          "Markup": {
-            "added": 0,
-            "removed": 0
-          },
-          "Docs": {
-            "added": 0,
-            "removed": 0
-          },
-          "Communication": {
-            "added": 4,
-            "removed": 0
-          },
-          "Other": {
-            "added": 0,
-            "removed": 0
-          }
-        }
-      ]
+      "groupedPie": {
+        "Backend": { "Bob": 10 },
+        "Communication": { "Bob": 4 }
+      }
     }
   );
+});
 
+
+test("Can Filter Authors", async () => {
+  fsFake.blame = {
+    "Backend": {
+      "Bob": 10,
+      "Fred": 33
+    }
+  }
+  githubFake.pullRequests = [
+    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
+  ];
+  githubFake.issues = [
+    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
+  ];
+
+  let result = await statisticsController.getGroupPie(
+    someCourse.canvasId, projectAssignmentName, "someRepo", { authors: ["Bob"] });
+  expect(result.groupedPie["Backend"]["Fred"]).toBe(undefined);
 });

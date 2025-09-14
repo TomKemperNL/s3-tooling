@@ -2,6 +2,7 @@ import { Chart } from "chart.js";
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { ref, createRef } from 'lit/directives/ref.js';
+import { ChartRenderedEvent } from "./events";
 
 @customElement('stacked-bar-chart')
 export class StackedBarChart extends LitElement {
@@ -39,6 +40,11 @@ export class StackedBarChart extends LitElement {
                     datasets: this.datasets
                 },
                 options: {
+                    animation: {
+                        onComplete: (c) => {
+                            this.dispatchEvent(new ChartRenderedEvent())
+                        }
+                    },
                     plugins: {
                         legend: {
                             display: false

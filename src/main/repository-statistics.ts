@@ -7,7 +7,7 @@ export let ignoredAuthors = [
     'github-classroom[bot]'
 ]
 
-let ignoredAuthorsEnv = process.env.IGNORE_AUTHORS;
+const ignoredAuthorsEnv = process.env.IGNORE_AUTHORS;
 if (ignoredAuthorsEnv) {
     ignoredAuthors = ignoredAuthors.concat(ignoredAuthorsEnv.split(',').map(a => a.trim()));
 }
@@ -58,7 +58,7 @@ export class RepositoryStatistics implements Statistics {
     }
 
     concat(other: RepositoryStatistics): RepositoryStatistics {
-        let combinedData = this.data.concat(other.data);
+        const combinedData = this.data.concat(other.data);
         return new RepositoryStatistics(combinedData, this.options);
     }
 
@@ -76,13 +76,13 @@ export class RepositoryStatistics implements Statistics {
             change.removed = '-';
         }
 
-        let addInc = change.added === '-' ? 0 : change.added;
-        let remInc = change.removed === '-' ? 0 : change.removed;
+        const addInc = change.added === '-' ? 0 : change.added;
+        const remInc = change.removed === '-' ? 0 : change.removed;
         return { added: acc.added + addInc, removed: acc.removed + remInc };
     }
 
     static #addWeek(date: Date) {
-        let newDate = new Date(date);
+        const newDate = new Date(date);
         const weekMs = 7 * 24 * 60 * 60 * 1000;
         return new Date(newDate.valueOf() + weekMs);
     }
@@ -97,16 +97,16 @@ export class RepositoryStatistics implements Statistics {
         if (someData.length === 0) {
             return [];
         }
-        let commits = someData.toSorted((a, b) => a.date.valueOf() - b.date.valueOf());
-        let start = startDate || commits[0].date;
-        let end = endDate || commits[commits.length - 1].date;
+        const commits = someData.toSorted((a, b) => a.date.valueOf() - b.date.valueOf());
+        const start = startDate || commits[0].date;
+        const end = endDate || commits[commits.length - 1].date;
 
-        let result = []
+        const result = []
         let currentCommits = [];
         let nextDate = RepositoryStatistics.#addWeek(start);
         let index = 0;
         while (index < commits.length) {
-            let c = commits[index];
+            const c = commits[index];
             if (c.date < nextDate) {
                 currentCommits.push(c);
                 index++;
@@ -126,6 +126,10 @@ export class RepositoryStatistics implements Statistics {
         return result;
     }
 
+    filterAuthors(authors: string[]): void {
+        this.data = this.data.filter(c => authors.includes(c.author));
+    }
+
     mapAuthors(authorMapping: StringDict){
         this.data.forEach(commit => {
             if (authorMapping[commit.author]) {
@@ -143,26 +147,26 @@ export class RepositoryStatistics implements Statistics {
     }
 
     getDateRange(): { start: Date; end: Date; } {
-        let start = new Date(Math.min(...this.data.map(stat => stat.date.getTime())));
-        let end = new Date(Math.max(...this.data.map(stat => stat.date.getTime())));
+        const start = new Date(Math.min(...this.data.map(stat => stat.date.getTime())));
+        const end = new Date(Math.max(...this.data.map(stat => stat.date.getTime())));
         return { start, end };
     }
 
     groupByWeek(startDate: Date = null, endDate: Date = null): ExportingArray<RepositoryStatistics> {
-        let stats: RepositoryStatistics[] = this.#privGetCommitsPerWeek(this.data, startDate, endDate)
+        const stats: RepositoryStatistics[] = this.#privGetCommitsPerWeek(this.data, startDate, endDate)
             .map(cs => new RepositoryStatistics(cs, this.options))
         return new ExportingArray<RepositoryStatistics>(stats);
     }
 
     groupByAuthor(authors: string[]): GroupedCollection<RepositoryStatistics> {
-        let result: { [name: string]: RepositoryStatistics } = {};
-        for (let author of this.getDistinctAuthors()) {
-            let authorCommits = this.data.filter(c => c.author === author);
-            let authorResult = new RepositoryStatistics(authorCommits, this.options);
+        const result: { [name: string]: RepositoryStatistics } = {};
+        for (const author of this.getDistinctAuthors()) {
+            const authorCommits = this.data.filter(c => c.author === author);
+            const authorResult = new RepositoryStatistics(authorCommits, this.options);
             result[author] = authorResult;
         }
 
-        for (let author of authors) {
+        for (const author of authors) {
             if (!result[author]) {
                 result[author] = new RepositoryStatistics([], this.options);
             }
@@ -174,15 +178,15 @@ export class RepositoryStatistics implements Statistics {
 
 
     groupBy(groups: GroupDefinition[]): GroupedCollection<Statistics> {
-        let intermediate: { [name: string]: LoggedCommit[] } = {};        
-        let otherCommits = [];
+        const intermediate: { [name: string]: LoggedCommit[] } = {};        
+        const otherCommits = [];
 
-        for(let commit of this.data){      
-            let copyCommit = { ...commit, changes: [...commit.changes] }; // Maak een kopie van de commit om te voorkomen dat we de originele data aanpassen      
-            for(let group of groups){
+        for(const commit of this.data){      
+            const copyCommit = { ...commit, changes: [...commit.changes] }; // Maak een kopie van de commit om te voorkomen dat we de originele data aanpassen      
+            for(const group of groups){
                 if(group.extensions){
-                    let [matchingChanges, nonMatchingChanges] = partition(copyCommit.changes, (c: LoggedChange) => group.extensions.some(ext => c.path.toLocaleLowerCase().endsWith(ext.toLocaleLowerCase())))
-                    let filteredCommit = {
+                    const [matchingChanges, nonMatchingChanges] = partition(copyCommit.changes, (c: LoggedChange) => group.extensions.some(ext => c.path.toLocaleLowerCase().endsWith(ext.toLocaleLowerCase())))
+                    const filteredCommit = {
                         ...copyCommit,
                         changes: matchingChanges
                     };
@@ -200,8 +204,8 @@ export class RepositoryStatistics implements Statistics {
             }
         }
 
-        let result : Record<string, Statistics> = {};
-        for(let group of groups){
+        const result : Record<string, Statistics> = {};
+        for(const group of groups){
             if (intermediate[group.name]) {
                 result[group.name] = new RepositoryStatistics(intermediate[group.name], this.options);
             } else if (group.other) {

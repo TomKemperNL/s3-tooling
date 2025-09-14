@@ -1,0 +1,1 @@
+cat ./projects.txt | %{ npm run screenshots $_ }

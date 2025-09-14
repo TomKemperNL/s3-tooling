@@ -19,9 +19,9 @@ export function ipc(channel: string){
 
 export function setupIpcPreloadHandlers(){
     require('./main/index')  //De Electron-preload require doet aan 'tree-shaking' (deeeenk ik? Who knows, het is niet gedocumenteerd), en anders ziet ie de @ipc-decorators niet, daarom staat deze bullshit regel hier.
-    let result : {[funcName: string]: any} = {};
-    for(let channel of Object.keys(decoratorRegistry)){ 
-        let entry = decoratorRegistry[channel];
+    const result : {[funcName: string]: any} = {};
+    for(const channel of Object.keys(decoratorRegistry)){ 
+        const entry = decoratorRegistry[channel];
         result[entry.propertyKey] = (...args: any[]) => {
             console.log('calling channel:', channel, 'with args:', args);
             return ipcRenderer.invoke(channel, ...args);
@@ -31,14 +31,14 @@ export function setupIpcPreloadHandlers(){
 }
 
 export async function setupIpcMainHandlers(app: S3App ) {
-    let appAsAny = <any> app;
+    const appAsAny = <any> app;
 
-    for(let channel of Object.keys(decoratorRegistry)){        
+    for(const channel of Object.keys(decoratorRegistry)){        
         ipcMain.handle(channel, function(e, ...args){            
             console.log('handling channel:', channel, 'with args:', args);
-            let entry = decoratorRegistry[channel];
+            const entry = decoratorRegistry[channel];
             let owningObject = app;
-            for(let key of Object.keys(app)){
+            for(const key of Object.keys(app)){
                 if(entry.target.constructor === appAsAny[key].constructor){
                     owningObject = appAsAny[key];
                     break;
@@ -48,14 +48,11 @@ export async function setupIpcMainHandlers(app: S3App ) {
         });
     }
 
-    ipcMain.handle("request:screenshot", async (e, fileName: string) => {
-        await app.screenshotController.requestScreenshot(e.sender, fileName);
-    });
 
     ipcMain.handle("startup", async (e) => {
-        let settings = app.settings;
+        const settings = app.settings;
 
-        let allSettings = !!settings.canvasToken && !!settings.githubToken && !!settings.dataPath;
+        const allSettings = !!settings.canvasToken && !!settings.githubToken && !!settings.dataPath;
         if(allSettings){
             return {
                 validSettings: existsSync(settings.dataPath),
@@ -78,7 +75,7 @@ export async function setupIpcMainHandlers(app: S3App ) {
         if(existingValue){
             suggestedPath = existingValue;
         }
-        let dialogResult = await dialog.showOpenDialog({
+        const dialogResult = await dialog.showOpenDialog({
             title: "Select Data Directory",
             properties: ["openDirectory", "createDirectory", "dontAddToRecent", "promptToCreate"],
             defaultPath: suggestedPath,

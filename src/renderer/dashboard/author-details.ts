@@ -1,33 +1,94 @@
-import { html, LitElement, PropertyValues } from "lit";
+import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { AuthorStatisticsDTO, RepoDTO } from "../../shared";
-import { classMap } from "lit/directives/class-map.js";
-import { consume } from "@lit/context";
-import { ipcContext } from "../contexts";
+import { LinesStatistics, RepoDTO, RepoStatisticsDTO, GroupPieDTO } from "../../shared";
+import { when } from "lit/directives/when.js";
+import { map } from "lit/directives/map.js";
 import { BackendApi } from "../../backend-api";
+import { classMap } from "lit/directives/class-map.js";
+import { ipcContext } from "../contexts";
+import { consume } from "@lit/context";
+import { HTMLInputEvent } from "../events";
+import { AuthorMappedEvent, EnabledAuthorsChanged, RemoveAliasEvent } from "./author-list";
+import { EnabledItemsChanged } from "./group-list";
+
 
 @customElement('author-details')
-export class AuthorDetails extends LitElement {
-
+export class RepositoryDetails extends LitElement {
     @consume({context: ipcContext})
     ipc: BackendApi;
-
-    @property({ type: Object, state: true })
-    authorStats: AuthorStatisticsDTO = {
-        total: {},
-        weekly: []
+    
+    constructor() {
+        super();
+        this.repoStats = undefined;
     }
 
-    @property({ type: Boolean })
-    loading: boolean = false;
-
-    @property({type: String})
-    authorName: string = "";
+    @property({ type: String })
+    author: string;
 
     @property({ type: Object })
     repo: RepoDTO;
 
-    private colors = [        
+    @property({ type: Boolean})
+    readonly: boolean = true;
+
+    @property({ type: Object, state: true })
+    repoStats: RepoStatisticsDTO;
+
+    @property({ type: Object, state: true })
+    groupPie?: GroupPieDTO;
+
+    @property({ type: Boolean, state: true })
+    loading: boolean = false;
+
+    @property({ type: Array, state: true })
+    allGroups: string[] = [];
+
+    @property({ type: Array, state: true })
+    enabledGroups: string[] = [];
+
+    
+    protected updated(_changedProperties: PropertyValues): void {
+        if (_changedProperties.has('repo')) {
+            this.loading = true;
+
+            this.repoStats = undefined;
+            this.groupPie = undefined;
+            
+            const gettingRepos = this.ipc.getRepoStats(this.repo.courseId, this.repo.assignment, this.repo.name, { authors: [this.author] });
+            const gettingGroupPie = this.ipc.getGroupPie(this.repo.courseId, this.repo.assignment, this.repo.name, { authors: [this.author] });
+
+            Promise.all([gettingRepos, gettingGroupPie]).then(([repoStats, groupPie]) => {
+                this.repoStats = repoStats;                
+                this.groupPie = groupPie;
+                this.loading = false;
+                
+            });
+        }
+        if (_changedProperties.has('repoStats')) {            
+            if(this.repoStats){                
+                this.allGroups = this.repoStats.groups;
+                this.enabledGroups = this.repoStats.groups;
+            }            
+        }
+    }        
+
+    colors = [//Heb CoPilot maar de kleuren laten kiezen...
+        "rgba(223,159,159,1)",
+        "rgba(223,191,159,1)",
+        "rgba(223,223,159,1)",
+        "rgba(191,223,159,1)",
+        "rgba(159,223,159,1)",
+        "rgba(159,223,191,1)",
+        "rgba(159,223,223,1)",
+        "rgba(159,191,223,1)",
+        "rgba(159,159,223,1)",
+        "rgba(191,159,223,1)",
+        "rgba(223,159,223,1)",
+        "rgba(223,159,191,1)"
+    ]
+
+    //TODO: Copy-pasta van author-details fixen
+    groupColors = [        
         "rgba(255, 99, 132, 0.8)",
         "rgba(54, 162, 235, 0.8)",
         "rgba(255, 206, 86, 0.8)",
@@ -36,47 +97,47 @@ export class AuthorDetails extends LitElement {
         "rgba(88, 88, 88, 0.8)",
     ]
 
-    protected updated(_changedProperties: PropertyValues): void {
-        if(_changedProperties.has('repo') || _changedProperties.has('authorName')) {
-            this.loading = true;
-
-            this.ipc.getStudentStats(
-                this.repo.courseId,
-                this.repo.assignment,
-                this.repo.name,
-                { authorName: this.authorName }).then(
-                    authorStats => {
-                        this.authorStats = authorStats;
-                        this.loading = false;
-                    });
+    groupToColor(group: string): string {
+        const groups = Object.keys(this.groupPie?.groupedPie || []);
+        if (groups.indexOf(group) === -1) {
+            return 'rgba(0,0,0,1)';
+        } else {
+            return this.groupColors[groups.indexOf(group) % this.groupColors.length];
         }
     }
 
-    toDatasets(): any[] {
-        let datasets: any[] = [];
-
-        let groups = Object.keys(this.authorStats.total);
-
-        for (let group of groups) {            
-            let addedPerWeek = this.authorStats.weekly.map(w => w[group].added);
-            let removedPerWeek = this.authorStats.weekly.map(w => w[group].removed * -1);
-
-            let color = this.colors[groups.indexOf(group) % this.colors.length];
-
-            let options = {
+    toGroupBarchart(statsByWeek: Record<string, Record<string,LinesStatistics>>[]): any[] {
+        const dataPerWeek: Record<string, LinesStatistics>[] = [];
+        for(const week of statsByWeek){
+            const weekData : Record<string, LinesStatistics> = {};
+            for (const group of Object.keys(week)) {
+                const groupData = { added: 0, removed: 0 };
+                for(const author of Object.keys(week[group])) {                   
+                    groupData.added += week[group][author].added;
+                    groupData.removed -= week[group][author].removed;
+                }
+                weekData[group] = groupData;
+            }
+            dataPerWeek.push(weekData);
+        }
+        const datasets: any[] = [];
+        for(const group of this.enabledGroups) {
+            const addedNumbers = dataPerWeek.map(w => w[group]?.added || 0);
+            const removedNumbers = dataPerWeek.map(w => w[group]?.removed || 0);
+            const options = {
                 label: group,
-                backgroundColor: color,
-                borderColor: color,
+                backgroundColor: this.groupToColor(group),
+                borderColor: this.groupToColor(group),
                 borderWidth: 1
             }
 
             datasets.push({
-                data: addedPerWeek,
+                data: addedNumbers,
                 ...options
             });
 
             datasets.push({
-                data: removedPerWeek,
+                data: removedNumbers,
                 ...options
             });
         }
@@ -84,25 +145,124 @@ export class AuthorDetails extends LitElement {
         return datasets;
     }
 
-    render() {
-        let labels: string[] = [];
-        let datasets: any[] = [];
+    static styles = css`
+    :host {
+        display: grid;
+        grid-template-areas:
+            "title   title     title"            
+            "groups  pieG      barG"            
+            ;
+        grid-template-columns: 1fr 1fr 3fr;
+        /* grid-template-rows: min-content minmax(25%, 50%) 1fr; */
+    }
 
-        if (this.authorStats) {
-            for (let i = 0; i < this.authorStats.weekly.length; i++) {
+    /* :host > div {
+        border: 1px dashed slategray
+    } */
+
+    .loading {
+        opacity: 0.5;
+    }
+    ul {
+        list-style: none;
+    }
+    `
+
+    #barsDone: boolean = false;
+    #pieDone: boolean = false;
+
+    barsRendered() {
+        this.#barsDone = true;
+        if(this.#pieDone){
+            this.dispatchEvent(new CustomEvent('author-details-rendered'));
+        }
+        
+    }
+    pieRendered() {
+        this.#pieDone = true;
+        if(this.#barsDone){
+            this.dispatchEvent(new CustomEvent('author-details-rendered'));
+        }
+    }
+
+    render() {
+        const labels: string[] = [];
+        let groupBarcharts: any[] = [];
+
+        const groupLabels: string[] = [];
+        const groupValues: number[] = [];
+        const groupColors: string[] = [];
+
+
+        if (this.repoStats) {
+
+            for (let i = 0; i < this.repoStats.week_group_author.length; i++) {
                 labels.push('Week ' + (i + 1));
             }
-            datasets = this.toDatasets();
+            groupBarcharts = this.toGroupBarchart(this.repoStats.week_group_author);
         }
 
+        if(this.groupPie){            
+            for (const g of Object.keys(this.groupPie?.groupedPie)) {
+                if( this.enabledGroups.indexOf(g) === -1) {
+                    continue;
+                }
+                groupLabels.push(g);
+
+                const authorTotals = 0;                
+                groupValues.push(authorTotals);
+                groupColors.push(this.groupToColor(g));
+            }
+        }
+
+        const groupList = this.allGroups.map(g => ({
+            name: g,
+            enabled: this.enabledGroups.indexOf(g) !== -1,
+            color: this.groupToColor(g),
+        }));
+
         return html`
-            <h3>Author Details: ${this.authorName}</h3>
-            <stacked-bar-chart 
-                            class=${classMap({ loading: this.loading })} 
-                            style="grid-area: bar" 
-                            .labels=${labels} 
-                            .datasets=${datasets}></stacked-bar-chart>
+        <div style="grid-area: title">
+            <h3><a href=${this.repo.url.replace("https", "external")}>${this.repo.name}</a> - ${this.author}</h3>           
+        </div>        
+       
+       
+        <div style="grid-area: pieG">        
+        ${when(this.groupPie, () => html`
+            <h4>Regels code in eindproduct per groepering</h4>
+            <pie-chart 
+                class=${classMap({ loading: this.loading, chart: true })} 
+                
+                .labels=${groupLabels}
+                .values=${groupValues}
+                .colors=${groupColors}
+                @chart-rendered=${this.pieRendered}></pie-chart>
+        `)}
+        </div>
+
+        <div style="grid-area: groups;" class=${classMap({ loading: this.loading })}>
+            <ul>
+                ${when(this.allGroups.length > 0, () => html`                    
+                    <h4>Groeperingen</h4>
+                        <group-list 
+                            .groups=${groupList}                            
+                            ></group-list>                
+                    `)}                
+            </ul>
             
+        </div>
+     
+        <div style="grid-area: barG">
+        ${when(this.repoStats, () => html`
+            <h4>Changes per week per groepering</h4>
+            <stacked-bar-chart 
+                class=${classMap({ loading: this.loading, chart: true  })} 
+                
+                .labels=${labels} 
+                .datasets=${groupBarcharts}
+                @chart-rendered=${this.barsRendered}></stacked-bar-chart>           
+        `)}
+        </div>
         `;
     }
 }

@@ -24,13 +24,13 @@ export interface AssignmentResponse {
 
 export interface SubmissionCommentResponse {
     id: number;
-    author_id: number;    
+    author_id: number;
     comment: string;
     created_at: string;
 }
 
 export interface SubmissionResponse {
-    id: number, 
+    id: number,
     user_id: number,
     submission_comments: SubmissionCommentResponse[],
 }
@@ -98,21 +98,21 @@ export function getUsernameFromUrl(url: string, assignmentName: string) {
     }
 
     //Https url
-    if (url.startsWith('https://github.com')) {
-        const exp = `https\:\/\/github\.com\/(.+?)\/${assignmentName}-(.+)`;
+    if(url.startsWith('https://github.com')){
+        const exp = `https://github.com/(.+?)/${assignmentName}-(.+)`;
         const match = url.match(exp);
-        if (match && match.length > 2) {
-            let username = match[2].replace('.git', '').split('/')[0];
+        if(match && match.length > 2){ 
+            const username = match[2].replace('.git', '').split('/')[0];
             return username;
         }
     }
 
     //SSH url
-    if (url.startsWith('git@github.com')) {
-        const exp = `git\@github\.com\:(.+?)\/${assignmentName}-(.+)`;
+    if(url.startsWith('git@github.com')){
+        const exp = `git@github.com:(.+?)/${assignmentName}-(.+)`;
         const match = url.match(exp);
-        if (match && match.length > 2) {
-            let username = match[2].replace('.git', '').split('/')[0];
+        if(match && match.length > 2){
+            const username = match[2].replace('.git', '').split('/')[0];
             return username;
         }
     }
@@ -131,7 +131,7 @@ export class CanvasClient {
     }
 
     async getSelf() {
-        let response = await fetch(`${this.#baseUrl}/users/self`, {
+        const response = await fetch(`${this.#baseUrl}/users/self`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${this.#token}`
@@ -144,13 +144,13 @@ export class CanvasClient {
     }
 
     async #getPage<T>(url: string, page: number, pageSize: number, otherOptions: SimpleDict = {}): Promise<PageResponse<T>> {
-        let options = {
+        const options = {
             page: page,
             per_page: pageSize,
             ...otherOptions
         };
 
-        let response = await fetch(`${this.#baseUrl}/${url}?${formatQueryString(options)}`, {
+        const response = await fetch(`${this.#baseUrl}/${url}?${formatQueryString(options)}`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${this.#token}`
@@ -159,14 +159,14 @@ export class CanvasClient {
         if (!response.ok) {
             throw new Error(`Error fetching ${url}: ${response.statusText}`);
         }
-        let linkHeader = response.headers.get('link');
-        let links = linkHeader ? parseLinkHeader(linkHeader) : {};
+        const linkHeader = response.headers.get('link');
+        const links = linkHeader ? parseLinkHeader(linkHeader) : {};
         let hasNext = links['next'] !== undefined;
-        let isLast = links['last'] === links['current'];
+        const isLast = links['last'] === links['current'];
         if (hasNext && isLast) {
             hasNext = false;
         }
-        let data: any = await response.json();
+        const data : any = await response.json();
         return {
             data: data,
             hasNext: hasNext
@@ -195,13 +195,13 @@ export class CanvasClient {
     }
 
     async getGroups(course: { course_id: number }, category_name: string): Promise<GroupResponse[]> {
-        let categories: any[] = await this.getPages(`courses/${course.course_id}/group_categories`);
-        let category = categories.find(c => c.name === category_name);
+        const categories : any[] = await this.getPages(`courses/${course.course_id}/group_categories`);
+        const category = categories.find(c => c.name === category_name);
         if (!category) {
             throw new Error(`Category ${category_name} not found`);
         }
-        let groups: any = await this.getPages(`group_categories/${category.id}/groups`);
-        for (let g of groups) {
+        const groups : any = await this.getPages(`group_categories/${category.id}/groups`);
+        for(const g of groups){
             g.students = await this.getPages(`groups/${g.id}/users`);
         }
         return groups;
@@ -254,10 +254,10 @@ export class CanvasClient {
     }
 
     async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string): Promise<StringDict> {
-        let mapping: { [key: string]: string } = {};
-        let result: any = await this.getPages(`courses/${course.course_id}/assignments/${assignment.assignment_id}/submissions`, { 'include[]': 'user' });
-        for (let r of result) {
-            let user = r.user;
+        const mapping : {[key: string]: string} = {};
+        const result: any = await this.getPages(`courses/${course.course_id}/assignments/${assignment.assignment_id}/submissions`, { 'include[]': 'user' });
+        for (const r of result) {
+            const user = r.user;
             if (user && user.login_id) {
                 mapping[user.login_id] = getUsernameFromUrl(r.url, ghAssignmentName);
             }

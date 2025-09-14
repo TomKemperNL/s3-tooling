@@ -12,7 +12,7 @@ export class FakeGithubClient {
     members: {[repo: string]: {login: string}[]} = {};
     async getMembers(org: string, repo: string){
         this.apiCalls++;
-        return this.members[repo];
+        return this.members[repo] || [];
     }
 
     issues: Issue[] = [];

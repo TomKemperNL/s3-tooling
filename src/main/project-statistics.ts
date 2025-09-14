@@ -13,17 +13,29 @@ export class ProjectStatistics implements Statistics {
         }
     }
 
+    filterAuthors(authors: string[]): void {
+        this.issues = this.issues.filter(i => authors.includes(i.author));
+        this.issues.forEach(i => {
+            i.comments = i.comments.filter(c => authors.includes(c.author));
+        });
+        this.prs = this.prs.filter(pr => authors.includes(pr.author));
+        this.prs.forEach(pr => {
+            pr.comments = pr.comments.filter(c => authors.includes(c.author));
+        });
+        this.comments = this.comments.filter(c => authors.includes(c.author));
+    }
+
     getDistinctAuthors(): string[] {
-        let authors = new Set<string>();
-        for (let i of this.issues) {
+        const authors = new Set<string>();
+        for (const i of this.issues) {
             authors.add(i.author);
-            for (let c of i.comments) {
+            for (const c of i.comments) {
                 authors.add(c.author);
             }
         }
-        for (let pr of this.prs) {
+        for (const pr of this.prs) {
             authors.add(pr.author);
-            for (let c of pr.comments) {
+            for (const c of pr.comments) {
                 authors.add(c.author);
             }
         }
@@ -31,12 +43,12 @@ export class ProjectStatistics implements Statistics {
     }
 
     getDateRange(): { start: Date; end: Date; } {
-        let start = new Date(Math.min(
+        const start = new Date(Math.min(
             ...this.issues.map(i => i.createdAt.getTime()),
             ...this.prs.map(pr => pr.createdAt.getTime()),
             ...this.comments.map(c => c.createdAt.getTime())
         ));
-        let end = new Date(Math.max(
+        const end = new Date(Math.max(
             ...this.issues.map(i => i.createdAt.getTime()),
             ...this.prs.map(pr => pr.createdAt.getTime()),
             ...this.comments.map(c => c.createdAt.getTime())
@@ -46,8 +58,8 @@ export class ProjectStatistics implements Statistics {
 
 
     groupBy(groups: GroupDefinition[]): GroupedCollection<Statistics> {
-        let result: { [name: string]: Statistics } = {};
-        for (let group of groups) {
+        const result: { [name: string]: Statistics } = {};
+        for (const group of groups) {
             if(group.projectContent){
                 result[group.name] = this; //TODO: splitsen van issues, prs en comments in losse groups
             }else{
@@ -59,7 +71,7 @@ export class ProjectStatistics implements Statistics {
     }
 
     groupByAuthor(authors: string[]): GroupedCollection<ProjectStatistics> {
-        let results: { [name: string]: any } = {};
+        const results: { [name: string]: any } = {};
         function addOrAppend<T>(type: string, key: string, value: T) {
             if (!results[key]) {
                 results[key] = {
@@ -71,20 +83,20 @@ export class ProjectStatistics implements Statistics {
             results[key][type].push(value);
         }
 
-        for (let i of this.issues) {
+        for (const i of this.issues) {
             addOrAppend('issues', i.author, { ...i, comments: [] });
-            for (let c of i.comments) {
+            for (const c of i.comments) {
                 addOrAppend('comments', c.author, c);
             }
         }
-        for (let pr of this.prs) {
+        for (const pr of this.prs) {
             addOrAppend('prs', pr.author, { ...pr, comments: [] });
-            for (let c of pr.comments) {
+            for (const c of pr.comments) {
                 addOrAppend('comments', c.author, c);
             }
         }
 
-        for (let author of Object.keys(results)) {
+        for (const author of Object.keys(results)) {
             results[author] = new ProjectStatistics(                
                 results[author].issues,
                 results[author].prs,
@@ -92,7 +104,7 @@ export class ProjectStatistics implements Statistics {
             );
         }
 
-        for(let requestedAuthor of authors){
+        for(const requestedAuthor of authors){
             if (!results[requestedAuthor]) {
                 results[requestedAuthor] = new ProjectStatistics([], [], []);
             }
@@ -130,18 +142,18 @@ export class ProjectStatistics implements Statistics {
     }
 
     getLinesTotal(): LinesStatistics {
-        let issueStats = this.issues.reduce((acc, issue) => {
+        const issueStats = this.issues.reduce((acc, issue) => {
             return { lines: acc.lines + ProjectStatistics.#getLinesTotal(issue) }
         }, { lines: 0 });
-        let prStats = this.prs.reduce((acc, pr) => {
+        const prStats = this.prs.reduce((acc, pr) => {
             return { lines: acc.lines + ProjectStatistics.#getLinesTotal(pr) }
         }, { lines: 0 });
 
-        let commentStats = this.comments.reduce((acc, comment) => {
+        const commentStats = this.comments.reduce((acc, comment) => {
             return { lines: acc.lines + comment.body.split('\n').length }
         }, { lines: 0 });
 
-        let total = {
+        const total = {
             added: issueStats.lines + prStats.lines + commentStats.lines,
             removed: 0
         };
@@ -149,16 +161,16 @@ export class ProjectStatistics implements Statistics {
     }
 
     static #addWeek(date: Date) {
-        let newDate = new Date(date);
+        const newDate = new Date(date);
         const weekMs = 7 * 24 * 60 * 60 * 1000;
         return new Date(newDate.valueOf() + weekMs);
     }
 
     groupByWeek(beginDate?: Date, endDate?: Date): ExportingArray<ProjectStatistics> {
-        let gathered = [];
+        const gathered = [];
 
         //Algoritmisch gaan we hiervan huilen...
-        let earliestDate = Math.min(            
+        const earliestDate = Math.min(            
             Math.min(...this.issues.map(i => i.createdAt.valueOf())),
             Math.min(...this.prs.map(pr => pr.createdAt.valueOf())),
             Math.min(...this.comments.map(c => c.createdAt.valueOf()))
@@ -177,17 +189,17 @@ export class ProjectStatistics implements Statistics {
         let nextDate = ProjectStatistics.#addWeek(startDate);
 
         while (nextDate.valueOf() <= lastDate) {
-            let weekIssues = this.issues.filter(i => i.createdAt >= startDate && i.createdAt < nextDate);
-            let weekPrs = this.prs.filter(pr => pr.createdAt >= startDate && pr.createdAt < nextDate);
-            let weekComments = this.comments.filter(c => c.createdAt >= startDate && c.createdAt < nextDate);
+            const weekIssues = this.issues.filter(i => i.createdAt >= startDate && i.createdAt < nextDate);
+            const weekPrs = this.prs.filter(pr => pr.createdAt >= startDate && pr.createdAt < nextDate);
+            const weekComments = this.comments.filter(c => c.createdAt >= startDate && c.createdAt < nextDate);
 
             gathered.push(new ProjectStatistics(weekIssues, weekPrs, weekComments));
             startDate = nextDate;
             nextDate = ProjectStatistics.#addWeek(startDate);
         }
-        let weekIssues = this.issues.filter(i => i.createdAt >= startDate && i.createdAt < nextDate);
-        let weekPrs = this.prs.filter(pr => pr.createdAt >= startDate && pr.createdAt < nextDate);
-        let weekComments = this.comments.filter(c => c.createdAt >= startDate && c.createdAt < nextDate);
+        const weekIssues = this.issues.filter(i => i.createdAt >= startDate && i.createdAt < nextDate);
+        const weekPrs = this.prs.filter(pr => pr.createdAt >= startDate && pr.createdAt < nextDate);
+        const weekComments = this.comments.filter(c => c.createdAt >= startDate && c.createdAt < nextDate);
 
 
         gathered.push(new ProjectStatistics(weekIssues, weekPrs, weekComments));
