@@ -58,7 +58,7 @@ export class S3App {
     }
 
     async isAuthorized(user: string, session: any, params: { courseId: number, assignment: string, repository: string }) { //TODO: dit moet op org/repo niveau, niet op hardcoded setting niveau
-        console.log(`Checking if user ${user} is authorized to access course ${params.courseId}, assignment ${params.assignment}, repository ${params.repository}`);
+        // console.debug(`Checking if user ${user} is authorized to access course ${params.courseId}, assignment ${params.assignment}, repository ${params.repository}`);
         let allowed = this.#settings.authorizedUsers.indexOf(user) !== -1;
 
 
@@ -71,17 +71,17 @@ export class S3App {
             if (!allowed) {
                 const course = await this.db.getCourseConfig(params.courseId);
                 if (course) {
-                    const members = await this.githubClient.getMembers(course.githubStudentOrg, params.repository);
+                    const members = await this.githubClient.getCollaborators(course.githubStudentOrg, params.repository);
                     allowed = members.map(m => m.login).indexOf(user) !== -1;
 
                     if (allowed && session) {
-                        session.allowedRepos = session.allowedRepos || {};
+                        session.allowedRepos = session.allowedRepos || [];
                         session.allowedRepos.push(`${params.courseId}/${params.assignment}/${params.repository}`);
                     }
                 }
             }
         }
-
+        // console.debug(`User ${user} is ${allowed ? '' : 'not '}authorized to access course ${params.courseId}, assignment ${params.assignment}, repository ${params.repository}`);
         return allowed;
     }
 }

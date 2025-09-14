@@ -15,6 +15,12 @@ passport.deserializeUser((user: any, done: any) => {
 import { Strategy as GitHubStrategy } from 'passport-github2';
 
 
+interface ExpressExtension {
+    parsedParams?: { [key: string]: any };
+}
+
+type ExtendedRequest = ExpressExtension & express.Request;
+
 const expressApp = express();
 const listen = promisify(expressApp.listen).bind(expressApp);
 
@@ -66,6 +72,8 @@ export async function setupWebHandlers(app: S3App) {
     const apiRouter = express.Router();
 
     expressApp.use('/assets', express.static('dist/src/web/assets'));
+    expressApp.use('/favicon.ico', express.static('dist/src/web/static'));
+    expressApp.use('/.well-known/*wtf', express.static('dist/src/web/static'));
     
     expressApp.use(session({
         store: new SQLiteStore({ db: 'sessions.sqlite3' }),
@@ -105,36 +113,41 @@ export async function setupWebHandlers(app: S3App) {
         res.sendFile(fspath.resolve(process.cwd(), 'dist', 'src', 'web', 'web.html'));
     });
 
-    expressApp.param('cid', (req, res, next, cid) => {
+    expressApp.param('cid', (req: ExtendedRequest, res, next, cid) => {
         req.parsedParams = req.parsedParams || {};
-        req.params['cid'] = parseInt(cid);
+        req.parsedParams['cid'] = parseInt(cid);
         next(); 
     });
-    
-    expressApp.get('/stats/:cid/:assignment/:name', (req, res, next) => { 
-        console.log('lalalaaa3', req.params);        
-        next() })
 
-    for(const path of Object.keys(getRegistry)) {
-        const fullPath = '/api' + path;
-        console.log('setting up parser for '  + fullPath)
-        expressApp.get(fullPath, (req, res, next) => {   
-            console.log('lalalalaaaa', req.params);
-            next();
-        });
-        expressApp.get(path, (req, res, next) => {   
-            console.log('lalalalaaaa2', req.params);
-            next();
-        });
-    }
+    expressApp.param('assignment', (req: ExtendedRequest, res, next, assignment) => {
+        req.parsedParams = req.parsedParams || {};
+        req.parsedParams['assignment'] = assignment
+        next(); 
+    });
 
+    expressApp.param('name', (req: ExtendedRequest, res, next, name) => {
+        req.parsedParams = req.parsedParams || {};
+        req.parsedParams['name'] = name;
+        next(); 
+    });    
 
-    expressApp.use(async (req, res, next) => {
+    //Dit is lelijk as heck, en moet anders! 
+    expressApp.get('/stats/:cid/:assignment/:name', (req, res, next) => {
+        next()
+    });
+    expressApp.get('/api/stats/:cid/:assignment/:name/weekly', (req, res, next) => {
+        next()
+    });
+    expressApp.get('/api/stats/:cid/:assignment/:name/pie', (req, res, next) => {
+        next()
+    });
+    expressApp.use(async (req: ExtendedRequest, res, next) => {
         const requestedPathWithoutLeadingSlash = req.path.substring(1);
-        if(req.user && await app.isAuthorized((<any>req.user).username, (<any>req).session, {
-            courseId: req.params['cid'] ? parseInt(req.params['cid']) : undefined,
-            assignment: req.params['assignment'],
-            repository: req.params['name'] //...
+        // console.debug('Checking auth for ', req.path, req.parsedParams, req.user);
+        if(req.user && req.parsedParams && await app.isAuthorized((<any>req.user).username, (<any>req).session, {
+            courseId: req.parsedParams['cid'] ? parseInt(req.parsedParams['cid']) : undefined,
+            assignment: req.parsedParams['assignment'],
+            repository: req.parsedParams['name'] //...
         })){
             next();
         }else if(req.user){
