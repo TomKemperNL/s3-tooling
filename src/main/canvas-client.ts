@@ -25,6 +25,7 @@ export interface AssignmentResponse {
 export interface SubmissionCommentResponse {
     id: number;
     author_id: number;
+    author_name: string;
     comment: string;
     created_at: string;
 }
@@ -251,6 +252,16 @@ export class CanvasClient {
 
         let submissions = await Promise.all(submisisonPs);
         return submissions.flat();
+    }
+
+    async getCalloutsForStudent(params: { course_id: number, student_id: number }) {
+        let subs = await this.getAllSubmissionsForStudent({ course_id: params.course_id, student_id: params.student_id });
+        let comments = subs.flatMap(s => s.submission_comments);
+        let commentsWithCallouts = comments.filter(c => c.comment && c.comment.indexOf('@') !== -1).map(c => ({
+            author: c.author_name,
+            comment: c.comment
+        }));
+        return commentsWithCallouts;
     }
 
     async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string): Promise<StringDict> {
