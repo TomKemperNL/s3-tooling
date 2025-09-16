@@ -20,6 +20,15 @@ export default defineConfig(
     },
     {
         rules: {
+            '@typescript/no-unused-vars': ["error", {
+                argsIgnorePattern: '^_',
+                varsIgnorePattern: '^_',
+            }]
+        }
+    }
+    ,
+    {
+        rules: {
             "@typescript-eslint/no-explicit-any": "off",
             "@typescript-eslint/no-unsafe-call": "off",
             "@typescript-eslint/no-unsafe-member-access": "off",
@@ -27,7 +36,7 @@ export default defineConfig(
             "@typescript-eslint/no-unsafe-argument": "off",
             "@typescript-eslint/no-unsafe-return": "off",
 
-            
+
             "@typescript-eslint/no-floating-promises": "error",
             "@typescript-eslint/no-misused-promises": "error",
         }

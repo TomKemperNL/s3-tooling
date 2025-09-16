@@ -85,11 +85,11 @@ export async function setupIpcMainHandlers(app: S3App ) {
     });
 
     ipcMain.handle("settings:save", async (e, newSettings) => {
-        saveSettings(newSettings);
+        await saveSettings(newSettings);
         await app.reload(newSettings);
     });
 
-    ipcMain.handle("settings:load", async (e) => {
+    ipcMain.handle("settings:load", async (_e) => {
         return loadSettings();
     });
 }

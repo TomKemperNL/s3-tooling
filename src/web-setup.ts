@@ -19,7 +19,11 @@ import { Strategy as GitHubStrategy } from 'passport-github2';
 
 
 interface ExpressExtension {
+    user?: { token: string, id: number, username: string };
     parsedParams?: { [key: string]: any };
+    session: {
+        returnUrl?: string;
+    }
 }
 
 type ExtendedRequest = ExpressExtension & express.Request;
@@ -70,8 +74,6 @@ export async function setupWebHandlers(app: S3App) {
       }
     ));
 
-    const apiRouter = express.Router();
-
     expressApp.use('/assets', express.static('dist/src/web/assets'));
     expressApp.use('/favicon.ico', express.static('dist/src/web/static'));
     expressApp.use('/.well-known/*wtf', express.static('dist/src/web/static'));
@@ -96,14 +98,14 @@ export async function setupWebHandlers(app: S3App) {
         });
     });
 
-    expressApp.get('/auth/github', (req, res, next) => {
-        (<any>req).session.returnUrl = req.query.returnUrl || '';
+    expressApp.get('/auth/github', (req: ExtendedRequest, res, next) => {
+        req.session.returnUrl = <string>req.query.returnUrl || '';
         next();
     });
     expressApp.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email' ] }));
-    expressApp.get('/auth/github/callback', function(req, res, next){
+    expressApp.get('/auth/github/callback', function(req: ExtendedRequest, res, next){
         passport.authenticate('github', { 
-            successRedirect: '/' + ((<any>req).session.returnUrl || ''),
+            successRedirect: '/' + (<string> req.session.returnUrl || ''),
             failureRedirect: '/login'
          })(req, res, next);
     }, function(req, res) {        
@@ -145,7 +147,7 @@ export async function setupWebHandlers(app: S3App) {
     expressApp.use(async (req: ExtendedRequest, res, next) => {
         const requestedPathWithoutLeadingSlash = req.path.substring(1);
         // console.debug('Checking auth for ', req.path, req.parsedParams, req.user);
-        if(req.user && req.parsedParams && await app.isAuthorized((<any>req.user).username, (<any>req).session, {
+        if(req.user && req.parsedParams && await app.isAuthorized(req.user.username, req.session, {
             courseId: req.parsedParams['cid'] ? parseInt(req.parsedParams['cid']) : undefined,
             assignment: req.parsedParams['assignment'],
             repository: req.parsedParams['name'] //...
@@ -166,6 +168,8 @@ export async function setupWebHandlers(app: S3App) {
         }
     });
 
+    
+    const apiRouter = express.Router({ mergeParams: true });
     expressApp.use('/api', apiRouter);
     expressApp.get('{/*spa}', (req, res) => {    
         res.sendFile(fspath.resolve(process.cwd(), 'dist', 'src', 'web', 'web.html'));
