@@ -133,17 +133,16 @@ export async function setupWebHandlers(app: S3App) {
         req.parsedParams['name'] = name;
         next(); 
     });    
+    
+    for(const path of Object.keys(getRegistry)) {
+        expressApp.get(path, (req, res, next) => {
+            next();
+        });
+        expressApp.get('/api' + path, (req, res, next) => {
+            next();
+        });
+    }
 
-    //Dit is lelijk as heck, en moet anders! 
-    expressApp.get('/stats/:cid/:assignment/:name', (req, res, next) => {
-        next()
-    });
-    expressApp.get('/api/stats/:cid/:assignment/:name/weekly', (req, res, next) => {
-        next()
-    });
-    expressApp.get('/api/stats/:cid/:assignment/:name/pie', (req, res, next) => {
-        next()
-    });
     expressApp.use(async (req: ExtendedRequest, res, next) => {
         const requestedPathWithoutLeadingSlash = req.path.substring(1);
         // console.debug('Checking auth for ', req.path, req.parsedParams, req.user);
@@ -168,12 +167,14 @@ export async function setupWebHandlers(app: S3App) {
         }
     });
 
-    
     const apiRouter = express.Router({ mergeParams: true });
     expressApp.use('/api', apiRouter);
     expressApp.get('{/*spa}', (req, res) => {    
         res.sendFile(fspath.resolve(process.cwd(), 'dist', 'src', 'web', 'web.html'));
     });
+
+
+
 
     const appAsAny = <any> app;
     for(const registeredParam of paramRegistry){

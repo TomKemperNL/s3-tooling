@@ -195,6 +195,13 @@ export class StatisticsController implements StatsApi {
         await this.db.removeAliases(savedCourseConfig.githubStudentOrg, name, aliases);
     }
 
+
+    @get('/stats/:cid/:assignment/:name')
+    async getRepoStatsBase(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string){
+        //Voor nu een hack om authentication op dit pad in de SPA toe te kunnen passen, maar eeeeigenlijk hoort dit iets nuttigs te returnen.
+        return;
+    }
+
     @ipc("repostats:get")
     @get('/stats/:cid/:assignment/:name/weekly')
     async getRepoStats(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter?: StatsFilter): Promise<RepoStatisticsDTO> {
