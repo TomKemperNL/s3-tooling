@@ -2,7 +2,10 @@ import express from "express"
 import { promisify } from "util";
 import { S3App } from "./main/index";
 import * as fspath from "path";
-const passport = require('passport');
+import passport from 'passport'
+import session from 'express-session'
+import createSessionStore from 'connect-sqlite3'
+
 passport.serializeUser((user: any, done: any) => {
     done(null, user);
 });
@@ -22,7 +25,7 @@ interface ExpressExtension {
 type ExtendedRequest = ExpressExtension & express.Request;
 
 const expressApp = express();
-const listen = promisify(expressApp.listen).bind(expressApp);
+const listen = promisify(expressApp.listen.bind(expressApp));
 
 const PORT = process.env.PORT || 3000;
 
@@ -39,7 +42,7 @@ export function path(value: string) {
             parameterIndex: parameterIndex
         });
     }
-}
+} 
 
 
 export function get(path: string = '') {
@@ -54,9 +57,7 @@ export function get(path: string = '') {
 }
 
 export async function setupWebHandlers(app: S3App) {
-    
-    const session: any = require('express-session');
-    const SQLiteStore: any = require('connect-sqlite3')(session);
+    const SQLiteStore: any = createSessionStore(session);
     
     passport.use(new GitHubStrategy({
         clientID: process.env.OAUTH_GITHUB_ID,
