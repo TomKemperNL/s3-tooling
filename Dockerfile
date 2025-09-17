@@ -1,7 +1,9 @@
 FROM node:22-alpine
 RUN apk update
 RUN apk add git
+RUN apk add openssh
 RUN git config --global --add safe.directory '*'
+COPY ./container/ssh-keys/id_* /root/.ssh/
 
 RUN mkdir /app
 COPY . /app
