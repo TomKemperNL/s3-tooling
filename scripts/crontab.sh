@@ -1,0 +1,1 @@
+0 * * * * cd /s3-data/HU-SD-S3-Studenten-S2526/s3-project && ./update && docker container restart s3-s3-1 >> /s3-data/HU-SD-S3-Studenten-S2526/s3-project/update.log 2>&1
