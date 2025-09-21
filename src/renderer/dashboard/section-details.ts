@@ -23,6 +23,7 @@ export class SectionDetails extends LitElement {
 
     protected updated(_changedProperties: PropertyValues): void {
         if (_changedProperties.has('courseId') || _changedProperties.has('section') || _changedProperties.has('assignment')) {
+            this.sectionDTO = undefined;
             this.ipc.getSectionStats(this.courseId, this.assignment, this.section).then(stats => {
                 console.log("Fetched section stats:", stats);
                 this.sectionDTO = stats;

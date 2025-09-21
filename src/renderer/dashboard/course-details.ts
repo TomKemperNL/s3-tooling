@@ -48,8 +48,7 @@ export class CourseDetails extends LitElement {
     sectionDropdownChange(e: HTMLInputEvent) {
         this.selectedSection = e.target.value;        
 
-        if(this.selectedSection && this.selectedAssignment){
-            this.dispatchEvent(new DetailsSelectedEvent(this.selectedSection, this.selectedAssignment));
+        if(this.selectedSection && this.selectedAssignment){            
             this.loadRepos();
         }else{
             this.dispatchEvent(new ReposClearedEvent());
@@ -59,8 +58,7 @@ export class CourseDetails extends LitElement {
     assignmentDropdownChange(e: HTMLInputEvent) {
         this.selectedAssignment = e.target.value;
 
-        if(this.selectedSection && this.selectedAssignment){
-            this.dispatchEvent(new DetailsSelectedEvent(this.selectedSection, this.selectedAssignment));
+        if(this.selectedSection && this.selectedAssignment){            
             this.loadRepos();
         }else{
             this.dispatchEvent(new ReposClearedEvent());
@@ -72,6 +70,7 @@ export class CourseDetails extends LitElement {
         try {
             this.loading = true;
             const result = await this.ipc.loadRepos(this.course.canvasId, this.selectedAssignment, { sections: [ this.selectedSection] })
+            this.dispatchEvent(new DetailsSelectedEvent(this.selectedSection, this.selectedAssignment));
             this.dispatchEvent(new ReposLoadedEvent(result));
         }
         catch (e) {

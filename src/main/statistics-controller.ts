@@ -222,7 +222,7 @@ export class StatisticsController implements StatsApi {
             repos] = await Promise.all([
             this.db.getCourseConfig(courseId),
             this.db.getCourse(courseId),
-            this.db.getUserMappingRev(courseId),
+            this.db.getUserMapping(courseId),
             this.repoController.loadRepos(courseId, assignment, { sections: [section] })
         ]);
 
@@ -239,8 +239,8 @@ export class StatisticsController implements StatsApi {
         await Promise.all(repos.map(addRepo));
         let allTheStats : CombinedStats = new CombinedStats(gatheredStats);
         
-        allTheStats.mapAuthors(mapping);
-        allTheStats.filterAuthors(savedCourse.sections[section].map(m => m.email));
+        let usersInSection = savedCourse.sections[section].map(m => mapping[m.email]);
+        allTheStats.filterAuthors(usersInSection);
 
         let distinctAuthors = allTheStats.getDistinctAuthors();
         
