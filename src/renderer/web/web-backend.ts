@@ -2,6 +2,9 @@ import { BackendApi } from "../../backend-api";
 import { CourseConfig, CourseDTO, RepoFilter, RepoDTO, StatsFilter, RepoStatisticsDTO, GroupPieDTO, StudentFilter, Startup, Settings, BranchInfo } from "../../shared";
 
 export class WebBackend implements BackendApi {
+    getSectionStats(courseId: number, assignment: string, section: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
     getCourses: () => Promise<CourseConfig[]>;
     loadCourse: (id: number) => Promise<CourseDTO>;
     loadRepo: (courseId: number, assignment: string, name: string) => Promise<RepoDTO>;

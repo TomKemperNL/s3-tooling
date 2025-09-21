@@ -5,7 +5,7 @@ import { GithubClient } from "./github-client";
 import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
 import { ReposController } from "./repos-controller";
-import { CombinedStats, GroupDefinition, StatsBuilder } from "./statistics";
+import { CombinedStats, GroupDefinition, Statistics, StatsBuilder } from "./statistics";
 import { ipc } from "../electron-setup";
 import { StatsApi } from "../backend-api";
 import { get, path } from "../web-setup";
@@ -17,6 +17,17 @@ function mergeAuthors(pie: { [name: string]: number }, mapping: { [name: string]
         merged[mapped] = (merged[mapped] || 0) + pie[key];
     }
     return merged;
+}
+
+function merge<T>(a: { [key: string]: T[]}, b: { [key: string]: T[]}){
+    let result = {...a};
+    for(let key of Object.keys(b)){
+        if(!result[key]){
+            result[key] = [];
+        }
+        result[key] = result[key].concat(b[key]);
+    }
+    return result;
 }
 
 function mappingToAliases(mapping: { [name: string]: string}) : { [canonical: string]: string[] } {
@@ -200,6 +211,50 @@ export class StatisticsController implements StatsApi {
     async getRepoStatsBase(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string){
         //Voor nu een hack om authentication op dit pad in de SPA toe te kunnen passen, maar eeeeigenlijk hoort dit iets nuttigs te returnen.
         return;
+    }
+
+    @ipc("sectionstats:get")
+    async getSectionStats(courseId: number, assignment: string, section: string) {
+
+        const [savedCourseConfig, 
+            savedCourse, 
+            mapping, 
+            repos] = await Promise.all([
+            this.db.getCourseConfig(courseId),
+            this.db.getCourse(courseId),
+            this.db.getUserMappingRev(courseId),
+            this.repoController.loadRepos(courseId, assignment, { sections: [section] })
+        ]);
+
+        const gatheredStats : Statistics[] = [];
+        let gatheredAliases : { [canonical: string]: string[] } = {};
+        const addRepo = async (repo: RepoDTO) => {
+            const combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, repo.name);
+            const authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, repo.name);
+            combinedStats.mapAuthors(authorMapping);
+            gatheredAliases = merge(gatheredAliases, mappingToAliases(authorMapping));
+            gatheredStats.push(combinedStats);
+        }
+
+        await Promise.all(repos.map(addRepo));
+        let allTheStats : CombinedStats = new CombinedStats(gatheredStats);
+        
+        allTheStats.mapAuthors(mapping);
+        allTheStats.filterAuthors(savedCourse.sections[section].map(m => m.email));
+
+        let distinctAuthors = allTheStats.getDistinctAuthors();
+        
+        const groups = this.#getGroups(savedCourseConfig);
+        let builder = new StatsBuilder(allTheStats);
+        let author_group = builder.groupByAuthor(distinctAuthors)
+            .thenBy(groups)
+            .build();
+
+        return  {
+            authors: distinctAuthors,
+            groups: groups.map(g => g.name),
+            author_group: author_group
+        }
     }
 
     @ipc("repostats:get")

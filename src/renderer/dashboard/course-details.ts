@@ -6,6 +6,7 @@ import { BackendApi } from "../../backend-api";
 import { ipcContext } from "../contexts";
 import { consume } from "@lit/context";
 import { HTMLInputEvent } from "../events";
+import { NavigationRequestedEvent } from "../navigation/events";
 
 export class ReposLoadedEvent extends Event {
     constructor(public repos: RepoDTO[]) {
@@ -16,6 +17,12 @@ export class ReposLoadedEvent extends Event {
 export class ReposClearedEvent extends Event {
     constructor() {
         super('repos-cleared')
+    }
+}
+
+export class DetailsSelectedEvent extends Event {
+    constructor(public section: string, public assignment: string) {
+        super('details-selected')
     }
 }
 
@@ -42,6 +49,7 @@ export class CourseDetails extends LitElement {
         this.selectedSection = e.target.value;        
 
         if(this.selectedSection && this.selectedAssignment){
+            this.dispatchEvent(new DetailsSelectedEvent(this.selectedSection, this.selectedAssignment));
             this.loadRepos();
         }else{
             this.dispatchEvent(new ReposClearedEvent());
@@ -52,6 +60,7 @@ export class CourseDetails extends LitElement {
         this.selectedAssignment = e.target.value;
 
         if(this.selectedSection && this.selectedAssignment){
+            this.dispatchEvent(new DetailsSelectedEvent(this.selectedSection, this.selectedAssignment));
             this.loadRepos();
         }else{
             this.dispatchEvent(new ReposClearedEvent());
@@ -72,10 +81,14 @@ export class CourseDetails extends LitElement {
         }
     }
 
+    goToSectionOverview() {
+        this.dispatchEvent(new NavigationRequestedEvent("section"));
+    }
 
     render() {
         return html`          
             <h3>Secties</h3>
+            <custom-carat></custom-carat>
             <select ?disabled=${this.loading} @change=${this.sectionDropdownChange}>
                 <option value="">Select a section</option>
                     ${map(Object.keys(this.course.sections), s => html`
@@ -84,11 +97,15 @@ export class CourseDetails extends LitElement {
             </select>
               
             <h3>Assignments</h3>
-            <select ?disabled=${this.loading} @change=${this.assignmentDropdownChange}>
-                <option value="">Select an assignment</option>
-                ${map(this.course.assignments, a =>
-            html`<option value=${a.githubAssignment}>${a.githubAssignment} </option>`)}
-            </select>
+            <custom-carat></custom-carat>
+            <div>
+                <select ?disabled=${this.loading} @change=${this.assignmentDropdownChange}>
+                    <option value="">Select an assignment</option>
+                    ${map(this.course.assignments, a =>
+                html`<option value=${a.githubAssignment}>${a.githubAssignment} </option>`)}
+                </select>
+                <custom-carat style="cursor:pointer" @click=${this.goToSectionOverview} direction="right" color="red"></custom-carat>
+            </div>
         `
     }
 }

@@ -1,3 +1,5 @@
+import "./navigation/custom-carat"
+
 import './dashboard/courses-list'
 import './app-element'
 import './dashboard/course-details'
@@ -6,6 +8,7 @@ import './dashboard/repository-details'
 import './dashboard/author-details'
 import './dashboard/author-list'
 import './dashboard/group-list'
+import './dashboard/section-details'
 
 import './settings-page'
 
@@ -16,4 +19,4 @@ import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 
 import './screenshot-element'
-import './webapp-element'	
+import './webapp-element'

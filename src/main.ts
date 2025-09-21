@@ -12,6 +12,7 @@ async function main() {
     if (process.argv.indexOf('webonly') !== -1) {
         await setupWebHandlers(s3App);
     } else if (process.argv.indexOf('load') !== -1) {
+        await s3App.db.initData()
         const courseId = parseInt(process.argv[process.argv.indexOf('load') + 1]);
         const assignmentName = process.argv[process.argv.indexOf('load') + 2];
         await s3App.coursesController.loadCourse(courseId);

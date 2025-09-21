@@ -95,6 +95,11 @@ export function combineStats(...stats: LinesStatistics[]): LinesStatistics {
     }), { added: 0, removed: 0 });
 }
 
+export type SectionStatisticsDTO = {
+    authors: string[],
+    groups: string[],
+    author_group: { [author: string]: {[group: string] : LinesStatistics } }
+}
 
 export type RepoStatisticsDTO = {
     authors: string[],
