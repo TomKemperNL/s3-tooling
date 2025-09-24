@@ -54,7 +54,7 @@ export class S3App {
 
         this.repoController = new ReposController(db, this.canvasClient, this.githubClient, this.fileSystem);
         this.coursesController = new CoursesController(db, this.canvasClient);
-        this.statisticsController = new StatisticsController(db, this.githubClient, this.fileSystem, this.repoController);
+        this.statisticsController = new StatisticsController(db, this.githubClient, this.fileSystem, this.repoController, this.coursesController);
     }
 
     async isAuthorized(user: string, session: any, params: { courseId: number, assignment: string, repository: string }) {
