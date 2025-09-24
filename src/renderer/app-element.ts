@@ -10,13 +10,17 @@ import { ipcContext } from "./contexts";
 import { provide } from "@lit/context";
 import { ErrorHandlingBackendApi } from "./error-handling-backend";
 import { AuthorSelectedEvent } from "./dashboard/author-list";
+import { choose } from "lit/directives/choose.js";
+import { Page } from "./navigation/pages";
+import { NavigationRequestedEvent } from "./navigation/events";
+
 
 @customElement("app-element")
 export class AppElement extends LitElement {
 
-    @provide({ context: ipcContext})
+    @provide({ context: ipcContext })
     ipc: BackendApi;
-    
+
     constructor() {
         super();
         this.ipc = new ErrorHandlingBackendApi(window.electron);
@@ -31,8 +35,15 @@ export class AppElement extends LitElement {
     @property({ type: Object })
     activeRepo: RepoDTO;
 
-    @property({ type: Boolean, state: true })
-    showSettings: boolean = false;
+    @property({ type: String, state: true })
+    activePage: Page = "repo";
+
+    @property({type: Number, state: true})
+    courseId: number = null;
+    @property({type: String, state: true})
+    selectedSection: string = null;
+    @property({type: String, state: true})
+    selectedAssignment: string = null;
 
     @property({ type: Boolean, state: true })
     isActive: boolean = false;
@@ -41,19 +52,19 @@ export class AppElement extends LitElement {
     githubUser: string = '';
     @property({ type: String, state: true })
     canvasUser: string = '';
-    
+
     @property({ type: String, state: true })
     selectedAuthor: string;
 
-    reload(startup: Startup){
-        if(startup.validSettings){
+    reload(startup: Startup) {
+        if (startup.validSettings) {
             this.isActive = true;
-            this.showSettings = false;
+            this.activePage = "repo";
             this.githubUser = startup.githubUser;
             this.canvasUser = startup.canvasUser;
-        }else{
+        } else {
             this.isActive = false;
-            this.showSettings = true;
+            this.activePage = "repo";
             this.githubUser = '';
             this.canvasUser = '';
         }
@@ -88,6 +99,7 @@ export class AppElement extends LitElement {
 
     repoSelected(e: RepoSelectedEvent) {
         this.activeRepo = e.repo;
+        this.activePage = "repo";
         this.selectedAuthor = null;
         this.save();
     }
@@ -97,14 +109,20 @@ export class AppElement extends LitElement {
         this.selectedAuthor = null;
     }
 
-    reposCleared(e: Event) {        
+    reposCleared(e: Event) {
         this.availableRepos = null;
         this.activeRepo = null;
         this.selectedAuthor = null;
     }
 
-    selectAuthor(e: AuthorSelectedEvent){
+    selectAuthor(e: AuthorSelectedEvent) {
         this.selectedAuthor = e.authorName;
+        this.save();
+    }
+
+    detailsSelected(e: { assignment: string, section: string }) {
+        this.selectedAssignment = e.assignment;
+        this.selectedSection = e.section;
         this.save();
     }
 
@@ -167,39 +185,50 @@ export class AppElement extends LitElement {
         `;
 
     async goToSettings() {
-        this.showSettings = true;
+        this.activePage = "settings";
     }
     async goToDashboard() {
-        this.showSettings = false;
+        this.activePage = "repo";
+    }
+    async handleNavigation(e: NavigationRequestedEvent) {
+        this.activePage = e.page;
+        this.save();
     }
 
-    async onSettingsChanged(e: Event) {  
+
+    async onSettingsChanged(e: Event) {
         const startup = await this.ipc.startup();
         this.reload(startup);
     }
 
-    save(){
+    save() {
         const memento = {
             activeRepo: this.activeRepo,
             activeCourse: this.activeCourse,
             availableRepos: this.availableRepos,
-            selectedAuthor: this.selectedAuthor
+            selectedAuthor: this.selectedAuthor,
+            selectedSection: this.selectedSection,
+            selectedAssignment: this.selectedAssignment,
+            activePage: this.activePage
         }
 
         window.localStorage.setItem('app-element-memento', JSON.stringify(memento));
     }
 
-    load(){
-        try{
+    load() {
+        try {
             const memento = window.localStorage.getItem('app-element-memento');
-            if(memento){
+            if (memento) {
                 const parsed = JSON.parse(memento);
                 this.activeRepo = parsed.activeRepo;
                 this.activeCourse = parsed.activeCourse;
                 this.availableRepos = parsed.availableRepos;
                 this.selectedAuthor = parsed.selectedAuthor;
+                this.selectedSection = parsed.selectedSection;
+                this.selectedAssignment = parsed.selectedAssignment;
+                this.activePage = parsed.activePage
             }
-        }catch(e){
+        } catch (e) {
             console.error("Error loading memento", e);
         }
     }
@@ -228,28 +257,39 @@ export class AppElement extends LitElement {
                 
             </nav>
         </header>
-        <nav style="grid-area: nav;" label="dashboard navigation">
+        <nav style="grid-area: nav;" label="dashboard navigation" @navigation-requested=${this.handleNavigation}>
             ${when(this.isActive, () => html`  
                 <h2>Cursussen</h2>            
                 <courses-list @course-loaded=${this.courseLoaded} @course-cleared=${this.courseCleared}></courses-list>
                 ${when(this.activeCourse, () => html`  
-                    <course-details .course=${this.activeCourse} @repos-loaded=${this.reposLoaded} @repos-cleared=${this.reposCleared}></course-details>
+                    <custom-carat></custom-carat>
+                    <course-details .course=${this.activeCourse} 
+                        @details-selected=${this.detailsSelected} 
+                        @repos-loaded=${this.reposLoaded} 
+                        @repos-cleared=${this.reposCleared}></course-details>
                 `)}
                 ${when(this.availableRepos, () => html`                
                     <h3>Repositories</h3>
+                    <custom-carat></custom-carat>
                     <repositories-list .repos=${this.availableRepos} @repo-selected=${this.repoSelected} @repo-cleared=${this.repoCleared}></repositories-list>
                 `)}
             `)}
         </nav>
         <main style="grid-area: details;">            
-        ${when(this.showSettings, 
-            () => html`
-                <settings-page @settings-changed=${this.onSettingsChanged}></settings-page>`, 
-            () => html`            
-                ${when(this.activeRepo, () => html`
-                    <repository-details .repo=${this.activeRepo} @author-selected=${this.selectAuthor}></repository-details>
+        ${choose(this.activePage, [[
+            "settings", () => html`
+                <settings-page @settings-changed=${this.onSettingsChanged}></settings-page>
+            `], 
+            ["section", () => html`
+                ${when(!!this.activeCourse && !!this.selectedAssignment && !!this.selectedSection, () => html`
+                    <section-details courseId=${this.activeCourse.canvasId} section=${this.selectedSection} assignment=${this.selectedAssignment}></section-details>
                 `)}
-        `)}
+            `],
+            ["repo", () => html`
+                ${when(!!this.activeRepo, () => html`
+                    <repository-details .repo=${this.activeRepo} @author-selected=${this.selectAuthor}></repository-details>`
+                )}
+            `]])}
         </main>
         `
     }

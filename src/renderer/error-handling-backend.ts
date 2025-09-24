@@ -9,6 +9,15 @@ export class ErrorHandlingBackendApi implements BackendApi {
     constructor(ipc: BackendApi) {
         this.ipc = ipc;
     }
+    async getSectionStats(courseId: number, assignment: string, section: string): Promise<any> {
+        try {
+            return await this.ipc.getSectionStats(courseId, assignment, section);
+        } catch (error) {
+            console.error("Error fetching section stats:", error);
+            alert("Failed to load section stats:" + error.message);
+            return {}; // Return an empty object on error
+        }
+    }
     async loadRepo(courseId: number, assignment: string, name: string) : Promise<RepoDTO>{
         try {
             return await this.ipc.loadRepo(courseId, assignment, name);

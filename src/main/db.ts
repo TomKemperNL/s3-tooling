@@ -67,17 +67,23 @@ export class Db {
         this.#db = this.#initializer();
     }
 
+    activeTransaction = false;
+
     async #inTransaction<T>(func: () => Promise<T | void>) {
         try {
+            if (this.activeTransaction) {
+                throw new Error("Nested transactions are not supported");
+            }
             await this.#runProm("begin transaction;")
-
+            this.activeTransaction = true;
             const result = await func();
 
             await this.#runProm("commit transaction;")
-
+            this.activeTransaction = false;
             return result;
         } catch (e) {
             await this.#runProm("rollback transaction;")
+            this.activeTransaction = false;
             throw e;
         }
     }

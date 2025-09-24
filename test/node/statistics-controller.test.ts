@@ -8,12 +8,14 @@ import { FakeFileSystem } from './fakes/FakeFileSystem';
 import { CourseConfig } from '../../src/shared';
 import { StatisticsController } from '../../src/main/statistics-controller';
 import { FakeReposController } from './fakes/FakeReposController';
+import { FakeCoursesController } from './fakes/FakeCoursesController';
 
 let db: Db = null;
 let statisticsController: StatisticsController = null;
 let githubFake: FakeGithubClient = null;
 let fsFake: FakeFileSystem = null;
 let reposFake: FakeReposController = null;
+let coursesFake: FakeCoursesController = null;
 
 beforeEach(async () => {
   db = new Db(() => {
@@ -25,7 +27,8 @@ beforeEach(async () => {
   githubFake = new FakeGithubClient();
   fsFake = new FakeFileSystem();
   reposFake = new FakeReposController();
-  statisticsController = new StatisticsController(db, <any>githubFake, <any>fsFake, <any>reposFake);
+  coursesFake = new FakeCoursesController();
+  statisticsController = new StatisticsController(db, <any>githubFake, <any>fsFake, <any>reposFake, <any>coursesFake);
 
   await db.addCourse(someCourse);
 });

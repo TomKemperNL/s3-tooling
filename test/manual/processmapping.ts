@@ -10,7 +10,7 @@ async function main() {
     const mapping = JSON.parse(importMapping);
 
 
-    let controller = new StatisticsController(db, null, null, null);
+    let controller = new StatisticsController(db, null, null, null, null);
 
     for(let klas in mapping){
         console.log(`Klas: ${klas}`);

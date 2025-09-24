@@ -3,6 +3,7 @@ import { RepoDTO } from "../../shared";
 import { customElement, property } from "lit/decorators.js";
 import { map } from "lit/directives/map.js";
 import { HTMLInputEvent } from "../events";
+import { NavigationRequestedEvent } from "../navigation/events";
 
 export class RepoSelectedEvent extends Event {
     constructor(public repo: RepoDTO){
@@ -40,6 +41,10 @@ export class RepositoriesList extends LitElement {
         }
     }
 
+    goToRepo(){
+        this.dispatchEvent(new NavigationRequestedEvent('repo'));
+    }
+
     render(){
         return html`
         <select @change=${this.dropdownChange}>
@@ -47,6 +52,8 @@ export class RepositoriesList extends LitElement {
             ${map(this.repos, r => html`
                 <option value=${r.name}>${r.name}</option>
                 `)}
-            </select>`;
+            </select>
+            <custom-carat style="cursor:pointer" @click=${this.goToRepo} direction="right" color="red"></custom-carat>
+            `;
     }
 }
