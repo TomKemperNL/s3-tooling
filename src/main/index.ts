@@ -37,10 +37,18 @@ export class S3App {
             console.error('Error initializing app:', e);
         }
         // console.log(this.settings)
-        if (!this.settings.keepDB) {
-            await db.reset().then(() => db.test());
-        } else {
-            console.log('keeping db');
+
+        if(await db.exists()){
+            if (!this.settings.keepDB) {
+                console.log('resetting db');
+                await db.reset().then(() => db.test());
+            } else {
+                console.log('keeping db');
+            }
+        }else{
+            console.log('initializing db');
+            await db.initSchema();
+            await db.initData();
         }
     }
 

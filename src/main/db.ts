@@ -394,6 +394,15 @@ export class Db {
         return courseDTO;
     }
 
+    async exists(){
+        try{
+            await this.#getProm('select 1 from courses limit 1;');
+            return true;
+        }catch(e){
+            return false;
+        }
+    }
+
     async initSchema() {
         const schema = await fs.readFile('./create_schema.sql', { encoding: 'utf-8' });
         await this.#execProm(schema);
