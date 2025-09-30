@@ -144,16 +144,23 @@ export async function setupWebHandlers(app: S3App) {
     }
 
     expressApp.use(async (req: ExtendedRequest, res, next) => {
+        
         const requestedPathWithoutLeadingSlash = req.path.substring(1);
-        // console.debug('Checking auth for ', req.path, req.parsedParams, req.user);
+        console.debug('Checking auth for ', req.path, req.parsedParams, req.user);
         if(req.user && req.parsedParams && await app.isAuthorized(req.user.username, req.session, {
             courseId: req.parsedParams['cid'] ? parseInt(req.parsedParams['cid']) : undefined,
             assignment: req.parsedParams['assignment'],
             repository: req.parsedParams['name'] //...
         })){
+            console.debug('User is authorized');
             next();
-        }else if(req.user){
-            if(req.accepts('html')){
+        }
+        else if(req.user){
+            if(await app.isAdmin(req.user.username)){
+                console.debug('User is admin, allowing');
+                next();
+                return;
+            }else if (req.accepts('html')){
                 res.redirect('/login?returnUrl=' + requestedPathWithoutLeadingSlash);            
             }else{
                 res.status(403).send('You are not authorized to access this resource');

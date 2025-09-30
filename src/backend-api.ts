@@ -40,14 +40,15 @@ export interface RepoApi {
     getBranchInfo: (courseId: number, assignment: string, name: string) => Promise<BranchInfo>
     refreshRepo: (courseId: number, assignment: string, name: string) => Promise<void>
     switchBranch: (courseId: number, assignment: string, name: string, newBranch: string) => Promise<void>
+    updateAuthorMapping: (courseId: number, name: string, mapping: { [author: string]: string }) => Promise<void>
+    removeAlias: (courseId: number, name: string, aliases: { [canonical: string]: string[] }) => Promise<void>
 }
 
 export interface StatsApi {
     getRepoStats: (courseId: number, assignment: string, name: string, filter?: StatsFilter) => Promise<RepoStatisticsDTO>        
     getGroupPie: (courseId: number, assignment: string, name: string, filter?: StatsFilter) => Promise<GroupPieDTO>
     getSectionStats(courseId: number, assignment: string, section: string) : Promise<any>
-    updateAuthorMapping: (courseId: number, name: string, mapping: { [author: string]: string }) => Promise<void>
-    removeAlias: (courseId: number, name: string, aliases: { [canonical: string]: string[] }) => Promise<void>
+    
 }
 
 

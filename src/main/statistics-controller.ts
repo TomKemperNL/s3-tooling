@@ -196,19 +196,6 @@ export class StatisticsController implements StatsApi {
         };
     }
 
-    @ipc("repostats-mapping:update")
-    async updateAuthorMapping(courseId: number, name: string, mapping: { [author: string]: string }) {
-        const savedCourseConfig = await this.db.getCourseConfig(courseId);
-        await this.db.updateAuthorMapping(savedCourseConfig.githubStudentOrg, name, mapping);
-    }
-
-    @ipc("repostats-aliases:remove")
-    async removeAlias(courseId: number, name: string, aliases: { [canonical: string]: string[]; }): Promise<void> {
-        const savedCourseConfig = await this.db.getCourseConfig(courseId);
-        await this.db.removeAliases(savedCourseConfig.githubStudentOrg, name, aliases);
-    }
-
-
     @get('/stats/:cid/:assignment/:name')
     async getRepoStatsBase(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string) {
         //Voor nu een hack om authentication op dit pad in de SPA toe te kunnen passen, maar eeeeigenlijk hoort dit iets nuttigs te returnen.
@@ -230,7 +217,7 @@ export class StatisticsController implements StatsApi {
         }
 
         const repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
-        const mapping = await this.db.getUserMapping(courseId);  
+        const mapping = await this.db.getStudentMailToGHUserMapping(courseId);  
 
         console.log('??????????', mapping);
 

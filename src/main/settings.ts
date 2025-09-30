@@ -20,6 +20,7 @@ function readEnv(result: any = {}): any{
     const keepDB = process.env.KEEP_DB;
     const ignoreAuthors = process.env.IGNORE_AUTHORS
     const dataPath = process.env.DATA_PATH;
+    const admins = process.env.ADMINS;
 
     if(canvasToken){
         result['canvasToken'] = canvasToken;
@@ -37,6 +38,10 @@ function readEnv(result: any = {}): any{
         result['dataPath'] = dataPath;
     }
     result['authorizedUsers'] = result['authorizedUsers'] || [];
+
+    if(admins){
+        result['authorizedUsers'] = result['authorizedUsers'].concat(admins.split(',').map((admin: string) => admin.trim()));
+    }
     return result;
 }
 

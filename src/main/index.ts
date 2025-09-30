@@ -57,8 +57,12 @@ export class S3App {
         this.statisticsController = new StatisticsController(db, this.githubClient, this.fileSystem, this.repoController, this.coursesController);
     }
 
+    async isAdmin(user: string) {
+        return this.#settings.authorizedUsers.indexOf(user) !== -1;
+    }
+
     async isAuthorized(user: string, session: any, params: { courseId: number, assignment: string, repository: string }) {
-        // console.debug(`Checking if user ${user} is authorized to access course ${params.courseId}, assignment ${params.assignment}, repository ${params.repository}`);
+        console.log(`Checking if user ${user} is authorized to access course ${params.courseId}, assignment ${params.assignment}, repository ${params.repository}`);
         let allowed = this.#settings.authorizedUsers.indexOf(user) !== -1;
 
 

@@ -37,7 +37,7 @@ async function main() {
 
     let courseId = 44633;
     let assignment = 'sd-s2-project';
-    let loginUserMapping = await app.db.getUserMapping(courseId);
+    let loginUserMapping = await app.db.getStudentMailToGHUserMapping(courseId);
     loginUserMapping = flip(loginUserMapping)
 
     let repos = await app.db.selectReposByCourse(courseId);
