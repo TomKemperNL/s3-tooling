@@ -48,10 +48,24 @@ export class S3App {
     async reload(settings: Settings) { //Nog niet async, maar ik vermoed dat dit wel ooit nodig gaat zijn... (en dan is retroactief async maken vaak vrij ingrijpend)
         this.#settings = settings;
         this.screenshotController = new ScreenshotController();
-        this.githubClient = new GithubClient(this.settings.githubToken);
-        this.fileSystem = new FileSystem(this.settings.dataPath);
-        this.canvasClient = new CanvasClient(this.settings.canvasToken);
-
+        try{
+            this.githubClient = new GithubClient(this.settings.githubToken);
+        }catch(e){
+            console.error("Unable to create github client", e);
+        }
+        
+        try{
+            this.fileSystem = new FileSystem(this.settings.dataPath);
+        }catch(e){
+            console.error("Unable to create FileSystem client", e);
+        }
+        
+        try{
+            this.canvasClient = new CanvasClient(this.settings.canvasToken);
+        }catch(e){
+            console.error("Unable to create canvas client", e);
+        }
+        
         this.repoController = new ReposController(db, this.canvasClient, this.githubClient, this.fileSystem);
         this.coursesController = new CoursesController(db, this.canvasClient);
         this.statisticsController = new StatisticsController(db, this.githubClient, this.fileSystem, this.repoController, this.coursesController);
