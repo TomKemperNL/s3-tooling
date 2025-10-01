@@ -32,17 +32,16 @@ async function main() {
             console.log('\t' + portfolioRepo);
             await s3App.fileSystem.runCommands([
                 "git pull",
-                "git checkout -b sprint-0-stats",
+                "git checkout -b sprint-1-stats",
                 "git add .",
-                `git commit -m "Added stats screenshot for sprint 0"`,
-                "git checkout sprint-0-stats",
-                "git push origin sprint-0-stats",
+                `git commit -m "Added stats screenshot for sprint 1"`,
+                "git push origin sprint-1-stats",
                 "git checkout main"
             ],
                 organization, portfolio, portfolioRepo
             )
 
-            await s3App.githubClient.createPr(organization, portfolioRepo, "Stats toevoegen voor Sprint 0", "Deze PR voegt de stats screenshot toe voor sprint 0... Hoop ik.", "sprint-0-stats", "main");
+            await s3App.githubClient.createPr(organization, portfolioRepo, "Stats toevoegen voor Sprint 1", "Deze PR voegt de stats screenshot toe voor sprint 1... Hoop ik.", "sprint-1-stats", "main");
 
         }
     }
