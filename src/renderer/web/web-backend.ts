@@ -1,7 +1,8 @@
 import { BackendApi } from "../../backend-api";
-import { CourseConfig, CourseDTO, RepoFilter, RepoDTO, StatsFilter, RepoStatisticsDTO, GroupPieDTO, StudentFilter, Startup, Settings, BranchInfo } from "../../shared";
+import { CourseConfig, CourseDTO, RepoFilter, RepoDTO, StatsFilter, RepoStatisticsDTO, GroupPieDTO, StudentFilter, Startup, Settings, BranchInfo, StudentDetailsResult } from "../../shared";
 
 export class WebBackend implements BackendApi {
+    getStudents: (courseId: number) => Promise<StudentDetailsResult>;
     getSectionStats(courseId: number, assignment: string, section: string): Promise<any> {
         throw new Error("Method not implemented.");
     }
