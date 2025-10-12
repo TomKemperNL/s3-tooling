@@ -18,5 +18,8 @@ import './charts/stacked-bar-chart'
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 
+
+import './students/students-page'
+
 import './screenshot-element'
 import './webapp-element'

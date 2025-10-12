@@ -4,7 +4,7 @@ import { AuthorStatisticsDTO, CourseDTO, RepoDTO, Startup } from "../shared";
 import { when } from "lit/directives/when.js";
 import { CourseLoadedEvent } from "./dashboard/courses-list";
 import { RepoSelectedEvent } from "./dashboard/repositories-list";
-import { ReposLoadedEvent } from "./dashboard/course-details";
+import { ReposLoadedEvent, SectionSelectedEvent } from "./dashboard/course-details";
 import { BackendApi } from "../backend-api";
 import { ipcContext } from "./contexts";
 import { provide } from "@lit/context";
@@ -120,6 +120,11 @@ export class AppElement extends LitElement {
         this.save();
     }
 
+    sectionSelected(e: SectionSelectedEvent) {
+        this.selectedSection = e.section;
+        this.save();
+    }
+
     detailsSelected(e: { assignment: string, section: string }) {
         this.selectedAssignment = e.assignment;
         this.selectedSection = e.section;
@@ -184,12 +189,13 @@ export class AppElement extends LitElement {
         }        
         `;
 
-    async goToSettings() {
-        this.activePage = "settings";
+    goTo(page: Page) {
+        return () => {
+            this.activePage = page;
+            this.save();
+        }
     }
-    async goToDashboard() {
-        this.activePage = "repo";
-    }
+
     async handleNavigation(e: NavigationRequestedEvent) {
         this.activePage = e.page;
         this.save();
@@ -240,15 +246,15 @@ export class AppElement extends LitElement {
             <nav class="top" label="app navigation">
                 <ul>
                      ${when(this.isActive, () => html`  
-                    <li @click=${this.goToDashboard}><a href="#">Dashboard</a></li>
-                    <li><a>Students</a></li>
+                    <li @click=${this.goTo("repo")}><a href="#">Dashboard</a></li>
+                    <li @click=${this.goTo("students")}><a href="#">Students</a></li>
                     <li><a>Repositories</a></li>
                         `, () => html`
                     <li><a>Dashboard</a></li>
                     <li><a>Students</a></li>
                     <li><a>Repositories</a></li>
                         `)}                    
-                    <li @click=${this.goToSettings}><a href="#">Settings</a></li>
+                    <li @click=${this.goTo("settings")}><a href="#">Settings</a></li>
                     <li class="user">                    
                         <p>Github: ${this.githubUser}</p>
                         <p>Canvas: ${this.canvasUser}</p>                    
@@ -264,6 +270,7 @@ export class AppElement extends LitElement {
                 ${when(this.activeCourse, () => html`  
                     <custom-carat></custom-carat>
                     <course-details .course=${this.activeCourse} 
+                        @section-selected=${this.sectionSelected}
                         @details-selected=${this.detailsSelected} 
                         @repos-loaded=${this.reposLoaded} 
                         @repos-cleared=${this.reposCleared}></course-details>
@@ -280,6 +287,11 @@ export class AppElement extends LitElement {
             "settings", () => html`
                 <settings-page @settings-changed=${this.onSettingsChanged}></settings-page>
             `], 
+            ["students", () => html`
+                 ${when(!!this.activeCourse, () => html`
+                <students-page .course=${this.activeCourse} .section=${this.selectedSection}></students-page>
+                `)}
+            `],
             ["section", () => html`
                 ${when(!!this.activeCourse && !!this.selectedAssignment && !!this.selectedSection, () => html`
                     <section-details courseId=${this.activeCourse.canvasId} section=${this.selectedSection} assignment=${this.selectedAssignment}></section-details>

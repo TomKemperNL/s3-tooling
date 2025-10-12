@@ -55,6 +55,25 @@ export type StudentDTO = {
     email: string;
 }
 
+export type StudentDetailsDTO = {    
+    studentId: number;
+    name: string;
+    email: string;
+    identities: {
+        [canonical: string]: string[]
+    },
+    sections: string[]
+}
+
+export type StudentDetailsResult = {
+    students: StudentDetailsDTO[],
+    missing: string[],
+    conflicting: {
+       username: string,
+       students: string[] 
+    }[]
+}
+
 export type CourseDTO = {
     canvasId: number,
     name: string    

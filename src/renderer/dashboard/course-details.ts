@@ -20,6 +20,12 @@ export class ReposClearedEvent extends Event {
     }
 }
 
+export class SectionSelectedEvent extends Event {
+    constructor(public section: string) {
+        super('section-selected')
+    }
+}
+
 export class DetailsSelectedEvent extends Event {
     constructor(public section: string, public assignment: string) {
         super('details-selected')
@@ -47,11 +53,11 @@ export class CourseDetails extends LitElement {
     
     sectionDropdownChange(e: HTMLInputEvent) {
         this.selectedSection = e.target.value;        
-
+        this.dispatchEvent(new SectionSelectedEvent(this.selectedSection));
         if(this.selectedSection && this.selectedAssignment){            
             this.loadRepos();
         }else{
-            this.dispatchEvent(new ReposClearedEvent());
+            this.dispatchEvent(new ReposClearedEvent());            
         }
     }
 
