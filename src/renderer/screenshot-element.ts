@@ -39,7 +39,7 @@ export class ScreenShotElement extends LitElement {
         setTimeout(async () => {
             await this.ipc.requestScreenshot(`${this.author}-screenshot`);
             window.close();    
-        }, 100); //Hmm, hij heeft toch nog een wait nodig, om niet midden in een render te screenshotten of zoiets?
+        }, 1000); //Hmm, hij heeft toch nog een wait nodig, om niet midden in een render te screenshotten of zoiets?
         
     }
 

@@ -21,28 +21,36 @@ async function main() {
 
     for (const repo of repos) {
         console.log(`Repo: ${repo.name}`);
-        if(['s3-project-teachers-united', 's3-project-docent-test'].includes(repo.name)) {
+        if (['s3-project-teachers-united', 's3-project-docent-test'].includes(repo.name)) {
             console.log('Skipping' + repo.name);
             continue;
         }
 
         const members = await s3App.db.getCollaborators(organization, repo.name);
-        for (const member of members) {            
+        for (const member of members) {
             const portfolioRepo = portfolio + '-' + member.login;
             console.log('\t' + portfolioRepo);
-            await s3App.fileSystem.runCommands([
-                "git pull",
-                "git checkout -b sprint-1-stats",
-                "git add .",
-                `git commit -m "Added stats screenshot for sprint 1"`,
-                "git push origin sprint-1-stats",
-                "git checkout main"
-            ],
-                organization, portfolio, portfolioRepo
-            )
+            try {
 
-            await s3App.githubClient.createPr(organization, portfolioRepo, "Stats toevoegen voor Sprint 1", "Deze PR voegt de stats screenshot toe voor sprint 1... Hoop ik.", "sprint-1-stats", "main");
 
+                // await s3App.fileSystem.runCommands([
+                //     "git pull",
+                //     "git checkout -b sprint-2-stats",
+                //     "git add .",
+                //     `git commit -m "Added stats screenshot for sprint 2"`,
+                //     "git push origin sprint-2-stats",
+                //     "git checkout main"
+                // ],
+                //     organization, portfolio, portfolioRepo
+                // )
+
+                await s3App.githubClient.createPr(organization, portfolioRepo, 
+                    "Stats toevoegen voor Sprint 2", "Deze PR voegt de stats screenshot toe voor sprint 2... Hoop ik. Ze waren een beetje laat, dus merge dit aub. ergens komende week. Voeg commentaar toe als de stats niet vanzelfsprekend zijn (of je denkt dat er een bug in zit).", 
+                    "sprint-2-stats", "main");
+            } catch (err) {
+                console.error(`\t\tError processing ${portfolioRepo}: ${err}`);
+                continue;
+            }
         }
     }
 }
