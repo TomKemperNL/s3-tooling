@@ -148,3 +148,22 @@ export const cisq2: CourseConfig = {
         }
     ]
 }
+
+
+
+export const feb2024: CourseConfig = {
+    name: 'Front-end',
+    canvasId: 44689,
+    canvasGroupsName: '',
+    startDate: new Date(Date.parse('2024-11-01')),
+    githubStudentOrg: 'HU-SD-V2FE-studenten-2425',
+    lastMappingCheck: null,
+    lastRepoCheck: null,
+    lastSectionCheck: null,
+    assignments: [
+        {
+            githubAssignment: 'frontend-project',
+            groupAssignment: true
+        }
+    ]
+}

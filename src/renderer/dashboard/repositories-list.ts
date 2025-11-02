@@ -46,10 +46,11 @@ export class RepositoriesList extends LitElement {
     }
 
     render(){
+        let sortedRepos = [...this.repos].sort((a,b) => a.name.localeCompare(b.name));
         return html`
         <select @change=${this.dropdownChange}>
             <option value="">Select a repository</option>
-            ${map(this.repos, r => html`
+            ${map(sortedRepos, r => html`
                 <option value=${r.name}>${r.name}</option>
                 `)}
             </select>

@@ -1,6 +1,6 @@
 import { Database } from "sqlite3";
 import fs from 'fs/promises';
-import { s2, s3 } from '../temp'
+import { feb2024, s2, s3 } from '../temp'
 import { CourseConfig, CourseDTO, StudentDTO } from "../shared";
 import { MemberResponse, RepoResponse } from "./github-client";
 import { StringDict } from "./canvas-client";
@@ -411,6 +411,7 @@ export class Db {
     async initData() {
         await this.addCourse(s2);
         await this.addCourse(s3);
+        await this.addCourse(feb2024);
     }
 
     async delete() {

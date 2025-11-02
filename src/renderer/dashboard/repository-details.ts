@@ -309,6 +309,8 @@ export class RepositoryDetails extends LitElement {
     }
     `
 
+    
+
     render() {
         const labels: string[] = [];
         let authorBarcharts: any[] = [];
@@ -317,11 +319,12 @@ export class RepositoryDetails extends LitElement {
         const blameLabels: string[] = [];
         const blameValues: number[] = [];
         const blameColors: string[] = [];
+        let blameTotals = 0;
 
         const groupLabels: string[] = [];
         const groupValues: number[] = [];
         const groupColors: string[] = [];
-
+        let groupTotals = 0;
 
         if (this.repoStats) {
 
@@ -341,6 +344,7 @@ export class RepositoryDetails extends LitElement {
                 blameLabels.push(a);
                 blameValues.push(authorPie[a]);
                 blameColors.push(this.authorToColor(a));
+                blameTotals += authorPie[a];
             }
 
             for (const g of Object.keys(this.groupPie?.groupedPie)) {
@@ -357,6 +361,7 @@ export class RepositoryDetails extends LitElement {
                 }
                 groupValues.push(authorTotals);
                 groupColors.push(this.groupToColor(g));
+                groupTotals += authorTotals;
             }
         }
 
@@ -390,25 +395,26 @@ export class RepositoryDetails extends LitElement {
         
         <div style="grid-area: pieA">
         ${when(this.repoStats, () => html`
-            <h4>Regels code in eindproduct per auteur</h4>
+            <h4>Regels code in eindproduct per auteur</h4>            
             <pie-chart 
                 class=${classMap({ loading: this.loading, chart: true })} 
                 
                 .labels=${blameLabels}
                 .values=${blameValues}
                 .colors=${blameColors}></pie-chart>
-                
+            <p>Totaal: ${blameTotals} regels</p>    
         `)}        
         </div>
         <div style="grid-area: pieG">        
         ${when(this.groupPie, () => html`
-            <h4>Regels code in eindproduct per groepering</h4>
+            <h4>Regels code in eindproduct per groepering</h4>            
             <pie-chart 
                 class=${classMap({ loading: this.loading, chart: true })} 
                 
                 .labels=${groupLabels}
                 .values=${groupValues}
                 .colors=${groupColors}></pie-chart>
+            <p>Totaal: ${groupTotals} regels</p>
         `)}
         </div>
 
