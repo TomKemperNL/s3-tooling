@@ -13,6 +13,29 @@ export interface StudentResponse {
     login_id: string;
 }
 
+export interface AssignmentResponse {
+    id: number;
+    name: string;
+    created_at: string;
+    updated_at: string;
+    due_at: string;
+    locked_at: string;
+}
+
+export interface SubmissionCommentResponse {
+    id: number;
+    author_id: number;
+    author_name: string;
+    comment: string;
+    created_at: string;
+}
+
+export interface SubmissionResponse {
+    id: number,
+    user_id: number,
+    submission_comments: SubmissionCommentResponse[],
+}
+
 export interface SectionResponse {
     id: number;
     name: string;
@@ -36,7 +59,7 @@ export type SimpleDict = { [key: string]: string | number };
 export type StringDict = { [key: string]: string };
 
 function parseLinkHeader(header: string): SimpleDict {
-    const links : {[key: string]: string} = {};
+    const links: { [key: string]: string } = {};
     const parts = header.split(',');
     for (const part of parts) {
         const section = part.split(';');
@@ -49,21 +72,29 @@ function parseLinkHeader(header: string): SimpleDict {
 }
 
 function formatQueryString(params: SimpleDict) {
+    function formatValue(key: string, value: string | number | string[] | number[]) {
+        if (Array.isArray(value)) {
+            return value.map(v => `${encodeURIComponent(key)}=${encodeURIComponent(v)}`).join('&');
+        } else {
+            return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+        }
+    }
+
     return Object.entries(params)
-        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .map(([key, value]) => formatValue(key, value))
         .join('&');
 }
 
-export function getUsernameFromName(repoName: string, assignmentName: string){
-    return repoName.slice(assignmentName.length +1);
+export function getUsernameFromName(repoName: string, assignmentName: string) {
+    return repoName.slice(assignmentName.length + 1);
 }
 
-export function getUsernameFromUrl(url: string, assignmentName: string){
-    if(!url){
+export function getUsernameFromUrl(url: string, assignmentName: string) {
+    if (!url) {
         return null;
     }
 
-    if(url.indexOf('github.com') === -1){
+    if (url.indexOf('github.com') === -1) {
         return null;
     }
 
@@ -81,7 +112,7 @@ export function getUsernameFromUrl(url: string, assignmentName: string){
     if(url.startsWith('git@github.com')){
         const exp = `git@github.com:(.+?)/${assignmentName}-(.+)`;
         const match = url.match(exp);
-        if(match && match.length > 2){ 
+        if(match && match.length > 2){
             const username = match[2].replace('.git', '').split('/')[0];
             return username;
         }
@@ -94,7 +125,7 @@ export class CanvasClient {
     #baseUrl = "https://canvas.hu.nl/api/v1";
 
     constructor(canvasToken: string) {
-        if(!canvasToken) {
+        if (!canvasToken) {
             throw new Error("Canvas token is required");
         }
         this.#token = canvasToken;
@@ -177,6 +208,61 @@ export class CanvasClient {
         return groups;
     }
 
+    async getAssignments(course: { course_id: number }): Promise<AssignmentResponse[]> {
+        return this.getPages(`courses/${course.course_id}/assignments`);
+    }
+
+    async getSubmissions(params: { course_id: number, assignment_id: number, student_id: number }): Promise<any[]> {
+        try {
+            return this.getPages(`courses/${params.course_id}/assignments/${params.assignment_id}/submissions/${params.student_id}`, { 'include[]': ['submission_comments', 'rubric_assessment'] });
+        } catch (e) {
+            console.log(`Error fetching submission for course ${params.course_id}, assignment ${params.assignment_id}, student ${params.student_id}: ${e}`);
+            return [];
+        }
+    }
+
+    async getUsers(params: { course_id: number }): Promise<StudentResponse[]> {
+        return this.getPages(`courses/${params.course_id}/users`);
+    }
+
+    // Performance too shitty
+    // async getAllSubmissions(params: { course_id: number }) {
+    //     let studentsP = this.getUsers({ course_id: params.course_id });
+    //     let assignmentsP = this.getAssignments({ course_id: params.course_id });
+    //     let [students, assignments] = await Promise.all([studentsP, assignmentsP]);
+    //     let submisisonPs: Promise<any[]>[] = [];
+    //     for (let student of students) {
+    //         for (let assignment of assignments) {
+    //             submisisonPs.push(this.getSubmissions({ course_id: params.course_id, assignment_id: assignment.id, student_id: student.id }));
+    //         }
+    //     }
+    //     let submissions = await Promise.all(submisisonPs);
+    //     return submissions.flat();
+    // }
+
+    async getAllSubmissionsForStudent(params: { course_id: number, student_id: number }) : Promise<SubmissionResponse[]> {
+        let studentsP = this.getUsers({ course_id: params.course_id });
+        let assignmentsP = this.getAssignments({ course_id: params.course_id });
+        let [students, assignments] = await Promise.all([studentsP, assignmentsP]);
+        let submisisonPs: Promise<any[]>[] = [];
+
+        for (let assignment of assignments) {
+            submisisonPs.push(this.getSubmissions({ course_id: params.course_id, assignment_id: assignment.id, student_id: params.student_id }));
+        }
+
+        let submissions = await Promise.all(submisisonPs);
+        return submissions.flat();
+    }
+
+    async getCalloutsForStudent(params: { course_id: number, student_id: number }) {
+        let subs = await this.getAllSubmissionsForStudent({ course_id: params.course_id, student_id: params.student_id });
+        let comments = subs.flatMap(s => s.submission_comments);
+        let commentsWithCallouts = comments.filter(c => c.comment && c.comment.indexOf('@') !== -1).map(c => ({
+            author: c.author_name,
+            comment: c.comment
+        }));
+        return commentsWithCallouts;
+    }
 
     async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string): Promise<StringDict> {
         const mapping : {[key: string]: string} = {};
