@@ -20,6 +20,7 @@ Chart.register(...registerables);
 
 
 import './students/students-page'
+import './students/student-progress'
 
 import './screenshot-element'
 import './webapp-element'

@@ -9,6 +9,7 @@ type CourseDb = {
     canvasId: number,
     name: string,
     canvasGroups: string,
+    canvasOverviewJson: string,
     startDate: string,
     githubStudentOrg: string,
     lastRepoCheck: string,
@@ -43,6 +44,7 @@ function courseDbToConfig(r: CourseDb, as: AssignmentDb[]): CourseConfig {
         canvasGroupsName: r.canvasGroups,
         startDate: r.startDate ? new Date(Date.parse(r.startDate)) : null,
         githubStudentOrg: r.githubStudentOrg,
+        canvasOverview: r.canvasOverviewJson ? JSON.parse(r.canvasOverviewJson) : [],
         assignments: as.map(a => ({
             canvasId: a.canvasId,
             githubAssignment: a.githubAssignment,
@@ -113,14 +115,14 @@ export class Db {
         await this.#inTransaction(async () => {
             await this.#runProm(`insert into courses(
                 name, startDate,
-                canvasId, canvasGroups, 
+                canvasId, canvasGroups, canvasOverviewJson,
                 githubStudentOrg)
                 values(
                 ?,?,
-                ?,?,
+                ?,?,?,
                 ?)`, [
-                courseConfig.name, courseConfig.startDate?.toISOString(),
-                courseConfig.canvasId, courseConfig.canvasGroupsName,
+                courseConfig.name, courseConfig.startDate?.toISOString(), 
+                courseConfig.canvasId, courseConfig.canvasGroupsName, courseConfig.canvasOverview ? JSON.stringify(courseConfig.canvasOverview) : null,
                 courseConfig.githubStudentOrg
             ]);
 

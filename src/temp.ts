@@ -48,6 +48,30 @@ export const s3: CourseConfig = {
             canvasId: 373168
 
         },
+    ],
+    canvasOverview: [
+        {
+            title: 'Sprints',
+            assignments: [
+                373165, 373166, 373164
+            ]
+        }
+        , {
+            title: "Peilmomenten",
+            assignments: [
+                373176, 373177, 373178, 373179, 373180, 373174, 373183
+            ]
+        }, {
+            title: "Back-end opdracht",
+            assignments: [373162]
+        }, {
+            title: "Front-end opdracht",
+            assignments: [373163]
+        },
+        {
+            title: "Analist opdracht",
+            assignments: [373161]
+        }
     ]
 }
 
