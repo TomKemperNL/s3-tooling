@@ -30,7 +30,8 @@ create table
     students (
         id integer primary key,
         email text not null,
-        name text not null
+        name text not null,
+        canvasId integer
     );
 
 create table

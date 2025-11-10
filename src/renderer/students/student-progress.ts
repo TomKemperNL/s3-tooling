@@ -14,6 +14,9 @@ export class StudentProgress extends LitElement {
     course: CourseDTO;
 
     render() {
-        return html`${this.student.name}'s progress page in ${this.course.name}`;
+        return html`${this.student.name}'s progress page in ${this.course.name}
+        
+        
+        <pre>${JSON.stringify([this.student, this.course])}</pre>`;
     }
 }

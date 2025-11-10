@@ -45,7 +45,7 @@ const someCourse : CourseConfig = {
 };
 
 const someStudents: StudentDTO[] = [
-    { studentId: 1, name: 'Bob', email: 'Bob@example.com' }, { studentId: 2, name: 'Frob', email: 'Frob@example.com' },
+    { studentId: 1, name: 'Bob', email: 'Bob@example.com', canvasId: 1 }, { studentId: 2, canvasId: 2, name: 'Frob', email: 'Frob@example.com' },
 ]
 
 test("can persist course", async () => {

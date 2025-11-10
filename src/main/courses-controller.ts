@@ -31,6 +31,7 @@ export class CoursesController implements CourseApi {
                         name: student.name,
                         email: student.email,
                         studentId: student.studentId,
+                        canvasId: student.canvasId,
                         sections: [],
                         identities: {}
                     };
@@ -111,7 +112,8 @@ export class CoursesController implements CourseApi {
                 savedCourse.sections[section.name] = section.students.map(s => ({
                     name: s.name,
                     studentId: parseInt(s.sis_user_id),
-                    email: s.login_id
+                    email: s.login_id,
+                    canvasId: s.id
                 }));
             }
             await this.db.updateSections(savedCourse);

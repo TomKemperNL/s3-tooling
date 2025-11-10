@@ -345,7 +345,7 @@ export class Db {
                 async function upsertStudent(s: StudentDTO) {
                     const existingStudent = await this.#getProm('select * from students where id = ?', [s.studentId]);
                     if (existingStudent === undefined) {
-                        await this.#runProm('insert into students(id, email, name) values(?,?,?) on conflict do nothing;', [s.studentId, s.email, s.name]);
+                        await this.#runProm('insert into students(id, email, name, canvasId) values(?,?,?,?) on conflict do nothing;', [s.studentId, s.email, s.name, s.canvasId]);
                     }
                     await this.#runProm('insert into students_sections(studentId, sectionId) values(?,?);', [s.studentId, sectionId]);
                 }
@@ -359,7 +359,7 @@ export class Db {
 
     async getCourse(canvasId: number) {
         const rows = await this.#allProm<any>(`
-                select c.name as courseName, sec.name as sectionName, stu.name as studentName, stu.id as studentId, * from courses c 
+                select c.canvasId as courseCId, c.name as courseName, sec.name as sectionName, stu.name as studentName, stu.id as studentId, stu.canvasId as studentCId, * from courses c 
                     left join sections sec on sec.courseId = c.canvasid
                     left join students_sections ss on ss.sectionId = sec.id
                     left join students stu on ss.studentId = stu.id
@@ -371,7 +371,7 @@ export class Db {
 
         const courseDTO: CourseDTO = {
             name: rows[0].courseName,
-            canvasId: rows[0].canvasId,
+            canvasId: rows[0].courseCId,
             assignments: as.map(a => ({
                 canvasId: a.canvasId,
                 githubAssignment: a.githubAssignment,
@@ -388,7 +388,8 @@ export class Db {
                 courseDTO.sections[r.sectionName].push({
                     studentId: r.studentId,
                     name: r.studentName,
-                    email: r.email
+                    email: r.email,
+                    canvasId: r.studentCId
                 });
             }
         }

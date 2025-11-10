@@ -63,7 +63,8 @@ const someCourse : CourseConfig & CourseDTO= {
             {
                 studentId: 123,
                 email: 'test@example.com',
-                name: 'test student'
+                name: 'test student',
+                canvasId: 123
             }
         ]
     }

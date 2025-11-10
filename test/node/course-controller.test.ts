@@ -83,7 +83,8 @@ test("canLoadCourse", async () => {
         'bla-section': [{
             email: 'test@example.com',
             name: 'test student',
-            studentId: 123456
+            studentId: 123456,
+            canvasId: 123
         }]
     })
 });

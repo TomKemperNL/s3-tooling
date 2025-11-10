@@ -59,12 +59,10 @@ export type StudentDTO = {
     studentId: number;
     name: string;
     email: string;
+    canvasId: number;
 }
 
-export type StudentDetailsDTO = {    
-    studentId: number;
-    name: string;
-    email: string;
+export type StudentDetailsDTO = StudentDTO & {        
     identities: {
         [canonical: string]: string[]
     },
