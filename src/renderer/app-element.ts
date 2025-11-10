@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { AuthorStatisticsDTO, CourseDTO, RepoDTO, Startup } from "../shared";
+import { AuthorStatisticsDTO, CourseDTO, RepoDTO, Startup, StudentDTO } from "../shared";
 import { when } from "lit/directives/when.js";
 import { CourseLoadedEvent } from "./dashboard/courses-list";
 import { RepoSelectedEvent } from "./dashboard/repositories-list";
@@ -13,6 +13,7 @@ import { AuthorSelectedEvent } from "./dashboard/author-list";
 import { choose } from "lit/directives/choose.js";
 import { Page } from "./navigation/pages";
 import { NavigationRequestedEvent } from "./navigation/events";
+import { StudentSelectedEvent } from "./students/students-page";
 
 
 @customElement("app-element")
@@ -34,6 +35,9 @@ export class AppElement extends LitElement {
 
     @property({ type: Object })
     activeRepo: RepoDTO;
+
+    @property({ type: Object })
+    activeStudent: StudentDTO;
 
     @property({ type: String, state: true })
     activePage: Page = "repo";
@@ -101,6 +105,12 @@ export class AppElement extends LitElement {
         this.activeRepo = e.repo;
         this.activePage = "repo";
         this.selectedAuthor = null;
+        this.save();
+    }
+
+    studentSelected(e: StudentSelectedEvent){
+        this.activeStudent = e.student;
+        this.activePage = "student-progress";
         this.save();
     }
 
@@ -215,7 +225,8 @@ export class AppElement extends LitElement {
             selectedAuthor: this.selectedAuthor,
             selectedSection: this.selectedSection,
             selectedAssignment: this.selectedAssignment,
-            activePage: this.activePage
+            activePage: this.activePage,
+            activeStudent: this.activeStudent
         }
 
         window.localStorage.setItem('app-element-memento', JSON.stringify(memento));
@@ -233,6 +244,7 @@ export class AppElement extends LitElement {
                 this.selectedSection = parsed.selectedSection;
                 this.selectedAssignment = parsed.selectedAssignment;
                 this.activePage = parsed.activePage
+                this.activeStudent = parsed.activeStudent;
             }
         } catch (e) {
             console.error("Error loading memento", e);
@@ -289,7 +301,12 @@ export class AppElement extends LitElement {
             `], 
             ["students", () => html`
                  ${when(!!this.activeCourse, () => html`
-                <students-page .course=${this.activeCourse} .section=${this.selectedSection}></students-page>
+                <students-page .course=${this.activeCourse} .section=${this.selectedSection} @student-selected=${this.studentSelected}></students-page>
+                `)}
+            `],
+            ["student-progress", () => html`
+                 ${when(!!this.activeStudent, () => html`
+                <student-progress .student=${this.activeStudent} .course=${this.activeCourse}></student-progress>
                 `)}
             `],
             ["section", () => html`

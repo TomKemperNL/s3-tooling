@@ -1,10 +1,19 @@
 import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { CourseDTO, StudentDetailsDTO } from "../../shared";
+import { CourseDTO, StudentDetailsDTO, StudentDTO } from "../../shared";
 import { BackendApi } from "../../backend-api";
 import { consume } from "@lit/context";
 import { ipcContext } from "../contexts";
 import { map } from "lit/directives/map.js";
+
+export class StudentSelectedEvent extends Event {
+    constructor(public student: StudentDTO){
+        super('student-selected', {
+            bubbles: true,
+            composed: true
+        })        
+    }
+}
 
 @customElement("students-page")
 export class StudentsPage extends LitElement {
@@ -34,6 +43,12 @@ export class StudentsPage extends LitElement {
         }
     }
 
+    selectStudent(s: StudentDetailsDTO) {
+        return () => {
+            this.dispatchEvent(new StudentSelectedEvent(s));
+        };
+    }
+
 
     render() {
         let students = this.students;
@@ -59,7 +74,7 @@ export class StudentsPage extends LitElement {
                 ${map(students, (s) => html`
                         <tr>
                             <td><ul>${map(s.sections, (sec) => html`<li>${sec}</li>`)}</ul></td>
-                            <td>${s.name}</td>
+                            <td><a href="#" @click=${this.selectStudent(s)}>${s.name}</a></td>
                             <td><a href="mailto:${s.email}">${s.email}</a></td>
                             <td>
                                 ${Object.keys(s.identities).join(', ')}
