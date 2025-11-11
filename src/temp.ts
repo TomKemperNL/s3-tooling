@@ -53,15 +53,19 @@ export const s3: CourseConfig = {
         {
             title: 'Sprints',
             assignments: [
-                373165, 373166, 373164
+                373165, 373166, 373164, 373172, 373173, 373169, 376358
             ]
         }
         , {
             title: "Peilmomenten",
             assignments: [
-                373176, 373177, 373178, 373179, 373180, 373174, 373183
+                373176, 373177, 373178, 373179, 373180
             ]
         }, {
+            title: "Eindbeoordeling",
+            assignments: [373174, 373183]
+        },
+        {
             title: "Back-end opdracht",
             assignments: [373162]
         }, {

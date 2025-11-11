@@ -13,6 +13,14 @@ export interface StudentResponse {
     login_id: string;
 }
 
+export interface RubricResponse {
+    id: string,
+    points: number,
+    description: string,
+    long_description: string,
+    ratings: { points: number, description: string, long_description: string }[];    
+}
+
 export interface AssignmentResponse {
     id: number;
     name: string;
@@ -20,6 +28,7 @@ export interface AssignmentResponse {
     updated_at: string;
     due_at: string;
     locked_at: string;
+    rubrics?: RubricResponse[];
 }
 
 export interface SubmissionCommentResponse {
@@ -32,7 +41,10 @@ export interface SubmissionCommentResponse {
 
 export interface SubmissionResponse {
     id: number,
+    assignment_id: number,
     user_id: number,
+    submitted_at: string,
+    rubric_assessment?: { [key: string]: { points: number, comments: string } },
     submission_comments: SubmissionCommentResponse[],
 }
 
@@ -240,10 +252,8 @@ export class CanvasClient {
     //     return submissions.flat();
     // }
 
-    async getAllSubmissionsForStudent(params: { course_id: number, student_id: number }) : Promise<SubmissionResponse[]> {
-        let studentsP = this.getUsers({ course_id: params.course_id });
-        let assignmentsP = this.getAssignments({ course_id: params.course_id });
-        let [students, assignments] = await Promise.all([studentsP, assignmentsP]);
+    async getAllSubmissionsForStudent(params: { course_id: number, student_id: number }) : Promise<SubmissionResponse[]> {        
+        let assignments = await this.getAssignments({ course_id: params.course_id });        
         let submisisonPs: Promise<any[]>[] = [];
 
         for (let assignment of assignments) {
