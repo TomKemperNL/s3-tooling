@@ -11,7 +11,8 @@
     "start:web": "dotenvx run -f .dev.env -- node ./dist/src/main.js webonly",
     "screenshots": "dotenvx run -f .dev.env -- electron ./dist/src/main-screenshots.js",
     "screenshots2": "dotenvx run -f .dev.env -- node ./dist/src/main-screenshots2.js",
-    "screenshots3": "dotenvx run -f .dev.env -- node ./dist/src/main-screenshots3.js"
+    "screenshots3": "dotenvx run -f .dev.env -- node ./dist/src/main-screenshots3.js",
+    "screenshots4": "dotenvx run -f .dev.env -- node ./dist/src/main-screenshots4.js"
   },
   "author": "",
   "license": "ISC",

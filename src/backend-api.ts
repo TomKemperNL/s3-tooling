@@ -16,7 +16,7 @@ export interface ScreenshotArgs {
 
 export interface ScreenshotApi {
     onLoadUserStats: (callback: (data: ScreenshotArgs) => void) => void;
-    requestScreenshot: (author: string) => Promise<void>;
+    requestScreenshot: (filename: string) => Promise<void>;
 }
 
 export interface AppApi {

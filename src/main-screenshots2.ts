@@ -4,7 +4,7 @@ import { createApp } from "./main/index"
 import "./electron-setup";
 import { s3 } from "./temp";
 import { copyFile, readFile } from 'fs/promises'
-import { read } from "fs";
+import { existsSync, read } from "fs";
 
 config();
 
@@ -27,7 +27,7 @@ async function main() {
 
 
     const courseId = s3.canvasId;
-    const sprint = 2;
+    const sprint = 3;
     const assignment = 's3-project';
     const portfolio = 's3-portfolio';
     const organization = 'HU-SD-S3-Studenten-S2526';
@@ -35,7 +35,7 @@ async function main() {
     let course = await s3App.db.getCourse(courseId);
     let userMapping = await s3App.db.getGHUserToStudentMailMapping(courseId);
     console.log(userMapping);
-    let extraUserMapping = await readFile('./testS1Mappings.json', { encoding: 'utf-8' }).then(data => JSON.parse(data));
+    let extraUserMapping = await readFile('./testMappingsS1.json', { encoding: 'utf-8' }).then(data => JSON.parse(data));
     for(let key of Object.keys(extraUserMapping)) {
         userMapping[key] = extraUserMapping[key];
     }
@@ -81,9 +81,18 @@ async function main() {
             }
 
             const pngPath = path.join(portfolioPath, 'sprints', 'blok-a', targetFolder, 'stats.png');
-            const sourcePath = path.join('.', 'screenshots', `${member.login}-screenshot.png`);
-            console.log(`\t\tCopying ${sourcePath} to ${pngPath}`);
-            await copyFile(sourcePath, pngPath);
+            const sourcePath = path.join('.', 'screenshots', `${repo.name}-${member.login}-screenshot.png`);
+            
+            try{
+                if(existsSync(sourcePath)){
+                    console.log(`\t\tCopying ${sourcePath} to ${pngPath}`);
+                    await copyFile(sourcePath, pngPath);
+                }
+                
+            }catch(err){
+                console.error(`\t\tError copying file: ${err}`);
+            }
+            
             
         }
     }
