@@ -21,7 +21,6 @@ export const s2: CourseConfig = {
         {
             githubAssignment: 'sd-s2-project',
             groupAssignment: true
-
         },
     ]
 }
@@ -40,13 +39,23 @@ export const s3: CourseConfig = {
             githubAssignment: 's3-portfolio',
             groupAssignment: false,
             canvasId: 373167
-
+        },
+        {
+            githubAssignment: 's3-focus',
+            groupAssignment: false,
+        },
+        {
+            githubAssignment: 'S3-Frontend-Gilde-Challenge',
+            groupAssignment: false,
+        },
+        {
+            githubAssignment: 's3-backend',
+            groupAssignment: false,
         },
         {
             githubAssignment: 's3-project',
             groupAssignment: true,
             canvasId: 373168
-
         },
     ]
 }

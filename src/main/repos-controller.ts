@@ -33,7 +33,7 @@ export class ReposController implements RepoApi{
             usermapping = await this.db.getUserMapping(savedCourseConfig.canvasId);
         } else {
             for (const a of savedCourseConfig.assignments) {
-                if (!a.groupAssignment) {
+                if (!a.groupAssignment && a.canvasId) {
                     usermapping = await this.canvasClient.getGithubMapping(
                         { course_id: savedCourseConfig.canvasId },
                         { assignment_id: a.canvasId }
@@ -113,7 +113,7 @@ export class ReposController implements RepoApi{
         repos = repos.filter(r => r.matchesAssignment(assignment));
 
         await this.#updateMembers(repos, assignment);
-        if (filter.sections.length > 0) {
+        if (assignment.canvasId && filter.sections.length > 0) {
             const usermapping: SimpleDict = await this.#getUserMapping(savedCourseConfig);
 
             const logins = filter.sections
