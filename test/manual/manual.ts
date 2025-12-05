@@ -1,6 +1,5 @@
 import { S3App } from "../../src/main/index";
 import { Settings } from "../../src/shared";
-import { importUserMappingTemp } from "../../src/temp";
 
 require('@dotenvx/dotenvx').config({path: ['.dev.env', '.env']})
 

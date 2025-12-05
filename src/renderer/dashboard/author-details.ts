@@ -58,17 +58,15 @@ export class RepositoryDetails extends LitElement {
             const gettingGroupPie = this.ipc.getGroupPie(this.repo.courseId, this.repo.assignment, this.repo.name, { authors: [this.author] });
 
             Promise.all([gettingRepos, gettingGroupPie]).then(([repoStats, groupPie]) => {
-                this.repoStats = repoStats;                
+                console.log(repoStats);                
+                this.repoStats = repoStats;
+                this.allGroups = repoStats.groups;
+                this.enabledGroups = repoStats.groups;
+                console.log(groupPie);
                 this.groupPie = groupPie;
                 this.loading = false;
                 
             });
-        }
-        if (_changedProperties.has('repoStats')) {            
-            if(this.repoStats){                
-                this.allGroups = this.repoStats.groups;
-                this.enabledGroups = this.repoStats.groups;
-            }            
         }
     }        
 
@@ -209,7 +207,7 @@ export class RepositoryDetails extends LitElement {
                 }
                 groupLabels.push(g);
 
-                const authorTotals = 0;                
+                const authorTotals = this.groupPie?.groupedPie[g][this.author] || 0;
                 groupValues.push(authorTotals);
                 groupColors.push(this.groupToColor(g));
             }

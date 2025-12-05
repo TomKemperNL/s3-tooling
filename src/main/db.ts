@@ -193,7 +193,7 @@ export class Db {
         });
     }
 
-    async getUserMapping(courseId: number): Promise<StringDict> {
+    async getStudentMailToGHUserMapping(courseId: number): Promise<StringDict> {
         const rows = await this.#allProm<{ email: string, username: string }>(`
             select s.email, gha.username from courses c 
                 join sections sec on c.canvasid = sec.courseId
@@ -208,7 +208,7 @@ export class Db {
         return result;
     }
 
-    async getUserMappingRev(courseId: number): Promise<StringDict> {
+    async getGHUserToStudentMailMapping(courseId: number): Promise<StringDict> {
         const rows = await this.#allProm<{ email: string, username: string }>(`
             select s.email, gha.username from courses c 
                 join sections sec on c.canvasid = sec.courseId
@@ -392,6 +392,15 @@ export class Db {
         }
 
         return courseDTO;
+    }
+
+    async exists(){
+        try{
+            await this.#getProm('select 1 from courses limit 1;');
+            return true;
+        }catch(e){
+            return false;
+        }
     }
 
     async initSchema() {

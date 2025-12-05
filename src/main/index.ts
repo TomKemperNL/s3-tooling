@@ -37,10 +37,18 @@ export class S3App {
             console.error('Error initializing app:', e);
         }
         // console.log(this.settings)
-        if (!this.settings.keepDB) {
-            await db.reset().then(() => db.test());
-        } else {
-            console.log('keeping db');
+
+        if(await db.exists()){
+            if (!this.settings.keepDB) {
+                console.log('resetting db');
+                await db.reset().then(() => db.test());
+            } else {
+                console.log('keeping db');
+            }
+        }else{
+            console.log('initializing db');
+            await db.initSchema();
+            await db.initData();
         }
     }
 
@@ -48,17 +56,35 @@ export class S3App {
     async reload(settings: Settings) { //Nog niet async, maar ik vermoed dat dit wel ooit nodig gaat zijn... (en dan is retroactief async maken vaak vrij ingrijpend)
         this.#settings = settings;
         this.screenshotController = new ScreenshotController();
-        this.githubClient = new GithubClient(this.settings.githubToken);
-        this.fileSystem = new FileSystem(this.settings.dataPath);
-        this.canvasClient = new CanvasClient(this.settings.canvasToken);
-
+        try{
+            this.githubClient = new GithubClient(this.settings.githubToken);
+        }catch(e){
+            console.error("Unable to create github client", e);
+        }
+        
+        try{
+            this.fileSystem = new FileSystem(this.settings.dataPath);
+        }catch(e){
+            console.error("Unable to create FileSystem client", e);
+        }
+        
+        try{
+            this.canvasClient = new CanvasClient(this.settings.canvasToken);
+        }catch(e){
+            console.error("Unable to create canvas client", e);
+        }
+        
         this.repoController = new ReposController(db, this.canvasClient, this.githubClient, this.fileSystem);
         this.coursesController = new CoursesController(db, this.canvasClient);
         this.statisticsController = new StatisticsController(db, this.githubClient, this.fileSystem, this.repoController, this.coursesController);
     }
 
+    async isAdmin(user: string) {
+        return this.#settings.authorizedUsers.indexOf(user) !== -1;
+    }
+
     async isAuthorized(user: string, session: any, params: { courseId: number, assignment: string, repository: string }) {
-        // console.debug(`Checking if user ${user} is authorized to access course ${params.courseId}, assignment ${params.assignment}, repository ${params.repository}`);
+        console.log(`Checking if user ${user} is authorized to access course ${params.courseId}, assignment ${params.assignment}, repository ${params.repository}`);
         let allowed = this.#settings.authorizedUsers.indexOf(user) !== -1;
 
 

@@ -60,33 +60,6 @@ export const s3: CourseConfig = {
     ]
 }
 
-export function importUserMappingTemp() {
-    if (existsSync("C://s3-tooling-data/usermappingS2.json")) {
-        console.log("Using local user mapping file");
-        return readFile("C://s3-tooling-data/usermappingS2.json", { encoding: 'utf-8' })
-            .then(data => JSON.parse(data))
-            .then(allMapped => {
-                const result = {};
-                const classes = Object.keys(allMapped);
-                for (const c of classes) {
-                    const teams = Object.keys(allMapped[c]);
-                    for (const t of teams) {
-                        const teamMapped = allMapped[c][t].mapped;
-                        Object.assign(result, teamMapped);
-                    }
-                }
-                return result;
-            })
-            .catch(err => {
-                console.error("Error reading user mapping file:", err);
-                return {};
-            });
-    } else {
-        return Promise.resolve({});
-    }
-}
-
-
 export const cisq1: CourseConfig = {
     name: 'Continuous Integration and Software Qua1',
     canvasId: 44760,
