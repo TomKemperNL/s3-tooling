@@ -37,6 +37,11 @@ export class Repo {
     }
 }
 
+export type CanvasAssignmentOverview = {
+    title: string,
+    assignments: number[]
+}
+
 export type CourseConfig = {
     name: string;
     canvasId: number;    
@@ -46,7 +51,8 @@ export type CourseConfig = {
     assignments: Assignment[],
     lastRepoCheck: Date,
     lastSectionCheck: Date,
-    lastMappingCheck: Date
+    lastMappingCheck: Date,
+    canvasOverview?: CanvasAssignmentOverview[]
 }
 
 export type StudentDTO = {
@@ -55,11 +61,31 @@ export type StudentDTO = {
     email: string;
 }
 
+export type StudentDetailsDTO = {    
+    studentId: number;
+    name: string;
+    email: string;
+    identities: {
+        [canonical: string]: string[]
+    },
+    sections: string[]
+}
+
+export type StudentDetailsResult = {
+    students: StudentDetailsDTO[],
+    missing: string[],
+    conflicting: {
+       username: string,
+       students: string[] 
+    }[]
+}
+
 export type CourseDTO = {
     canvasId: number,
     name: string    
     sections: { [key: string] : StudentDTO[] },
-    assignments: Assignment[]    
+    assignments: Assignment[],
+    canvasOverview?: CanvasAssignmentOverview[]
 }
 
 export type RepoFilter = {

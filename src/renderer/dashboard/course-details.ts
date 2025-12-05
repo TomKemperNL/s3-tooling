@@ -20,11 +20,19 @@ export class ReposClearedEvent extends Event {
     }
 }
 
+export class SectionSelectedEvent extends Event {
+    constructor(public section: string) {
+        super('section-selected')
+    }
+}
+
 export class DetailsSelectedEvent extends Event {
     constructor(public section: string, public assignment: string) {
         super('details-selected')
     }
 }
+
+const allSections = "All";
 
 @customElement('course-details')
 export class CourseDetails extends LitElement {
@@ -47,11 +55,11 @@ export class CourseDetails extends LitElement {
     
     sectionDropdownChange(e: HTMLInputEvent) {
         this.selectedSection = e.target.value;        
-
+        this.dispatchEvent(new SectionSelectedEvent(this.selectedSection));
         if(this.selectedSection && this.selectedAssignment){            
             this.loadRepos();
         }else{
-            this.dispatchEvent(new ReposClearedEvent());
+            this.dispatchEvent(new ReposClearedEvent());            
         }
     }
 
@@ -69,8 +77,9 @@ export class CourseDetails extends LitElement {
     async loadRepos() {
         try {
             this.loading = true;
-            const result = await this.ipc.loadRepos(this.course.canvasId, this.selectedAssignment, { sections: [ this.selectedSection] })
-            this.dispatchEvent(new DetailsSelectedEvent(this.selectedSection, this.selectedAssignment));
+            let sections = this.selectedSection === allSections ? [] : [ this.selectedSection];
+            const result = await this.ipc.loadRepos(this.course.canvasId, this.selectedAssignment, { sections })
+            this.dispatchEvent(new DetailsSelectedEvent(this.selectedSection === allSections ? null : this.selectedSection, this.selectedAssignment));
             this.dispatchEvent(new ReposLoadedEvent(result));
         }
         catch (e) {
@@ -85,12 +94,15 @@ export class CourseDetails extends LitElement {
     }
 
     render() {
+        
+        let renderSections = Object.keys(this.course.sections).concat([allSections]).sort();
+
         return html`          
             <h3>Secties</h3>
             <custom-carat></custom-carat>
             <select ?disabled=${this.loading} @change=${this.sectionDropdownChange}>
                 <option value="">Select a section</option>
-                    ${map(Object.keys(this.course.sections), s => html`
+                    ${map(renderSections, s => html`
                         <option value=${s}>${s}</option>
             `)}
             </select>

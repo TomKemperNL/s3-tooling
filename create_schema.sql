@@ -5,6 +5,7 @@ create table
         canvasGroups text,
         startDate text,
         githubStudentOrg text,
+        canvasOverviewJson text,
         lastRepoCheck text,
         lastSectionCheck text,
         lastMappingCheck text

@@ -57,6 +57,30 @@ export const s3: CourseConfig = {
             groupAssignment: true,
             canvasId: 373168
         },
+    ],
+    canvasOverview: [
+        {
+            title: 'Sprints',
+            assignments: [
+                373165, 373166, 373164
+            ]
+        }
+        , {
+            title: "Peilmomenten",
+            assignments: [
+                373176, 373177, 373178, 373179, 373180, 373174, 373183
+            ]
+        }, {
+            title: "Back-end opdracht",
+            assignments: [373162]
+        }, {
+            title: "Front-end opdracht",
+            assignments: [373163]
+        },
+        {
+            title: "Analist opdracht",
+            assignments: [373161]
+        }
     ]
 }
 
@@ -154,6 +178,25 @@ export const cisq2: CourseConfig = {
             githubAssignment: 'hupol',
             groupAssignment: true,
             canvasId: 349939
+        }
+    ]
+}
+
+
+
+export const feb2024: CourseConfig = {
+    name: 'Front-end',
+    canvasId: 44689,
+    canvasGroupsName: '',
+    startDate: new Date(Date.parse('2024-11-01')),
+    githubStudentOrg: 'HU-SD-V2FE-studenten-2425',
+    lastMappingCheck: null,
+    lastRepoCheck: null,
+    lastSectionCheck: null,
+    assignments: [
+        {
+            githubAssignment: 'frontend-project',
+            groupAssignment: true
         }
     ]
 }

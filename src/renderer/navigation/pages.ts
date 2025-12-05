@@ -1,1 +1,1 @@
-export type Page = "repo" | "settings" | "section";
+export type Page = "repo" | "settings" | "section" | "students" | "student-progress";

@@ -2,6 +2,7 @@ import { test, expect, beforeEach, afterAll } from 'vitest';
 import { Db } from '../../src/main/db'
 import { Database } from "sqlite3";
 import { CourseConfig, StudentDTO } from '../../src/shared';
+import { title } from 'process';
 
 let db: Db = null;
 beforeEach(async () => {
@@ -37,6 +38,9 @@ const someCourse : CourseConfig = {
             githubAssignment: 'bla-ass-p',
             groupAssignment: true
         }
+    ],
+    canvasOverview: [
+        { title: 'SomeOverview', assignments: [1, 2, 3] }
     ]
 };
 
@@ -50,6 +54,15 @@ test("can persist course", async () => {
 
     expect(foundCourse.name).toBe('bla-course');
     expect(foundCourse.assignments.length).toEqual(2);
+});
+
+test("can persist course-config", async () => {
+    await db.addCourse(someCourse);
+    let foundConfig = await db.getCourseConfig(123);
+
+    expect(foundConfig.name).toBe('bla-course');
+    expect(foundConfig.assignments.length).toEqual(2);
+    expect(foundConfig.canvasOverview.length).toEqual(1);
 });
 
 test("can add sections to course", async () => {

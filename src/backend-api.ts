@@ -1,4 +1,4 @@
-import { PieDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO, BranchInfo } from "./shared";
+import { PieDTO, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO, BranchInfo, StudentDetailsResult } from "./shared";
 import { Settings } from "./shared"
 
 
@@ -32,6 +32,7 @@ export interface SettingsApi {
 export interface CourseApi {
     getCourses: () => Promise<CourseConfig[]>
     loadCourse: (id: number) => Promise<CourseDTO>
+    getStudents: (courseId: number) => Promise<StudentDetailsResult>
 }
 
 export interface RepoApi {

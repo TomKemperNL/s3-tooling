@@ -1,4 +1,4 @@
-import { PieDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO } from "../shared";
+import { PieDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO, StudentDetailsResult } from "../shared";
 import { Settings } from "../shared";
 import { BackendApi } from "../backend-api";
 
@@ -9,6 +9,16 @@ export class ErrorHandlingBackendApi implements BackendApi {
     constructor(ipc: BackendApi) {
         this.ipc = ipc;
     }
+    async getStudents(courseId: number) : Promise<StudentDetailsResult>{
+        try {
+            return this.ipc.getStudents(courseId);
+        } catch (error) {
+            console.error("Error fetching students:", error);
+            alert("Failed to load students:" + error.message);
+            return { students: [], missing: [], conflicting: [] }; // Return an empty object on error
+        }
+    }
+
     async getSectionStats(courseId: number, assignment: string, section: string): Promise<any> {
         try {
             return await this.ipc.getSectionStats(courseId, assignment, section);

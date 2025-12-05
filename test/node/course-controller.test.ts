@@ -20,7 +20,9 @@ beforeEach(async () => {
     })
 
     await db.initSchema();
+    await db.addCourse(someCourse);
     canvasFake = new FakeCanvasClient();
+    canvasFake.sections = someSections;
     coursesController = new CoursesController(db, <any>canvasFake);
 });
 
@@ -69,16 +71,12 @@ const someSections = [
     }
 ];
 
-test("canReceiveConfigs", async () => {
-    await db.addCourse(someCourse);
+test("canReceiveConfigs", async () => {        
     let result = await coursesController.getCourses();
     expect(result.length).toStrictEqual(1);
 });
 
 test("canLoadCourse", async () => {
-    canvasFake.sections = someSections;
-
-    await db.addCourse(someCourse);
     let result = await coursesController.loadCourse(someCourse.canvasId);
     expect(result.assignments.length).toBe(2);
     expect(result.sections).toStrictEqual({
@@ -90,13 +88,35 @@ test("canLoadCourse", async () => {
     })
 });
 
-test("Second time loading course is cached", async () => {
-    canvasFake.sections = someSections;
-
-    await db.addCourse(someCourse);
+test("Second time loading course is cached", async () => {    
     await coursesController.loadCourse(someCourse.canvasId);
     let apiCalls = canvasFake.apiCalls;
     await coursesController.loadCourse(someCourse.canvasId);
     let nextApiCalls = canvasFake.apiCalls;
     expect(nextApiCalls).toBe(apiCalls);
 });
+
+test("Can get studentDetails", async () => {
+    await coursesController.loadCourse(someCourse.canvasId);
+    await db.updateUserMapping(someCourse.canvasId, {
+        "test@example.com": "testGithub"
+    });
+    await db.updateAuthorMapping("bla-org", "someRepo", {
+        "alias1": "testGithub",        
+        "alias2": "otherGithub",
+        "alias3": "testGithub",
+    });
+    await db.updateRepoMapping(someCourse.canvasId, [
+        <any>{ name: "someRepo", organization: { login: "bla-org" }, full_name: "bla-org/someRepo" }
+    ]);
+    await db.updateCollaborators("bla-org", "someRepo", [
+        { login: "testGithub" },
+        { login: "missingUser" }
+    ]); 
+
+    let students = await coursesController.getStudents(someCourse.canvasId);
+    console.log(students);
+    expect(students.students.length).toBe(1);
+    expect(students.students[0].identities["testGithub"]).toStrictEqual(["alias1", "alias3"]);
+    expect(students.missing.length).toBe(2);
+})
