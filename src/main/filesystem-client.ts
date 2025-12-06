@@ -4,7 +4,6 @@ import * as path from 'path';
 import { readdir } from 'fs/promises'
 
 import { promisify } from 'util';
-import { ignoredAuthors } from './repository-statistics';
 import { Repo } from '../shared';
 import { GroupDefinition } from './statistics';
 
@@ -63,8 +62,6 @@ export function parseLog(logLines: string[]): LoggedCommit[] {
             }
         }
     }
-    commits.push(currentCommit);
-
     return commits;
 }
 
@@ -132,6 +129,7 @@ export class FileSystem {
     #basePath: string;
     cloneStyle: CloneStyle = 'ssh'
     gitCli: GitCommands = new GitCli();
+    ignoredAuthors: string[] = [];
 
     constructor(basePath: string) {
         if (!basePath) {
@@ -288,7 +286,7 @@ export class FileSystem {
         const result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });
         const logLines = result.stdout.split('\n');
 
-        const parsedLog = parseLog(logLines);
+        const parsedLog = parseLog(logLines).filter(c => this.ignoredAuthors.indexOf(c.author) === -1);
         this.repoCache[target] = parsedLog;
         return parsedLog;
     }
@@ -311,7 +309,7 @@ export class FileSystem {
 
         let parsedLog: LoggedCommit[] = null;
         try {
-            parsedLog = await this.gitCli.getFileLog(path, file);
+            parsedLog = (await this.gitCli.getFileLog(path, file)).filter(c => this.ignoredAuthors.indexOf(c.author) === -1);
             //basically willen we files ignoren die altijd binary zijn, of alleen maar merge-commits hebben.
             //hmm, dat klinkt niet heel logisch: TODO, wat wouden we hier eigenlijk?:)
         } catch (e) {
@@ -327,7 +325,7 @@ export class FileSystem {
         } else if (parsedLog.every(l => l.changes.some(c => c.added === '-' || c.removed === '-'))) {
             return false;; //Ignore binary files
         }
-        else if (!parsedLog.every(l => ignoredAuthors.some(ia => ia === l.author))) {
+        else if (!parsedLog.every(l => this.ignoredAuthors.some(ia => ia === l.author))) {
             return true;
         } else {
             return false;

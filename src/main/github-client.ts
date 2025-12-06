@@ -1,5 +1,5 @@
 import { Octokit } from "@octokit/rest";
-import { Issue, PullRequest, Repo } from "../shared";
+import { Issue, PullRequest, Repo, Comment } from "../shared";
 import { response } from "express";
 
 export type RepoResponse = {
@@ -31,6 +31,7 @@ export type MemberResponse = {
 
 export class GithubClient {
   #kit: Octokit;
+  ignoredAuthors: string[] = [];
 
   constructor(githubToken: string) {
     if (!githubToken) {
@@ -59,28 +60,8 @@ export class GithubClient {
     }).then(response => response.data);
   }
 
-  async getMembers(org: string, repo: string): Promise<MemberResponse[]> {
-    const teamsResponse = await this.#kit.repos.listTeams({
-      repo: repo,
-      owner: org
-    });
-
-    const members = await Promise.all(teamsResponse.data.map(team => this.#kit.teams.listMembersInOrg({
-      org: org,
-      team_slug: team.slug
-    }))).then(responses => responses.flatMap(r => r.data));
-
-    //Hele nare hack: op dit moment hebben we 2 soorten opdrachten.
-    //Als er een team is, dan staan daar de juiste members in.
-    //Als er geen team is (individuele opdracht), dan zou je alle members willen ophalen
-    //Maar daar staan ook de docenten in, dus dat willen we niet.
-    //Echte oplossing: goede filtering op docenten en assistenten.
-    if (members.length === 0) {
-      let collaborators: MemberResponse[] = await this.getCollaborators(org, repo);
-      return collaborators.filter(c => repo.indexOf(c.login) !== -1);
-    }
-
-    return members;
+  getMembers(org: string, repo: string): Promise<MemberResponse[]> {
+    return this.getCollaborators(org, repo);    
   }
 
   async getCollaborators(org: string, repo: string): Promise<MemberResponse[]> {
@@ -89,7 +70,8 @@ export class GithubClient {
       repo: repo,
       per_page: 100
     });
-    return resp.data;
+    return resp.data
+      .filter(member => this.ignoredAuthors.indexOf(member.login) === -1);
   }
 
   async listRepos(org: string): Promise<RepoResponse[]> {
@@ -140,7 +122,7 @@ export class GithubClient {
       nextCursor = response.node.comments.pageInfo.endCursor;
     }
 
-    return comments;
+    return comments.filter((comment: Comment) => this.ignoredAuthors.indexOf(comment.author) === -1);
   }
 
   cachedIssues: { [org: string]: { [repo: string]: Issue[] } } = {};
@@ -209,7 +191,7 @@ export class GithubClient {
     }));
     this.cachedIssues[org] = this.cachedIssues[org] || {};
     this.cachedIssues[org][repo] = result;
-    return result;
+    return result.filter(issue => this.ignoredAuthors.indexOf(issue.author) === -1);
   }
 
   cachedPrs: { [org: string]: { [repo: string]: PullRequest[] } } = {};
@@ -280,7 +262,7 @@ export class GithubClient {
     );
     this.cachedPrs[org] = this.cachedPrs[org] || {};
     this.cachedPrs[org][repo] = results;
-    return results;
+    return results.filter(issue => this.ignoredAuthors.indexOf(issue.author) === -1);
   }
 
   clearCache(org: string, repo: string) {
