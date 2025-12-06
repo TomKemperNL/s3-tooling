@@ -15,6 +15,7 @@ create table
     course_assignments (
         courseId integer references courses(canvasId),
         githubAssignment text not null,
+        partsCSV text,
         canvasId integer,
         groupAssignment boolean not null default(false)
     );

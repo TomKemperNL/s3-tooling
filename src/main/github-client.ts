@@ -39,7 +39,7 @@ export class GithubClient {
     this.#kit = new Octokit({
       auth: githubToken,
       userAgent: 'ict.hu.nl:S3-Tools:Dev',
-      // log: console
+      log: console
     });
   }
 

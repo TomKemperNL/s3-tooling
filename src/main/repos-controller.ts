@@ -2,13 +2,30 @@ import { RepoApi } from "../backend-api";
 import { ipc } from "../electron-setup";
 import { Assignment, BranchInfo, CourseConfig, Repo, RepoDTO, RepoFilter } from "../shared";
 import { get, path } from "../web-setup";
-import { CanvasClient, getUsernameFromName, SimpleDict, StringDict } from "./canvas-client";
+import { CanvasClient, SimpleDict, StringDict } from "./canvas-client";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient, MemberResponse, RepoResponse, toRepo } from "./github-client";
 import { RepositoryStatistics } from "./repository-statistics";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
+
+
+export function getUsernameFromNameAndAssignment(repoName: string, assignment: Assignment){
+    
+    if(!assignment.parts || assignment.parts.length === 0){
+        return repoName.slice(assignment.name.length +1);
+    }else{
+        let matchingAssignments = assignment.parts.filter(p => repoName.startsWith(p));
+        let bestMatch = matchingAssignments.sort((a,b) => b.length - a.length)[0];
+        if(bestMatch){
+            return repoName.slice(bestMatch.length + 1)
+        }else{
+            throw new Error(`Cannot extract username from repo name ${repoName} for assignment ${assignment.name} with parts ${assignment.parts}`);
+        }
+    }    
+}
+
 
 function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: number }): { [name: string]: number } {
     const merged: { [name: string]: number } = {};
@@ -70,7 +87,7 @@ export class ReposController implements RepoApi {
                 return [repo, collaborators]
             } else {
                 return Promise.resolve([repo, [{
-                    login: getUsernameFromName(repo.name, assignment.name)
+                    login: getUsernameFromNameAndAssignment(repo.name, assignment)
                 }]])
             }
         }

@@ -42,14 +42,17 @@ export const s3: CourseConfig = {
         },
         {
             name: 's3-focus',
+            parts: ['s3-focus-galgje', 's3-focus-kluizen', 's3-focus-trains', 's3-focus-musica', 's3-focus-bedrijf', 's3-focus-battlensnake'],
             groupAssignment: false,
         },
         {
             name: 's3-frontend',
+            parts: ['s3-frontend-guilde-challenge-1', 's3-frontend-gilde-challenge-2', 's3-frontend-gilde-challenge-3'],
             groupAssignment: false,
         },
         {
             name: 's3-backend',
+            parts: ['s3-backend-uno', 's3-backend-crew', 's3-backend-wizard'],
             groupAssignment: false,
         },
         {

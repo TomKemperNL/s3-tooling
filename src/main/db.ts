@@ -21,7 +21,8 @@ type AssignmentDb = {
     courseId: number,
     githubAssignment: string,
     canvasId?: number,
-    groupAssignment: 0 | 1
+    groupAssignment: 0 | 1,
+    partsCSV: string
 }
 
 export type RepoDb = {
@@ -48,7 +49,8 @@ function courseDbToConfig(r: CourseDb, as: AssignmentDb[]): CourseConfig {
         assignments: as.map(a => ({
             canvasId: a.canvasId,
             name: a.githubAssignment,
-            groupAssignment: a.groupAssignment === 1
+            groupAssignment: a.groupAssignment === 1,
+            parts: a.partsCSV ? a.partsCSV.split(',').map(s => s.trim()) : []
         })),
 
         lastRepoCheck: r.lastRepoCheck ? new Date(Date.parse(r.lastRepoCheck)) : null,
@@ -127,10 +129,11 @@ export class Db {
             ]);
 
             for (const as of courseConfig.assignments) {
+                const partsCSV = as.parts ? as.parts.join(',') : null;
                 await this.#runProm(`insert into course_assignments(
-                    courseId, githubAssignment, canvasId, groupAssignment) values(
-                    ?,?,?,?
-                    )`, courseConfig.canvasId, as.name, as.canvasId, as.groupAssignment)
+                    courseId, githubAssignment, canvasId, groupAssignment, partsCSV) values(
+                    ?,?,?,?,?
+                    )`, courseConfig.canvasId, as.name, as.canvasId, as.groupAssignment, partsCSV)
             }
         });
 
@@ -385,7 +388,8 @@ export class Db {
             assignments: as.map(a => ({
                 canvasId: a.canvasId,
                 name: a.githubAssignment,
-                groupAssignment: a.groupAssignment === 1
+                groupAssignment: a.groupAssignment === 1,
+                parts: a.partsCSV ? a.partsCSV.split(',').map(s => s.trim()) : []
             })),
             sections: {}
         };

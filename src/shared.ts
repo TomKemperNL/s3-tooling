@@ -33,7 +33,13 @@ export class Repo {
     }   
     
     matchesAssignment(assignment: Assignment) {
-        return this.name.startsWith(assignment.name);
+        if(assignment.parts && assignment.parts.length >0){
+            return assignment.parts.some(part => this.name.startsWith(part));
+        }
+        else{
+            return this.name.startsWith(assignment.name);
+        }
+        
     }
 }
 
