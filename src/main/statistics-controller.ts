@@ -219,7 +219,6 @@ export class StatisticsController implements StatsApi {
 
     @ipc("sectionstats:get")
     async getSectionStats(courseId: number, assignment: string, section: string) {
-
         let [savedCourseConfig,
             savedCourse] = await Promise.all([
                 this.db.getCourseConfig(courseId),
