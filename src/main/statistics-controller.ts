@@ -4,7 +4,7 @@ import { FileSystem } from "./filesystem-client";
 import { GithubClient } from "./github-client";
 import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
-import { ReposController } from "./repos-controller";
+import { ReposController, getUsernameFromNameAndAssignment } from "./repos-controller";
 import { CombinedStats, GroupDefinition, Statistics, StatsBuilder } from "./statistics";
 import { ipc } from "../electron-setup";
 import { StatsApi } from "../backend-api";
@@ -253,9 +253,13 @@ export class StatisticsController implements StatsApi {
         let allTheStats: CombinedStats = new CombinedStats(gatheredStats);
 
         let usersInSection = savedCourse.sections[section].map(m => mapping[m.email]);
+        usersInSection.sort();
+        let authors =  allTheStats.getDistinctAuthors();
+        authors.sort();
         console.log('Users in section:', usersInSection);
-        console.log('All authors before filtering:', allTheStats.getDistinctAuthors());
+        console.log('All authors before filtering:', authors);
         allTheStats.filterAuthors(usersInSection);
+        console.log('authors missing', authors.filter(a => usersInSection.indexOf(a) === -1));
 
         let distinctAuthors = allTheStats.getDistinctAuthors();
 
@@ -294,7 +298,14 @@ export class StatisticsController implements StatsApi {
             combinedStats.filterAuthors(filter.authors);
         }
 
-        const members = await this.githubClient.getMembers(savedCourseConfig.githubStudentOrg, name);
+        let members = [];
+        if(foundAssignment.groupAssignment){
+            members = await this.githubClient.getMembers(savedCourseConfig.githubStudentOrg, name);
+        }else{
+            let login = getUsernameFromNameAndAssignment(name, foundAssignment)
+            members = [{ login: login}];
+        }
+        
         const allAuthors = combinedStats.getDistinctAuthors();
         members.map(m => m.login).forEach(login => {
             if (allAuthors.indexOf(login) === -1) {
