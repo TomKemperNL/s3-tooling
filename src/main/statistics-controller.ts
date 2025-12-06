@@ -219,13 +219,11 @@ export class StatisticsController implements StatsApi {
         const repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
         const mapping = await this.db.getStudentMailToGHUserMapping(courseId);  
 
-        console.log('??????????', mapping);
-
         const gatheredStats: Statistics[] = [];
         let gatheredAliases: { [canonical: string]: string[] } = {};
         const addRepo = async (repo: RepoDTO) => {
             const combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, repo.name);
-            const authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, repo.name);
+            const authorMapping = await this.db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg);
             combinedStats.mapAuthors(authorMapping);
             gatheredAliases = merge(gatheredAliases, mappingToAliases(authorMapping));
             gatheredStats.push(combinedStats);
@@ -235,6 +233,8 @@ export class StatisticsController implements StatsApi {
         let allTheStats: CombinedStats = new CombinedStats(gatheredStats);
 
         let usersInSection = savedCourse.sections[section].map(m => mapping[m.email]);
+        console.log('Users in section:', usersInSection);
+        console.log('All authors before filtering:', allTheStats.getDistinctAuthors()); 
         allTheStats.filterAuthors(usersInSection);
 
         let distinctAuthors = allTheStats.getDistinctAuthors();
@@ -263,7 +263,7 @@ export class StatisticsController implements StatsApi {
 
         const groups = this.#getGroups(savedCourseConfig);
 
-        const authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
+        const authorMapping = await this.db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg);
         combinedStats.mapAuthors(authorMapping);
 
         if (filter && filter.authors) {
@@ -283,7 +283,6 @@ export class StatisticsController implements StatsApi {
                 }
             }
         });
-
         const builder = new StatsBuilder(combinedStats);
 
         const week_group_author = builder
@@ -304,7 +303,7 @@ export class StatisticsController implements StatsApi {
     @ipc("repostats-group-pie:get")
     async getGroupPie(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter?: StatsFilter): Promise<GroupPieDTO> {
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
-        const authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name)
+        const authorMapping = await this.db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg)
         const [gitPie, projectStats] = await Promise.all([
             this.fileSystem.getLinesByGroupThenAuthor(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)

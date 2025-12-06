@@ -1,11 +1,12 @@
 import { config } from "@dotenvx/dotenvx";
 import { createApp } from "./main/index"
 import { setupWebHandlers } from "./web-setup";
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import { setupIpcMainHandlers } from "./electron-setup";
 import * as path from "path";
 import { app, BrowserWindow, shell } from 'electron'
 import "./electron-setup";
+import { s3 } from "./temp";
 
 
 export function loadJson(path: string): Promise<any> {
@@ -28,16 +29,24 @@ async function main() {
     } else if (process.argv.indexOf('loadMappings') !== -1) {
         
         const courseId = parseInt(process.argv[process.argv.indexOf('loadMappings') + 1]);
-        const assignmentName = process.argv[process.argv.indexOf('loadMappings') + 2];
-        const fileName = process.argv[process.argv.indexOf('loadMappings') + 3];
-        console.log(`Loading usermappings from ${fileName} for course ${courseId} assignment ${assignmentName}`);
+        const fileName = process.argv[process.argv.indexOf('loadMappings') + 2];
+        console.log(`Loading usermappings from ${fileName} for course ${courseId}`);
         let mappings = await loadJson(fileName);
         
         for(const key of Object.keys(mappings)) {
             await s3App.repoController.updateAuthorMapping(courseId, key, mappings[key]);    
         }
         
+        console.log(`Loaded usermappings from ${fileName} for course ${courseId}`);
+    }else if (process.argv.indexOf('exportMappings') !== -1) {
         
+        const courseId = parseInt(process.argv[process.argv.indexOf('exportMappings') + 1]);
+        const fileName = process.argv[process.argv.indexOf('exportMappings') + 2];
+        console.log(`Exporting usermappings from ${courseId} to ${fileName}`);
+        const mapping = await s3App.repoController.exportAuthorMapping(courseId);
+        await writeFile(fileName, JSON.stringify(mapping), { encoding: 'utf-8' });
+
+        console.log(`Exported usermappings from ${courseId} to ${fileName}`);
     }else {        
         await setupIpcMainHandlers(s3App);
         const createWindow = () => {

@@ -195,15 +195,25 @@ export class ReposController implements RepoApi {
     }
 
     @get("/author-mapping/:cid/:assignment")
-    async exportAuthorMapping(@path(":cid") courseId: number, @path(":assignment") assignmentName: string): Promise<Record<string, StringDict>> {
+    async exportAuthorMapping(@path(":cid") courseId: number, @path(":assignment") assignmentName?: string): Promise<Record<string, StringDict>> {
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
         let repos = await this.db.selectReposByCourse(savedCourseConfig.canvasId);
-        repos = repos.filter(r => r.name.startsWith(assignmentName + '-'));
+        if(assignmentName){
+            repos = repos.filter(r => r.name.startsWith(assignmentName + '-'));
+        }
+        
 
         const result: Record<string, StringDict> = {};
         for(let r of repos){
             const mapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, r.name);
             result[r.name] = mapping;
+        }
+
+        for(let key of Object.keys(result)){
+            let mapping = result[key];
+            if(Object.keys(mapping).length === 0){
+                delete result[key];
+            }
         }
 
         return result;

@@ -168,6 +168,17 @@ export class Db {
         return result;
     }
 
+    async getAuthorMappingOrg(org: string): Promise<{ [key: string]: string }> {
+        const rows = await this.#allProm<{ name: string, githubUsername: string }>(`
+            select name, githubUsername from githubCommitNames 
+            where organization = ?`, [org]);
+        const result: { [key: string]: string } = {};
+        for (const r of rows) {
+            result[r.name] = r.githubUsername;
+        }
+        return result;
+    }
+
     async removeAliases(githubStudentOrg: string, name: string, aliases: { [canonical: string]: string[]; }) {
         await this.#inTransaction(async () => {
             for (const canonical of Object.keys(aliases)) {
@@ -266,7 +277,6 @@ export class Db {
     }
 
     async updateCollaborators(organization: string, name: string, collaborators: MemberResponse[]) {
-
         await this.#inTransaction(async () => {
             await Promise.all(collaborators.map(async c => {
                 await this.#runProm('insert into repository_members(organization, name, username) values(?,?,?) on conflict do nothing',

@@ -70,6 +70,16 @@ export class GithubClient {
       team_slug: team.slug
     }))).then(responses => responses.flatMap(r => r.data));
 
+    //Hele nare hack: op dit moment hebben we 2 soorten opdrachten.
+    //Als er een team is, dan staan daar de juiste members in.
+    //Als er geen team is (individuele opdracht), dan zou je alle members willen ophalen
+    //Maar daar staan ook de docenten in, dus dat willen we niet.
+    //Echte oplossing: goede filtering op docenten en assistenten.
+    if (members.length === 0) {
+      let collaborators: MemberResponse[] = await this.getCollaborators(org, repo);
+      return collaborators.filter(c => repo.indexOf(c.login) !== -1);
+    }
+
     return members;
   }
 

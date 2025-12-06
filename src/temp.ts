@@ -45,7 +45,7 @@ export const s3: CourseConfig = {
             groupAssignment: false,
         },
         {
-            githubAssignment: 'S3-Frontend-Gilde-Challenge',
+            githubAssignment: 's3-frontend',
             groupAssignment: false,
         },
         {
