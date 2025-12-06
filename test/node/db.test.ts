@@ -30,12 +30,12 @@ const someCourse : CourseConfig = {
     lastMappingCheck: null,
     assignments: [
         {
-            githubAssignment: 'bla-ass-v',
+            name: 'bla-ass-v',
             canvasId: 456,
             groupAssignment: false
         },
         {
-            githubAssignment: 'bla-ass-p',
+            name: 'bla-ass-p',
             groupAssignment: true
         }
     ],

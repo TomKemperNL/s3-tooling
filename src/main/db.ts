@@ -47,7 +47,7 @@ function courseDbToConfig(r: CourseDb, as: AssignmentDb[]): CourseConfig {
         canvasOverview: r.canvasOverviewJson ? JSON.parse(r.canvasOverviewJson) : [],
         assignments: as.map(a => ({
             canvasId: a.canvasId,
-            githubAssignment: a.githubAssignment,
+            name: a.githubAssignment,
             groupAssignment: a.groupAssignment === 1
         })),
 
@@ -130,7 +130,7 @@ export class Db {
                 await this.#runProm(`insert into course_assignments(
                     courseId, githubAssignment, canvasId, groupAssignment) values(
                     ?,?,?,?
-                    )`, courseConfig.canvasId, as.githubAssignment, as.canvasId, as.groupAssignment)
+                    )`, courseConfig.canvasId, as.name, as.canvasId, as.groupAssignment)
             }
         });
 
@@ -384,7 +384,7 @@ export class Db {
             canvasId: rows[0].canvasId,
             assignments: as.map(a => ({
                 canvasId: a.canvasId,
-                githubAssignment: a.githubAssignment,
+                name: a.githubAssignment,
                 groupAssignment: a.groupAssignment === 1
             })),
             sections: {}

@@ -49,7 +49,7 @@ const someCourse: CourseConfig = {
   lastMappingCheck: null,
   assignments: [
     {
-      githubAssignment: projectAssignmentName,
+      name: projectAssignmentName,
       groupAssignment: true
     }
   ]

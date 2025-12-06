@@ -9,9 +9,10 @@ export type Author = {
 }
 
 export type Assignment = {
-    githubAssignment: string,
+    name: string,
     canvasId?: number,
-    groupAssignment: boolean
+    groupAssignment: boolean,
+    parts?: string[]
 }
 
 export type Startup = {
@@ -28,12 +29,11 @@ export class Repo {
                 public api_url: string, 
                 public ssh_url: string, 
                 public http_url: string,
-                public lastMemberCheck: Date) {
-        
+                public lastMemberCheck: Date) {        
     }   
     
     matchesAssignment(assignment: Assignment) {
-        return this.name.startsWith(assignment.githubAssignment);
+        return this.name.startsWith(assignment.name);
     }
 }
 

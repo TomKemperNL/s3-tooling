@@ -44,12 +44,12 @@ const someCourse : CourseConfig = {
     lastMappingCheck: null,
     assignments: [
         {
-            githubAssignment: verantwoordingAssignmentName,
+            name: verantwoordingAssignmentName,
             canvasId: 456,
             groupAssignment: false
         },
         {
-            githubAssignment: projectAssignmentName,
+            name: projectAssignmentName,
             groupAssignment: true
         }
     ]

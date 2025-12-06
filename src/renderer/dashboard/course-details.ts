@@ -113,7 +113,7 @@ export class CourseDetails extends LitElement {
                 <select ?disabled=${this.loading} @change=${this.assignmentDropdownChange}>
                     <option value="">Select an assignment</option>
                     ${map(this.course.assignments, a =>
-                html`<option value=${a.githubAssignment}>${a.githubAssignment} </option>`)}
+                html`<option value=${a.name}>${a.name} </option>`)}
                 </select>
                 <custom-carat style="cursor:pointer" @click=${this.goToSectionOverview} direction="right" color="red"></custom-carat>
             </div>
