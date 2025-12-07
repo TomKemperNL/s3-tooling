@@ -231,32 +231,46 @@ export class StatisticsController implements StatsApi {
     async getStudentStats(courseId: number, username: string) {
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
         const repos = await this.db.getRepositoriesForUser(courseId, username);
+        console.log('Repos for user', username, repos.map(r => r.name));
+
+        
+        const groups = this.#getGroups(savedCourseConfig);        
+        const comGroup = groups.find(g => g.extensions === undefined);        
         
         const gatheredStats: Statistics[] = [];
+        const gatheredProjectStats: Statistics[] = [];
         const pie = new GroupAuthorPie();
-        for (const repo of repos) {
-            
-            const assignment = findAssignment(repo.name, savedCourseConfig);            
-
+        for (const repo of repos) {            
+            const assignment = findAssignment(repo.name, savedCourseConfig);
             const [coreStats, projectStats, gitPie] = await Promise.all([
                 this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment.name, repo.name),
                 this.#getProjectStats(assignment.groupAssignment, savedCourseConfig.githubStudentOrg, repo.name),
                 this.fileSystem.getLinesByGroupThenAuthor(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment.name, repo.name),
             ]);
-            const combinedStats = new CombinedStats([coreStats, projectStats]);
-            gatheredStats.push(combinedStats);
+            
+            gatheredStats.push(coreStats);
+            if(assignment.groupAssignment){
+                console.log('Adding project stats for repo', repo.name);
+                gatheredProjectStats.push(projectStats);            
+                console.log('Project stats', JSON.stringify(projectStats, null, 2));
+            }
+            
+
+            if (comGroup) {
+                const comPie: Record<string, number> = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
+                gitPie.addGroup(comGroup.name, comPie);
+            }
+
             pie.addPie(gitPie);
         }
-        let allTheStats: CombinedStats = new CombinedStats(gatheredStats);
+        let allTheStats: CombinedStats = new CombinedStats(gatheredProjectStats.concat(gatheredStats));
 
         const firstDate = savedCourseConfig.startDate;
-        const lastDate = allTheStats.getDateRange().end;
-        const groups = this.#getGroups(savedCourseConfig);
+        const lastDate = new Date(); //TODO: beter bepalen
 
-        const authorMapping = await this.db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg);
+        const authorMapping = await this. db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg);
         allTheStats.mapAuthors(authorMapping);
         pie.mapAuthors(authorMapping);
-
         allTheStats.filterAuthors([username]);
         pie.filterAuthors([username]);
 
@@ -266,6 +280,8 @@ export class StatisticsController implements StatsApi {
             .groupByWeek(firstDate, lastDate)
             .thenBy(groups)
             .build();
+
+        console.log('result ' + JSON.stringify(week_group, null, 2));
 
         let filteredMapping : any = {};
         for(const key of Object.keys(authorMapping)){
@@ -427,7 +443,6 @@ export class StatisticsController implements StatsApi {
             projectStats.filterAuthors(filter.authors);
         }
 
-        console.log('?????????', gitPie)
         if (comGroup) {
             const comPie: Record<string, number> = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
             gitPie.addGroup(comGroup.name, comPie);

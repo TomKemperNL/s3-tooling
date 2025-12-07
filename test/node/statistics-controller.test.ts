@@ -38,6 +38,7 @@ afterAll(async () => {
 });
 
 const projectAssignmentName = 'bla-ass-p';
+const otherAssignmentName = 'bla-ass-o'
 const someCourse: CourseConfig = {
   canvasId: 123,
   canvasGroupsName: 'bla',
@@ -51,6 +52,10 @@ const someCourse: CourseConfig = {
     {
       name: projectAssignmentName,
       groupAssignment: true
+    },
+    {
+      name: otherAssignmentName,
+      groupAssignment: false
     }
   ]
 };
@@ -60,16 +65,16 @@ test("canGetEmptyStats", async () => {
     someCourse.canvasId, projectAssignmentName, "someRepo")
   expect(result).toStrictEqual({
     "aliases": {},
-    "authors": [ ],
-    "groups": [ "Backend", "Frontend", "Markup", "Docs", "Communication", "Other" ],
-    "week_group_author":[{
+    "authors": [],
+    "groups": ["Backend", "Frontend", "Markup", "Docs", "Communication", "Other"],
+    "week_group_author": [{
       "Backend": {},
       "Frontend": {},
       "Markup": {},
       "Docs": {},
       "Communication": {},
       "Other": {}
-    }]    
+    }]
   });
 });
 
@@ -95,16 +100,16 @@ test("Can Get Merged Stats", async () => {
   expect(result).toStrictEqual(
     {
       "aliases": {},
-      "authors": [ "Bob" ],
-      "groups": [ "Backend", "Frontend", "Markup", "Docs", "Communication", "Other" ],
-      "week_group_author":[{
-        "Backend": { "Bob": { added: 0, removed: 0} },
-        "Frontend": { "Bob": { added: 10, removed: 2} },
-        "Markup": { "Bob": { added: 0, removed: 0} },
-        "Docs": { "Bob": { added: 0, removed: 0} },
-        "Communication": { "Bob": { added: 4, removed: 0} },
-        "Other": { "Bob": { added: 0, removed: 0} }
-      }]  
+      "authors": ["Bob"],
+      "groups": ["Backend", "Frontend", "Markup", "Docs", "Communication", "Other"],
+      "week_group_author": [{
+        "Backend": { "Bob": { added: 0, removed: 0 } },
+        "Frontend": { "Bob": { added: 10, removed: 2 } },
+        "Markup": { "Bob": { added: 0, removed: 0 } },
+        "Docs": { "Bob": { added: 0, removed: 0 } },
+        "Communication": { "Bob": { added: 4, removed: 0 } },
+        "Other": { "Bob": { added: 0, removed: 0 } }
+      }]
     }
   );
 });
@@ -155,4 +160,59 @@ test("Can Filter Authors", async () => {
   let result = await statisticsController.getGroupPie(
     someCourse.canvasId, projectAssignmentName, "someRepo", { authors: ["Bob"] });
   expect(result.groupedPie["Backend"]["Fred"]).toBe(undefined);
+});
+
+
+
+
+test("Can Get Student Stats", async () => {
+
+  await db.updateRepoMapping(someCourse.canvasId, [
+    <any>{ name: "bla-ass-p-groupx", full_name: 'bla-org/bla-ass-p-groupx' },
+    <any>{ name: "bla-ass-o-Bob", full_name: 'bla-org/bla-ass-o-Bob' },
+  ])
+  await db.updateCollaborators('bla-org', 'bla-ass-p-groupx', [{ login: 'Bob' }])
+  await db.updateCollaborators('bla-org', 'bla-ass-o-Bob', [{ login: 'Bob' }])
+  fsFake.blame = {
+    "Backend": {
+      "Bob": 10
+    }
+  }
+
+  //Hier gaat de fake een beetje mis, want hij returnt dezelfde dingen voor elke repo, vandaar dat de assert gewoon alles verdubbelt voor lines of code
+  fsFake.commits = [
+    {
+      author: "Bob", hash: "ABCD1234", subject: "Feature X", date: new Date('2023-10-01'),
+      changes: [
+        { added: 10, removed: 2, path: "file1.js" },
+      ]
+    }
+  ];
+
+  githubFake.pullRequests = [
+    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
+  ];
+  githubFake.issues = [
+    { author: "Bob", body: "Hai", title: "Test", comments: [], createdAt: new Date('2023-10-01') }
+  ];
+
+  let result = await statisticsController.getStudentStats(
+    someCourse.canvasId, "Bob");
+  
+  //We hebben nog de hack dat we voor individuele repos geen coms uitvragen
+  expect(result.groupedPie).toStrictEqual(
+    {
+      "Backend": {
+        "Bob": 20,
+      },
+      "Communication": {
+        "Bob": 4,
+      }
+    }
+  );
+
+  console.log(result.week_group);
+  expect(result.week_group[0]["Frontend"]).toStrictEqual({ added: 20, removed: 4 });
+  expect(result.week_group[0]["Communication"]).toStrictEqual({ added: 4, removed: 0}); 
+    
 });

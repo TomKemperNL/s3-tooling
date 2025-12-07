@@ -141,6 +141,7 @@ export type RepoStatisticsDTO = {
 }
 
 export type StudentStatisticsDTO = {
+    repos: string[],
     authors: string[],
     groups: string[],
     aliases: { [name: string]: string[] },

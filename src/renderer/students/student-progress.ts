@@ -216,7 +216,14 @@ export class StudentProgress extends LitElement {
             color: this.groupToColor(g),
         }));
 
+        let repos : string[] = this.apiResult?.repos || [];
+
         return html`           
+            <div style="grid-area: title">
+                <h3>${firstIdentity}</h3>
+                <p>${repos.join(', ')}</p>
+             </div>        
+       
             <div style="grid-area: pieG">        
             ${when(this.apiResult, () => html`
                 <h4>Regels code in eindproduct per groepering</h4>

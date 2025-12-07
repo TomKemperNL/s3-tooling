@@ -15,6 +15,20 @@ export type RepoResponse = {
   lastMemberCheck: Date
 }
 
+function cloneIssues(issues: Issue[]): Issue[] {
+  return issues.map(issue => ({
+    ...issue,
+    comments: issue.comments.map(comment => ({ ...comment }))
+  }));
+} 
+function clonePRs(prs: PullRequest[]): PullRequest[] {
+  return prs.map(pr => ({
+    ...pr,
+    comments: pr.comments.map(comment => ({ ...comment }))
+  }));
+}
+
+
 export function toRepo(repoResponse: RepoResponse): Repo {
   return new Repo(
     repoResponse.name,
@@ -129,7 +143,7 @@ export class GithubClient {
 
   async listIssues(org: string, repo: string): Promise<Issue[]> {
     if (this.cachedIssues[org] && this.cachedIssues[org][repo]) {
-      return this.cachedIssues[org][repo];
+      return cloneIssues(this.cachedIssues[org][repo]);
     }
     let nextCursor = "";
     let hasNextPage = true;
@@ -198,7 +212,7 @@ export class GithubClient {
 
   async listPullRequests(org: string, repo: string) {
     if (this.cachedPrs[org] && this.cachedPrs[org][repo]) {
-      return this.cachedPrs[org][repo];
+      return clonePRs(this.cachedPrs[org][repo]);
     }
 
     let nextCursor = "";
