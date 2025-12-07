@@ -19,25 +19,22 @@ export class GroupAuthorPie {
     }
 
     addGroup(group: string, authorsData: Record<string, number>) {
-        if (this.data[group]) {
-            throw new Error(`Group ${group} already exists in the pie chart`); //TODO: dat kan gebruikersvriendelijker
+        if (!this.data[group]) {
+            this.data[group] = authorsData;
+        } else {
+            for (const author of Object.keys(authorsData)) {
+                if (!this.data[group][author]) {
+                    this.data[group][author] = authorsData[author];
+                } else {
+                    this.data[group][author] += authorsData[author];
+                }
+            }
         }
-        this.data[group] = authorsData;
     }
 
     addPie(otherPie: GroupAuthorPie) {
         for (const group of Object.keys(otherPie.data)) {
-            if (!this.data[group]) {
-                this.data[group] = otherPie.data[group];
-            } else {
-                for (const author of Object.keys(otherPie.data[group])) {
-                    if (!this.data[group][author]) {
-                        this.data[group][author] = otherPie.data[group][author];
-                    } else {
-                        this.data[group][author] += otherPie.data[group][author];
-                    }
-                }
-            }
+            this.addGroup(group, otherPie.data[group]);
         }
     }
 

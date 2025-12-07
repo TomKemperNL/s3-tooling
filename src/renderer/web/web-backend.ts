@@ -2,6 +2,9 @@ import { BackendApi } from "../../backend-api";
 import { CourseConfig, CourseDTO, RepoFilter, RepoDTO, StatsFilter, RepoStatisticsDTO, GroupPieDTO, StudentFilter, Startup, Settings, BranchInfo, StudentDetailsResult } from "../../shared";
 
 export class WebBackend implements BackendApi {
+    getStudentStats(courseId: number, username: string): Promise<any> {
+        throw new Error("Method not implemented.");
+    }
     getStudents: (courseId: number) => Promise<StudentDetailsResult>;
     getSectionStats(courseId: number, assignment: string, section: string): Promise<any> {
         throw new Error("Method not implemented.");
@@ -24,7 +27,6 @@ export class WebBackend implements BackendApi {
     getGroupPie(courseId: number, assignment: string, name: string, filter: StatsFilter){
         return fetch(`/api/stats/${courseId}/${assignment}/${name}/pie`).then(r => r.json());
     } 
-    getStudentStats: (courseId: number, assignment: string, name: string, filter: StudentFilter) => Promise<any>;
     updateAuthorMapping: (courseId: number, name: string, mapping: { [author: string]: string; }) => Promise<void>;
     removeAlias: (courseId: number, name: string, aliases: { [canonical: string]: string[]; }) => Promise<void>;
     startup: () => Promise<Startup>;

@@ -42,7 +42,7 @@ export const s3: CourseConfig = {
         },
         {
             name: 's3-focus',
-            parts: ['s3-focus-galgje', 's3-focus-kluizen', 's3-focus-trains', 's3-focus-musica', 's3-focus-bedrijf', 's3-focus-battlensnake'],
+            parts: ['s3-focus-galgje', 's3-focus-kluizen', 's3-focus-trains', 's3-focus-musica', 's3-focus-bedrijf', 's3-focus-battlesnake'],
             groupAssignment: false,
         },
         {

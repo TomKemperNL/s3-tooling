@@ -49,7 +49,7 @@ export interface StatsApi {
     getRepoStats: (courseId: number, assignment: string, name: string, filter?: StatsFilter) => Promise<RepoStatisticsDTO>        
     getGroupPie: (courseId: number, assignment: string, name: string, filter?: StatsFilter) => Promise<GroupPieDTO>
     getSectionStats(courseId: number, assignment: string, section: string) : Promise<any>
-    
+    getStudentStats(courseId: number, username: string): Promise<any>
 }
 
 

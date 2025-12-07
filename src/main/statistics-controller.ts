@@ -10,6 +10,7 @@ import { ipc } from "../electron-setup";
 import { StatsApi } from "../backend-api";
 import { get, path } from "../web-setup";
 import { CoursesController } from "./courses-controller";
+import { GroupAuthorPie } from "./pie";
 
 function merge<T>(a: { [key: string]: T[] }, b: { [key: string]: T[] }) {
     let result = { ...a };
@@ -230,10 +231,12 @@ export class StatisticsController implements StatsApi {
     async getStudentStats(courseId: number, username: string) {
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
         const repos = await this.db.getRepositoriesForUser(courseId, username);
-
+        
         const gatheredStats: Statistics[] = [];
+        const pie = new GroupAuthorPie();
         for (const repo of repos) {
-            const assignment = findAssignment(repo.name, savedCourseConfig);
+            
+            const assignment = findAssignment(repo.name, savedCourseConfig);            
 
             const [coreStats, projectStats, gitPie] = await Promise.all([
                 this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment.name, repo.name),
@@ -242,6 +245,7 @@ export class StatisticsController implements StatsApi {
             ]);
             const combinedStats = new CombinedStats([coreStats, projectStats]);
             gatheredStats.push(combinedStats);
+            pie.addPie(gitPie);
         }
         let allTheStats: CombinedStats = new CombinedStats(gatheredStats);
 
@@ -251,8 +255,10 @@ export class StatisticsController implements StatsApi {
 
         const authorMapping = await this.db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg);
         allTheStats.mapAuthors(authorMapping);
+        pie.mapAuthors(authorMapping);
 
         allTheStats.filterAuthors([username]);
+        pie.filterAuthors([username]);
 
         const builder = new StatsBuilder(allTheStats);
 
@@ -260,11 +266,23 @@ export class StatisticsController implements StatsApi {
             .groupByWeek(firstDate, lastDate)
             .thenBy(groups)
             .build();
+
+        let filteredMapping : any = {};
+        for(const key of Object.keys(authorMapping)){
+            if(authorMapping[key] === username){
+                filteredMapping[key] = authorMapping[key];
+            }
+        }
+
+
+
         return {
+            repos: repos.map(r => r.name),
             authors: [username],
             groups: groups.map(g => g.name),
-            aliases: mappingToAliases(authorMapping),
-            week_group: week_group
+            aliases: mappingToAliases(filteredMapping),
+            week_group: week_group,
+            groupedPie: pie.export()
         }
 
 
@@ -409,6 +427,7 @@ export class StatisticsController implements StatsApi {
             projectStats.filterAuthors(filter.authors);
         }
 
+        console.log('?????????', gitPie)
         if (comGroup) {
             const comPie: Record<string, number> = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
             gitPie.addGroup(comGroup.name, comPie);

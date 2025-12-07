@@ -9,6 +9,18 @@ export class ErrorHandlingBackendApi implements BackendApi {
     constructor(ipc: BackendApi) {
         this.ipc = ipc;
     }
+
+    async getStudentStats(courseId: number, username: string): Promise<any> {
+        try {
+            return this.ipc.getStudentStats(courseId, username);
+        
+        } catch (error) {
+            console.error("Error fetching student stats:", error);
+            alert("Failed to load student stats:" + error.message);
+            return {}; // Return an empty object on error
+        }   
+    }
+
     async getStudents(courseId: number) : Promise<StudentDetailsResult>{
         try {
             return this.ipc.getStudents(courseId);
