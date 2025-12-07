@@ -6,6 +6,7 @@ import { ipcContext } from '../contexts';
 import { BackendApi } from '../../backend-api';
 import { when } from 'lit/directives/when.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { EnabledItemsChanged } from '../dashboard/group-list';
 
 
 @customElement('student-progress')
@@ -87,6 +88,11 @@ export class StudentProgress extends LitElement {
         } else {
             return this.groupColors[groups.indexOf(group) % this.groupColors.length];
         }
+    }
+
+    
+    toggleGroups(e: EnabledItemsChanged){
+        this.enabledGroups = e.enabledGroups;
     }
 
     toGroupBarchart(statsByWeek: Record<string, LinesStatistics>[]): any[] {
@@ -241,7 +247,7 @@ export class StudentProgress extends LitElement {
                 <ul>
                     ${when(this.allGroups.length > 0, () => html`                    
                         <h4>Groeperingen</h4>
-                            <group-list 
+                            <group-list @enabled-items-changed=${this.toggleGroups}            
                                 .groups=${groupList}                            
                                 ></group-list>                
                         `)}                

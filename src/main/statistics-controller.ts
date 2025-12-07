@@ -231,8 +231,6 @@ export class StatisticsController implements StatsApi {
     async getStudentStats(courseId: number, username: string) {
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
         const repos = await this.db.getRepositoriesForUser(courseId, username);
-        console.log('Repos for user', username, repos.map(r => r.name));
-
         
         const groups = this.#getGroups(savedCourseConfig);        
         const comGroup = groups.find(g => g.extensions === undefined);        
@@ -250,11 +248,8 @@ export class StatisticsController implements StatsApi {
             
             gatheredStats.push(coreStats);
             if(assignment.groupAssignment){
-                console.log('Adding project stats for repo', repo.name);
-                gatheredProjectStats.push(projectStats);            
-                console.log('Project stats', JSON.stringify(projectStats, null, 2));
-            }
-            
+                gatheredProjectStats.push(projectStats);
+            }            
 
             if (comGroup) {
                 const comPie: Record<string, number> = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
@@ -281,16 +276,12 @@ export class StatisticsController implements StatsApi {
             .thenBy(groups)
             .build();
 
-        console.log('result ' + JSON.stringify(week_group, null, 2));
-
         let filteredMapping : any = {};
         for(const key of Object.keys(authorMapping)){
             if(authorMapping[key] === username){
                 filteredMapping[key] = authorMapping[key];
             }
         }
-
-
 
         return {
             repos: repos.map(r => r.name),
