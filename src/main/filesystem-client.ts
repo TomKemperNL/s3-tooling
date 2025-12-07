@@ -6,6 +6,7 @@ import { readdir } from 'fs/promises'
 import { promisify } from 'util';
 import { Repo } from '../shared';
 import { GroupDefinition } from './statistics';
+import { GroupAuthorPie } from './pie';
 
 const exec = promisify(proc.exec);
 const exists = promisify(fs.exists);
@@ -337,10 +338,10 @@ export class FileSystem {
 
 
     pieCache: { [repoPath: string]: Record<string, Record<string, number>> } = {};
-    async getLinesByGroupThenAuthor(groups: GroupDefinition[], ...repoPath: string[]): Promise<Record<string, Record<string, number>>> {
+    async getLinesByGroupThenAuthor(groups: GroupDefinition[], ...repoPath: string[]): Promise<GroupAuthorPie> {
         const target = path.join(this.#basePath, ...repoPath);
         if (this.pieCache[target]) {
-            return clone(this.pieCache[target]);
+            return new GroupAuthorPie(clone(this.pieCache[target]));
         }
         const files = await this.gitCli.listFiles(target);
         const repoGroups = groups.filter(g => g.extensions && g.extensions.length > 0);
@@ -387,6 +388,6 @@ export class FileSystem {
         }
 
         this.pieCache[target] = orderedReport;
-        return orderedReport;
+        return new GroupAuthorPie(orderedReport);
     }
 }

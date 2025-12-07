@@ -1,4 +1,5 @@
 import { LoggedCommit } from "../../../src/main/filesystem-client";
+import { GroupAuthorPie } from "../../../src/main/pie";
 import { Repo } from "../../../src/shared";
 
 export class FakeFileSystem{
@@ -12,7 +13,7 @@ export class FakeFileSystem{
         return this.commits;
     }
 
-    async getLinesByGroupThenAuthor() : Promise<Record<string, Record<string, number>>>{
-        return this.blame;
+    async getLinesByGroupThenAuthor() : Promise<GroupAuthorPie>{
+        return new GroupAuthorPie(this.blame);
     }
 }

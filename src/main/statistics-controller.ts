@@ -11,15 +11,6 @@ import { StatsApi } from "../backend-api";
 import { get, path } from "../web-setup";
 import { CoursesController } from "./courses-controller";
 
-function mergeAuthors(pie: { [name: string]: number }, mapping: { [name: string]: string }) {
-    const merged: { [name: string]: number } = {};
-    for (const key in pie) {
-        const mapped = mapping[key] || key; // Als er geen mapping is, gebruik de originele naam
-        merged[mapped] = (merged[mapped] || 0) + pie[key];
-    }
-    return merged;
-}
-
 function merge<T>(a: { [key: string]: T[] }, b: { [key: string]: T[] }) {
     let result = { ...a };
     for (let key of Object.keys(b)) {
@@ -399,13 +390,16 @@ export class StatisticsController implements StatsApi {
 
     @get('/stats/:cid/:assignment/:name/pie')
     @ipc("repostats-group-pie:get")
-    async getGroupPie(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter?: StatsFilter): Promise<GroupPieDTO> {
+    async getGroupPie(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter?: StatsFilter): Promise<GroupPieDTO> {        
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
         const foundAssignment = savedCourseConfig.assignments.find(a => a.name === assignment);
         if (!foundAssignment) {
             throw new Error(`Assignment ${assignment} not found in course config`);
         }
         const authorMapping = await this.db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg)
+        const groups = this.#getGroups(savedCourseConfig);
+        const comGroup = groups.find(g => g.extensions === undefined);        
+
         const [gitPie, projectStats] = await Promise.all([
             this.fileSystem.getLinesByGroupThenAuthor(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment, name),
             this.#getProjectStats(foundAssignment.groupAssignment, savedCourseConfig.githubStudentOrg, name)
@@ -415,47 +409,20 @@ export class StatisticsController implements StatsApi {
             projectStats.filterAuthors(filter.authors);
         }
 
-        const groups = this.#getGroups(savedCourseConfig);
-        const comGroup = groups.find(g => g.extensions === undefined);
-        const pie = gitPie;
         if (comGroup) {
             const comPie: Record<string, number> = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
-            pie[comGroup.name] = comPie;
+            gitPie.addGroup(comGroup.name, comPie);
         }
 
-        for (const group of Object.keys(pie)) {
-            let groupPie = pie[group];
-            groupPie = mergeAuthors(groupPie, authorMapping);
-            pie[group] = groupPie;
-        }
+        gitPie.mapAuthors(authorMapping);
 
         if (filter && filter.authors) {
-            for (const group of Object.keys(pie)) {
-                const groupPie = pie[group];
-                const filteredGroupPie: { [name: string]: number } = {};
-                for (const author of Object.keys(groupPie)) {
-                    if (filter.authors.indexOf(author) !== -1) {
-                        filteredGroupPie[author] = groupPie[author];
-                    }
-                }
-                pie[group] = filteredGroupPie;
-            }
+            gitPie.filterAuthors(filter.authors);           
         }
 
         return {
             aliases: mappingToAliases(authorMapping),
-            groupedPie: pie
+            groupedPie: gitPie.export()
         };
     }
 }
-
-type NumberPie = { [label: string]: number }
-type CompositePie = { [label: string]: number | CompositePie }
-
-
-class Pie implements CompositePie {
-    [label: string]: number | CompositePie;
-    
-}
-
-
