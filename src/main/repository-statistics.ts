@@ -44,8 +44,8 @@ export class RepositoryStatistics implements Statistics {
 
     constructor(rawData: LoggedCommit[], public options: { ignoredExtensions: string[] } = {
         ignoredExtensions: ['.json', '.pdf'] //TODO: dit is dubbelop met de package-json. Even nadenken wat we willen
-    }) {
-        this.data = rawData;
+    }) {        
+        this.data = rawData.filter(c => !c.author.endsWith('[bot]'));
     }
 
     concat(other: RepositoryStatistics): RepositoryStatistics {

@@ -1,7 +1,7 @@
 import { Database } from "sqlite3";
 import fs from 'fs/promises';
 import { feb2024, s2, s3 } from '../temp'
-import { CourseConfig, CourseDTO, StudentDTO } from "../shared";
+import { CourseConfig, CourseDTO, Repo, StudentDTO } from "../shared";
 import { MemberResponse, RepoResponse } from "./github-client";
 import { StringDict } from "./canvas-client";
 
@@ -26,6 +26,7 @@ type AssignmentDb = {
 }
 
 export type RepoDb = {
+    courseId: number,
     organization: string,
     name: string,
     full_name: string,
@@ -59,7 +60,7 @@ function courseDbToConfig(r: CourseDb, as: AssignmentDb[]): CourseConfig {
     }
 }
 
-export class Db {   
+export class Db {
     #initializer: () => Database;
     #db: Database
     constructor(initializer: () => Database = null) {
@@ -123,7 +124,7 @@ export class Db {
                 ?,?,
                 ?,?,?,
                 ?)`, [
-                courseConfig.name, courseConfig.startDate?.toISOString(), 
+                courseConfig.name, courseConfig.startDate?.toISOString(),
                 courseConfig.canvasId, courseConfig.canvasGroupsName, courseConfig.canvasOverview ? JSON.stringify(courseConfig.canvasOverview) : null,
                 courseConfig.githubStudentOrg
             ]);
@@ -155,7 +156,7 @@ export class Db {
                 await this.#runProm(
                     `insert into githubCommitNames(name, githubUsername, organization, repository)
                      values(?,?,?,?);`,
-                     [authorName, username, org, repo]);
+                    [authorName, username, org, repo]);
             };
         });
     }
@@ -299,6 +300,14 @@ export class Db {
         }))
     }
 
+    async getRepositoriesForUser(courseId: number, username: string): Promise<Repo[]> {
+        const rows = await this.#allProm<RepoDb>(`
+            select r.* from repositories r
+                join repository_members rm on r.organization = rm.organization and r.name = rm.name
+                where rm.username = ? and r.courseId = ?`, [username, courseId]);
+        return rows.map(r => new Repo(r.name, r.organization, r.api_url, r.ssh_url, r.html_url, new Date(Date.parse(r.lastMemberCheck))));
+    }
+
     //TODO: uitzoeken hoe je dit netter promisified...
     #runProm(query: string, ...args: any[]): Promise<undefined | { lastID: number }> {
         return new Promise((resolve, reject) => {
@@ -410,11 +419,11 @@ export class Db {
         return courseDTO;
     }
 
-    async exists(){
-        try{
+    async exists() {
+        try {
             await this.#getProm('select 1 from courses limit 1;');
             return true;
-        }catch(e){
+        } catch (e) {
             return false;
         }
     }

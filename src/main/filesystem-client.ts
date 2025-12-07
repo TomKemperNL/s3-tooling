@@ -61,7 +61,9 @@ export function parseLog(logLines: string[]): LoggedCommit[] {
                 })
             }
         }
-    }
+    }    
+
+    commits.push(currentCommit);
     return commits;
 }
 

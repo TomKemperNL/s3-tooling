@@ -43,6 +43,23 @@ function mappingToAliases(mapping: { [name: string]: string }): { [canonical: st
     return aliases;
 }
 
+
+function findAssignment(repoName: string, courseConfig: CourseConfig): Assignment {
+    for (const assignment of courseConfig.assignments) {
+        if (repoName.startsWith(assignment.name)) {
+            return assignment;
+        }
+        if (assignment.parts && assignment.parts.length > 0) {
+            for (const part of assignment.parts) {
+                if (repoName.startsWith(part)) {
+                    return assignment;
+                }
+            }
+        }
+    }
+    throw new Error(`No assignment found for repo ${repoName}`);
+}
+
 export class StatisticsController implements StatsApi {
     constructor(private db: Db, private githubClient: GithubClient, private fileSystem: FileSystem,
         private repoController: ReposController, //TODO: deze willen we niet als dep, maar voor nu...
@@ -217,6 +234,51 @@ export class StatisticsController implements StatsApi {
         return;
     }
 
+
+    @ipc("studentstats:get")
+    async getStudentStats(courseId: number, username: string) {
+        const savedCourseConfig = await this.db.getCourseConfig(courseId);
+        const repos = await this.db.getRepositoriesForUser(courseId, username);
+
+        const gatheredStats: Statistics[] = [];
+        for (const repo of repos) {
+            const assignment = findAssignment(repo.name, savedCourseConfig);
+
+            const [coreStats, projectStats, gitPie] = await Promise.all([
+                this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment.name, repo.name),
+                this.#getProjectStats(assignment.groupAssignment, savedCourseConfig.githubStudentOrg, repo.name),
+                this.fileSystem.getLinesByGroupThenAuthor(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment.name, repo.name),
+            ]);
+            const combinedStats = new CombinedStats([coreStats, projectStats]);
+            gatheredStats.push(combinedStats);
+        }
+        let allTheStats: CombinedStats = new CombinedStats(gatheredStats);
+
+        const firstDate = savedCourseConfig.startDate;
+        const lastDate = allTheStats.getDateRange().end;
+        const groups = this.#getGroups(savedCourseConfig);
+
+        const authorMapping = await this.db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg);
+        allTheStats.mapAuthors(authorMapping);
+
+        allTheStats.filterAuthors([username]);
+
+        const builder = new StatsBuilder(allTheStats);
+
+        const week_group = builder
+            .groupByWeek(firstDate, lastDate)
+            .thenBy(groups)
+            .build();
+        return {
+            authors: [username],
+            groups: groups.map(g => g.name),
+            aliases: mappingToAliases(authorMapping),
+            week_group: week_group
+        }
+
+
+    }
+
     @ipc("sectionstats:get")
     async getSectionStats(courseId: number, assignment: string, section: string) {
         let [savedCourseConfig,
@@ -253,7 +315,7 @@ export class StatisticsController implements StatsApi {
 
         let usersInSection = savedCourse.sections[section].map(m => mapping[m.email]);
         usersInSection.sort();
-        let authors =  allTheStats.getDistinctAuthors();
+        let authors = allTheStats.getDistinctAuthors();
         authors.sort();
         console.log('Users in section:', usersInSection);
         console.log('All authors before filtering:', authors);
@@ -298,13 +360,13 @@ export class StatisticsController implements StatsApi {
         }
 
         let members = [];
-        if(foundAssignment.groupAssignment){
+        if (foundAssignment.groupAssignment) {
             members = await this.githubClient.getMembers(savedCourseConfig.githubStudentOrg, name);
-        }else{
+        } else {
             let login = getUsernameFromNameAndAssignment(name, foundAssignment)
-            members = [{ login: login}];
+            members = [{ login: login }];
         }
-        
+
         const allAuthors = combinedStats.getDistinctAuthors();
         members.map(m => m.login).forEach(login => {
             if (allAuthors.indexOf(login) === -1) {
@@ -333,6 +395,8 @@ export class StatisticsController implements StatsApi {
 
     }
 
+
+
     @get('/stats/:cid/:assignment/:name/pie')
     @ipc("repostats-group-pie:get")
     async getGroupPie(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter?: StatsFilter): Promise<GroupPieDTO> {
@@ -355,7 +419,7 @@ export class StatisticsController implements StatsApi {
         const comGroup = groups.find(g => g.extensions === undefined);
         const pie = gitPie;
         if (comGroup) {
-            const comPie: { [name: string]: number } = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
+            const comPie: Record<string, number> = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
             pie[comGroup.name] = comPie;
         }
 
@@ -384,3 +448,14 @@ export class StatisticsController implements StatsApi {
         };
     }
 }
+
+type NumberPie = { [label: string]: number }
+type CompositePie = { [label: string]: number | CompositePie }
+
+
+class Pie implements CompositePie {
+    [label: string]: number | CompositePie;
+    
+}
+
+
