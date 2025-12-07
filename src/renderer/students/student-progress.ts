@@ -14,19 +14,17 @@ export class StudentProgress extends LitElement {
     @consume({ context: ipcContext })
     api: BackendApi
 
-    @property({ type: Object })
-    student: StudentDetailsDTO;
+    @property({ type: String })
+    user: string;
 
-    @property({ type: Object })
-    course: CourseDTO;
+    @property({ type: Number })
+    courseId: number
 
     connectedCallback(): void {
         super.connectedCallback();
-
-        let firstIdentity = Object.keys(this.student.identities)[0];
-        this.api.getStudentStats(this.course.canvasId, firstIdentity).then(stats => {
+        
+        this.api.getStudentStats(this.courseId, this.user).then(stats => {
             this.apiResult = stats;
-            console.log(this.apiResult);
             this.allGroups = stats.groups;
             this.enabledGroups = stats.groups;
         });
@@ -188,7 +186,7 @@ export class StudentProgress extends LitElement {
 
 
     render() {
-        let firstIdentity = Object.keys(this.student.identities)[0];
+        
         const labels: string[] = [];
         let groupBarcharts: any[] = [];
 
@@ -210,7 +208,7 @@ export class StudentProgress extends LitElement {
                 }
                 groupLabels.push(g);
 
-                const authorTotals = this.apiResult.groupedPie[g][firstIdentity] || 0;
+                const authorTotals = this.apiResult.groupedPie[g][this.user] || 0;
                 groupValues.push(authorTotals);
                 groupColors.push(this.groupToColor(g));
             }
@@ -226,7 +224,7 @@ export class StudentProgress extends LitElement {
 
         return html`           
             <div style="grid-area: title">
-                <h3>${firstIdentity}</h3>
+                <h3>${this.user}</h3>
                 <p>${repos.join(', ')}</p>
              </div>        
        

@@ -20,7 +20,7 @@ function cloneIssues(issues: Issue[]): Issue[] {
     ...issue,
     comments: issue.comments.map(comment => ({ ...comment }))
   }));
-} 
+}
 function clonePRs(prs: PullRequest[]): PullRequest[] {
   return prs.map(pr => ({
     ...pr,
@@ -54,7 +54,7 @@ export class GithubClient {
     this.#kit = new Octokit({
       auth: githubToken,
       userAgent: 'ict.hu.nl:S3-Tools:Dev',
-      log: console
+      // log: console
     });
   }
 
@@ -75,7 +75,7 @@ export class GithubClient {
   }
 
   getMembers(org: string, repo: string): Promise<MemberResponse[]> {
-    return this.getCollaborators(org, repo);    
+    return this.getCollaborators(org, repo);
   }
 
   async getCollaborators(org: string, repo: string): Promise<MemberResponse[]> {
@@ -110,7 +110,8 @@ export class GithubClient {
     let comments: Comment[] = [];
 
     while (hasNextPage) {
-      const response: any = await this.#kit.graphql(`
+      try {
+        const response: any = await this.#kit.graphql(`
                 query listComments($issueId: ID!, $cursor: String!) {
                   node(id: $issueId) {
                     ... on Issue {
@@ -129,11 +130,15 @@ export class GithubClient {
                     }
                   }
                 }`, {
-        issueId, cursor: nextCursor
-      });
-      comments = comments.concat(response.node.comments.nodes);
-      hasNextPage = response.node.comments.pageInfo.hasNextPage;
-      nextCursor = response.node.comments.pageInfo.endCursor;
+          issueId, cursor: nextCursor
+        });
+        comments = comments.concat(response.node.comments.nodes);
+        hasNextPage = response.node.comments.pageInfo.hasNextPage;
+        nextCursor = response.node.comments.pageInfo.endCursor;
+      }catch (e) {
+        console.error("Error fetching comments for issue", issueId, e);
+        break;
+      }      
     }
 
     return comments.filter((comment: Comment) => this.ignoredAuthors.indexOf(comment.author) === -1);

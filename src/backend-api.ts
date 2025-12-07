@@ -8,9 +8,6 @@ export interface BackendApi extends CourseApi, RepoApi, StatsApi, AppApi, Settin
 
 export interface ScreenshotArgs {
     courseId: number,
-    assignment: string,
-    organisation: string, 
-    repository: string, 
     user: string 
 }
 

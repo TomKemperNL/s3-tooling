@@ -306,7 +306,7 @@ export class AppElement extends LitElement {
             `],
             ["student-progress", () => html`
                  ${when(!!this.activeStudent, () => html`
-                <student-progress .student=${this.activeStudent} .course=${this.activeCourse}></student-progress>
+                <student-progress  courseId=${this.activeCourse.canvasId}></student-progress>
                 `)}
             `],
             ["section", () => html`

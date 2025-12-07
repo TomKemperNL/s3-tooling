@@ -300,6 +300,14 @@ export class Db {
         }))
     }
 
+    async selectDistinctUsernames(courseId: number): Promise<string[]> {
+        const rows = await this.#allProm<{ username: string }>(`
+            select distinct rm.username from repository_members rm
+                join repositories r on rm.organization = r.organization and rm.name = r.name
+                where r.courseId = ?`, [courseId]);
+        return rows.map(r => r.username);
+    }
+
     async getRepositoriesForUser(courseId: number, username: string): Promise<Repo[]> {
         const rows = await this.#allProm<RepoDb>(`
             select r.* from repositories r
