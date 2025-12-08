@@ -1,13 +1,13 @@
 import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { CourseDTO, StudentDetailsDTO, StudentDTO } from "../../shared";
+import { CourseDTO, StudentDetailsDTO } from "../../shared";
 import { BackendApi } from "../../backend-api";
 import { consume } from "@lit/context";
 import { ipcContext } from "../contexts";
 import { map } from "lit/directives/map.js";
 
 export class StudentSelectedEvent extends Event {
-    constructor(public student: StudentDTO){
+    constructor(public student: StudentDetailsDTO){
         super('student-selected', {
             bubbles: true,
             composed: true

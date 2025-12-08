@@ -1,6 +1,6 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { AuthorStatisticsDTO, CourseDTO, RepoDTO, Startup, StudentDTO } from "../shared";
+import { AuthorStatisticsDTO, CourseDTO, RepoDTO, Startup, StudentDetailsDTO, StudentDTO } from "../shared";
 import { when } from "lit/directives/when.js";
 import { CourseLoadedEvent } from "./dashboard/courses-list";
 import { RepoSelectedEvent } from "./dashboard/repositories-list";
@@ -37,7 +37,7 @@ export class AppElement extends LitElement {
     activeRepo: RepoDTO;
 
     @property({ type: Object })
-    activeStudent: StudentDTO;
+    activeStudent: StudentDetailsDTO;
 
     @property({ type: String, state: true })
     activePage: Page = "repo";
@@ -306,7 +306,7 @@ export class AppElement extends LitElement {
             `],
             ["student-progress", () => html`
                  ${when(!!this.activeStudent, () => html`
-                <student-progress  courseId=${this.activeCourse.canvasId}></student-progress>
+                <student-progress courseId=${this.activeCourse.canvasId} user=${Object.keys(this.activeStudent.identities)[0]}></student-progress>
                 `)}
             `],
             ["section", () => html`
