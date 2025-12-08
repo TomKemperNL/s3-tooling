@@ -94,10 +94,12 @@ export class CoursesController implements CourseApi {
     @ipc('course:students:get')
     async getStudents(courseId: number): Promise<StudentDetailsResult> {
         let savedCourse = await this.db.getCourse(courseId);
+        let savedCourseConfig = await this.db.getCourseConfig(courseId);
         let users = await this.db.getGHUserToStudentMailMapping(courseId);
         let repos = await this.db.selectReposByCourse(courseId);
 
-        let results: StudentDetailsDTO[] = [];
+        let results: StudentDetailsDTO[] = [];        
+        let allIdentities : Record<string,string[]> = {};
         for (let section of Object.keys(savedCourse.sections)) {
             for (let student of savedCourse.sections[section]) {
                 let found = results.find(s => s.studentId === student.studentId);
@@ -119,33 +121,28 @@ export class CoursesController implements CourseApi {
                     if (!found.identities[id]) {
                         found.identities[id] = [];
                     }
+                    allIdentities[id] = [];
                 }
             }
         }
+        
+        let missing : string[] = [];
+        let conflicting : { username: string, students: string[] }[]= [];        
 
-        let missing: string[] = [];
-        let conflicting: { username: string, students: string[] }[] = [];
-        let allIdentities = {} as Record<string, string[]>;
+        let authorMapping = await this.db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg);
 
-
-        for (let r of repos) {
-            let authorMapping = await this.db.getAuthorMapping(r.organization.login, r.name);
-
-            let identities: Record<string, string[]> = Object.entries(authorMapping).reduce((prev: Record<string, string[]>, [alias, canonical]) => {
+        Object.entries(authorMapping).reduce((prev : Record<string,string[]>, [alias, canonical]) => {
                 prev[canonical] = prev[canonical] || [];
                 prev[canonical].push(alias);
                 return prev
-            }, {});
+            }, allIdentities);
+        console.log('Identities', allIdentities);
 
-
-            for (let username of Object.keys(identities)) {
-                allIdentities[username] = allIdentities[username] || [];
-                allIdentities[username].push(...identities[username]);
-            }
-
+        for (let r of repos) {
             let collaborators = await this.db.getCollaborators(r.organization.login, r.name);
-            for (let c of collaborators) {
-                if (!identities[c.login]) {
+            for(let c of collaborators){
+                if(!allIdentities[c.login]){
+                    console.log(`Missing identity for collaborator ${c.login} on repo ${r.organization.login}/${r.name}`);
                     missing.push(c.login);
                 }
             }
@@ -156,17 +153,18 @@ export class CoursesController implements CourseApi {
             if (found.length === 1) {
                 for (let a of allIdentities[u]) {
                     found[0].identities[u].push(a);
-                }
-            } else if (found.length === 0) {
-                missing.push(u);
-            } else if (found.length > 1) {
-                conflicting.push({ username: u, students: found.map(f => f.email) })
+                }                
+            }else if(found.length === 0){
+                console.log(`Missing student for identity ${u}`);
+                missing.push(u);             
+            } else if(found.length > 1){
+                conflicting.push({ username: u, students: found.map(f => f.email )})
             }
         }
 
         return {
             students: results,
-            missing: missing,
+            missing: Array.from(new Set(missing)),
             conflicting: conflicting
         };
 

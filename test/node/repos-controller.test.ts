@@ -37,6 +37,7 @@ afterAll(async () => {
 
 const projectAssignmentName = 'bla-ass-p';
 const verantwoordingAssignmentName = 'bla-ass-v';
+const oefenAssignmentName = 'bla-ass-o'
 
 const someCourse : CourseConfig & CourseDTO= {    
     canvasId: 123,
@@ -49,13 +50,20 @@ const someCourse : CourseConfig & CourseDTO= {
     lastMappingCheck: null,
     assignments: [
         {
-            githubAssignment: verantwoordingAssignmentName,
+            name: verantwoordingAssignmentName,
             canvasId: 456,
             groupAssignment: false
         },
         {
-            githubAssignment: projectAssignmentName,
+            name: projectAssignmentName,
             groupAssignment: true
+        },
+        {
+            name: oefenAssignmentName,
+            groupAssignment: false,
+            parts: [
+                oefenAssignmentName + '-p1', oefenAssignmentName + '-p2'
+            ]
         }
     ],
     sections:{
@@ -87,7 +95,25 @@ test("canLoadSoloRepos", async () => {
 
     let result = await reposController.loadRepos(someCourse.canvasId, verantwoordingAssignmentName, { sections: ['bla-section'] })
     expect(result.length).toBe(1);
+});
 
+
+test("canLoadSoloExerciseRepos", async () => {
+    canvasFake.mapping = { 'test@example.com': 'githubtest' }
+    githubFake.repos = [
+        {                       
+            name: oefenAssignmentName + '-p1-githubtest',
+            full_name: 'bla-org/' + verantwoordingAssignmentName + '-githubtest',
+            organization: { login: 'bla-org' }
+        },
+        {                       
+            name: oefenAssignmentName + '-p2-githubtest',
+            full_name: 'bla-org/' + verantwoordingAssignmentName + '-githubtest',
+            organization: { login: 'bla-org' }
+        }];
+
+    let result = await reposController.loadRepos(someCourse.canvasId, oefenAssignmentName, { sections: ['bla-section'] })
+    expect(result.length).toBe(2);
 });
 
 function setupFakeGroupRepos() {

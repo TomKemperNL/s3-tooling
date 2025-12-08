@@ -13,4 +13,6 @@ settings*.json
 usermapping*.json
 projects.txt
 
+testmapping*.json
+
 test*.json

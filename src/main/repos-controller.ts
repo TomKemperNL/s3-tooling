@@ -2,13 +2,30 @@ import { RepoApi } from "../backend-api";
 import { ipc } from "../electron-setup";
 import { Assignment, BranchInfo, CourseConfig, Repo, RepoDTO, RepoFilter } from "../shared";
 import { get, path } from "../web-setup";
-import { CanvasClient, getUsernameFromName, SimpleDict, StringDict } from "./canvas-client";
+import { CanvasClient, SimpleDict, StringDict } from "./canvas-client";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient, MemberResponse, RepoResponse, toRepo } from "./github-client";
 import { RepositoryStatistics } from "./repository-statistics";
 
 const cacheTimeMs = 1000 /*seconds*/ * 60 /*minutes*/ * 60 /*hours*/ * 1;
+
+
+export function getUsernameFromNameAndAssignment(repoName: string, assignment: Assignment){
+    
+    if(!assignment.parts || assignment.parts.length === 0){
+        return repoName.slice(assignment.name.length +1);
+    }else{
+        let matchingAssignments = assignment.parts.filter(p => repoName.startsWith(p));
+        let bestMatch = matchingAssignments.sort((a,b) => b.length - a.length)[0];
+        if(bestMatch){
+            return repoName.slice(bestMatch.length + 1)
+        }else{
+            throw new Error(`Cannot extract username from repo name ${repoName} for assignment ${assignment.name} with parts ${assignment.parts}`);
+        }
+    }    
+}
+
 
 function mergePies(pie1: { [name: string]: number }, pie2: { [name: string]: number }): { [name: string]: number } {
     const merged: { [name: string]: number } = {};
@@ -34,11 +51,11 @@ export class ReposController implements RepoApi {
             usermapping = await this.db.getStudentMailToGHUserMapping(savedCourseConfig.canvasId);
         } else {
             for (const a of savedCourseConfig.assignments) {
-                if (!a.groupAssignment) {
+                if (!a.groupAssignment && a.canvasId) {
                     usermapping = await this.canvasClient.getGithubMapping(
                         { course_id: savedCourseConfig.canvasId },
                         { assignment_id: a.canvasId }
-                        , a.githubAssignment);
+                        , a.name);
                     await this.db.updateUserMapping(savedCourseConfig.canvasId, usermapping);
                 }
             }
@@ -70,7 +87,7 @@ export class ReposController implements RepoApi {
                 return [repo, collaborators]
             } else {
                 return Promise.resolve([repo, [{
-                    login: getUsernameFromName(repo.name, assignment.githubAssignment)
+                    login: getUsernameFromNameAndAssignment(repo.name, assignment)
                 }]])
             }
         }
@@ -85,7 +102,7 @@ export class ReposController implements RepoApi {
     @ipc("repos:loadSingle")
     async loadRepo(courseId: number, assignmentName: string, name: string): Promise<RepoDTO> {
         const savedCourse = await this.db.getCourse(courseId);
-        const assignment = savedCourse.assignments.find(a => a.githubAssignment === assignmentName);
+        const assignment = savedCourse.assignments.find(a => a.name === assignmentName);
         if (!assignment) {
             throw new Error(`Assignment ${assignmentName} not found in course ${courseId}`);
         }
@@ -95,7 +112,7 @@ export class ReposController implements RepoApi {
         return {
             members: r.members.map(m => m.login),
             courseId: savedCourse.canvasId,
-            assignment: assignment.githubAssignment,
+            assignment: assignment.name,
             groupRepo: assignment.groupAssignment,
             name: r.name,
             url: r.http_url,
@@ -105,7 +122,7 @@ export class ReposController implements RepoApi {
     @ipc('repos:load')
     async loadRepos(courseId: number, assignmentName: string, filter: RepoFilter): Promise<RepoDTO[]> {
         const savedCourse = await this.db.getCourse(courseId);
-        const assignment = savedCourse.assignments.find(a => a.githubAssignment === assignmentName);
+        const assignment = savedCourse.assignments.find(a => a.name === assignmentName);
         if (!assignment) {
             throw new Error(`Assignment ${assignmentName} not found in course ${courseId}`);
         }
@@ -114,7 +131,7 @@ export class ReposController implements RepoApi {
         repos = repos.filter(r => r.matchesAssignment(assignment));
 
         await this.#updateMembers(repos, assignment);
-        if (filter.sections.length > 0) {
+        if (assignment.canvasId && filter.sections.length > 0) {
             const usermapping: SimpleDict = await this.#getUserMapping(savedCourseConfig);
 
             const logins = filter.sections
@@ -130,12 +147,12 @@ export class ReposController implements RepoApi {
         await Promise.all(
             repos.map(r =>
                 this.fileSystem.cloneRepo(
-                    [savedCourseConfig.githubStudentOrg, assignment.githubAssignment], r).catch(console.error)));
+                    [savedCourseConfig.githubStudentOrg, assignment.name], r).catch(console.error)));
 
         return repos.map(r => ({
             members: r.members.map(m => m.login),
             courseId: savedCourse.canvasId,
-            assignment: assignment.githubAssignment,
+            assignment: assignment.name,
             groupRepo: assignment.groupAssignment,
             name: r.name,
             url: r.http_url,
@@ -195,15 +212,25 @@ export class ReposController implements RepoApi {
     }
 
     @get("/author-mapping/:cid/:assignment")
-    async exportAuthorMapping(@path(":cid") courseId: number, @path(":assignment") assignmentName: string): Promise<Record<string, StringDict>> {
+    async exportAuthorMapping(@path(":cid") courseId: number, @path(":assignment") assignmentName?: string): Promise<Record<string, StringDict>> {
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
         let repos = await this.db.selectReposByCourse(savedCourseConfig.canvasId);
-        repos = repos.filter(r => r.name.startsWith(assignmentName + '-'));
+        if(assignmentName){
+            repos = repos.filter(r => r.name.startsWith(assignmentName + '-'));
+        }
+        
 
         const result: Record<string, StringDict> = {};
         for(let r of repos){
             const mapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, r.name);
             result[r.name] = mapping;
+        }
+
+        for(let key of Object.keys(result)){
+            let mapping = result[key];
+            if(Object.keys(mapping).length === 0){
+                delete result[key];
+            }
         }
 
         return result;

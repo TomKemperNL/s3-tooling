@@ -1,5 +1,5 @@
 import { Octokit } from "@octokit/rest";
-import { Issue, PullRequest, Repo } from "../shared";
+import { Issue, PullRequest, Repo, Comment } from "../shared";
 import { response } from "express";
 
 export type RepoResponse = {
@@ -14,6 +14,20 @@ export type RepoResponse = {
   organization: { login: string },
   lastMemberCheck: Date
 }
+
+function cloneIssues(issues: Issue[]): Issue[] {
+  return issues.map(issue => ({
+    ...issue,
+    comments: issue.comments.map(comment => ({ ...comment }))
+  }));
+}
+function clonePRs(prs: PullRequest[]): PullRequest[] {
+  return prs.map(pr => ({
+    ...pr,
+    comments: pr.comments.map(comment => ({ ...comment }))
+  }));
+}
+
 
 export function toRepo(repoResponse: RepoResponse): Repo {
   return new Repo(
@@ -31,6 +45,7 @@ export type MemberResponse = {
 
 export class GithubClient {
   #kit: Octokit;
+  ignoredAuthors: string[] = [];
 
   constructor(githubToken: string) {
     if (!githubToken) {
@@ -59,18 +74,8 @@ export class GithubClient {
     }).then(response => response.data);
   }
 
-  async getMembers(org: string, repo: string): Promise<MemberResponse[]> {
-    const teamsResponse = await this.#kit.repos.listTeams({
-      repo: repo,
-      owner: org
-    });
-
-    const members = await Promise.all(teamsResponse.data.map(team => this.#kit.teams.listMembersInOrg({
-      org: org,
-      team_slug: team.slug
-    }))).then(responses => responses.flatMap(r => r.data));
-
-    return members;
+  getMembers(org: string, repo: string): Promise<MemberResponse[]> {
+    return this.getCollaborators(org, repo);
   }
 
   async getCollaborators(org: string, repo: string): Promise<MemberResponse[]> {
@@ -79,7 +84,8 @@ export class GithubClient {
       repo: repo,
       per_page: 100
     });
-    return resp.data;
+    return resp.data
+      .filter(member => this.ignoredAuthors.indexOf(member.login) === -1);
   }
 
   async listRepos(org: string): Promise<RepoResponse[]> {
@@ -104,7 +110,8 @@ export class GithubClient {
     let comments: Comment[] = [];
 
     while (hasNextPage) {
-      const response: any = await this.#kit.graphql(`
+      try {
+        const response: any = await this.#kit.graphql(`
                 query listComments($issueId: ID!, $cursor: String!) {
                   node(id: $issueId) {
                     ... on Issue {
@@ -123,21 +130,25 @@ export class GithubClient {
                     }
                   }
                 }`, {
-        issueId, cursor: nextCursor
-      });
-      comments = comments.concat(response.node.comments.nodes);
-      hasNextPage = response.node.comments.pageInfo.hasNextPage;
-      nextCursor = response.node.comments.pageInfo.endCursor;
+          issueId, cursor: nextCursor
+        });
+        comments = comments.concat(response.node.comments.nodes);
+        hasNextPage = response.node.comments.pageInfo.hasNextPage;
+        nextCursor = response.node.comments.pageInfo.endCursor;
+      }catch (e) {
+        console.error("Error fetching comments for issue", issueId, e);
+        break;
+      }      
     }
 
-    return comments;
+    return comments.filter((comment: Comment) => this.ignoredAuthors.indexOf(comment.author) === -1);
   }
 
   cachedIssues: { [org: string]: { [repo: string]: Issue[] } } = {};
 
   async listIssues(org: string, repo: string): Promise<Issue[]> {
     if (this.cachedIssues[org] && this.cachedIssues[org][repo]) {
-      return this.cachedIssues[org][repo];
+      return cloneIssues(this.cachedIssues[org][repo]);
     }
     let nextCursor = "";
     let hasNextPage = true;
@@ -199,14 +210,14 @@ export class GithubClient {
     }));
     this.cachedIssues[org] = this.cachedIssues[org] || {};
     this.cachedIssues[org][repo] = result;
-    return result;
+    return result.filter(issue => this.ignoredAuthors.indexOf(issue.author) === -1);
   }
 
   cachedPrs: { [org: string]: { [repo: string]: PullRequest[] } } = {};
 
   async listPullRequests(org: string, repo: string) {
     if (this.cachedPrs[org] && this.cachedPrs[org][repo]) {
-      return this.cachedPrs[org][repo];
+      return clonePRs(this.cachedPrs[org][repo]);
     }
 
     let nextCursor = "";
@@ -270,7 +281,7 @@ export class GithubClient {
     );
     this.cachedPrs[org] = this.cachedPrs[org] || {};
     this.cachedPrs[org][repo] = results;
-    return results;
+    return results.filter(issue => this.ignoredAuthors.indexOf(issue.author) === -1);
   }
 
   clearCache(org: string, repo: string) {

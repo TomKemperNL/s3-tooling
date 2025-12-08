@@ -58,12 +58,15 @@ export class S3App {
         this.screenshotController = new ScreenshotController();
         try{
             this.githubClient = new GithubClient(this.settings.githubToken);
+            console.log('wuuut', this.settings.ignoreAuthors);
+            this.githubClient.ignoredAuthors = this.settings.ignoreAuthors;
         }catch(e){
             console.error("Unable to create github client", e);
         }
         
         try{
             this.fileSystem = new FileSystem(this.settings.dataPath);
+            this.fileSystem.ignoredAuthors = this.settings.ignoreAuthors;
         }catch(e){
             console.error("Unable to create FileSystem client", e);
         }

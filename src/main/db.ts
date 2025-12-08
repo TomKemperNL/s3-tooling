@@ -1,7 +1,7 @@
 import { Database } from "sqlite3";
 import fs from 'fs/promises';
 import { feb2024, s2, s3 } from '../temp'
-import { CourseConfig, CourseDTO, StudentDTO } from "../shared";
+import { CourseConfig, CourseDTO, Repo, StudentDTO } from "../shared";
 import { MemberResponse, RepoResponse } from "./github-client";
 import { StringDict } from "./canvas-client";
 
@@ -21,10 +21,12 @@ type AssignmentDb = {
     courseId: number,
     githubAssignment: string,
     canvasId?: number,
-    groupAssignment: 0 | 1
+    groupAssignment: 0 | 1,
+    partsCSV: string
 }
 
 export type RepoDb = {
+    courseId: number,
     organization: string,
     name: string,
     full_name: string,
@@ -47,8 +49,9 @@ function courseDbToConfig(r: CourseDb, as: AssignmentDb[]): CourseConfig {
         canvasOverview: r.canvasOverviewJson ? JSON.parse(r.canvasOverviewJson) : [],
         assignments: as.map(a => ({
             canvasId: a.canvasId,
-            githubAssignment: a.githubAssignment,
-            groupAssignment: a.groupAssignment === 1
+            name: a.githubAssignment,
+            groupAssignment: a.groupAssignment === 1,
+            parts: a.partsCSV ? a.partsCSV.split(',').map(s => s.trim()) : []
         })),
 
         lastRepoCheck: r.lastRepoCheck ? new Date(Date.parse(r.lastRepoCheck)) : null,
@@ -57,7 +60,7 @@ function courseDbToConfig(r: CourseDb, as: AssignmentDb[]): CourseConfig {
     }
 }
 
-export class Db {   
+export class Db {
     #initializer: () => Database;
     #db: Database
     constructor(initializer: () => Database = null) {
@@ -121,16 +124,17 @@ export class Db {
                 ?,?,
                 ?,?,?,
                 ?)`, [
-                courseConfig.name, courseConfig.startDate?.toISOString(), 
+                courseConfig.name, courseConfig.startDate?.toISOString(),
                 courseConfig.canvasId, courseConfig.canvasGroupsName, courseConfig.canvasOverview ? JSON.stringify(courseConfig.canvasOverview) : null,
                 courseConfig.githubStudentOrg
             ]);
 
             for (const as of courseConfig.assignments) {
+                const partsCSV = as.parts ? as.parts.join(',') : null;
                 await this.#runProm(`insert into course_assignments(
-                    courseId, githubAssignment, canvasId, groupAssignment) values(
-                    ?,?,?,?
-                    )`, courseConfig.canvasId, as.githubAssignment, as.canvasId, as.groupAssignment)
+                    courseId, githubAssignment, canvasId, groupAssignment, partsCSV) values(
+                    ?,?,?,?,?
+                    )`, courseConfig.canvasId, as.name, as.canvasId, as.groupAssignment, partsCSV)
             }
         });
 
@@ -152,7 +156,7 @@ export class Db {
                 await this.#runProm(
                     `insert into githubCommitNames(name, githubUsername, organization, repository)
                      values(?,?,?,?);`,
-                     [authorName, username, org, repo]);
+                    [authorName, username, org, repo]);
             };
         });
     }
@@ -161,6 +165,17 @@ export class Db {
         const rows = await this.#allProm<{ name: string, githubUsername: string }>(`
             select name, githubUsername from githubCommitNames 
             where organization = ? and repository = ?`, [org, repo]);
+        const result: { [key: string]: string } = {};
+        for (const r of rows) {
+            result[r.name] = r.githubUsername;
+        }
+        return result;
+    }
+
+    async getAuthorMappingOrg(org: string): Promise<{ [key: string]: string }> {
+        const rows = await this.#allProm<{ name: string, githubUsername: string }>(`
+            select name, githubUsername from githubCommitNames 
+            where organization = ?`, [org]);
         const result: { [key: string]: string } = {};
         for (const r of rows) {
             result[r.name] = r.githubUsername;
@@ -266,7 +281,6 @@ export class Db {
     }
 
     async updateCollaborators(organization: string, name: string, collaborators: MemberResponse[]) {
-
         await this.#inTransaction(async () => {
             await Promise.all(collaborators.map(async c => {
                 await this.#runProm('insert into repository_members(organization, name, username) values(?,?,?) on conflict do nothing',
@@ -284,6 +298,22 @@ export class Db {
         return result.map(r => ({
             login: r.username
         }))
+    }
+
+    async selectDistinctUsernames(courseId: number): Promise<string[]> {
+        const rows = await this.#allProm<{ username: string }>(`
+            select distinct rm.username from repository_members rm
+                join repositories r on rm.organization = r.organization and rm.name = r.name
+                where r.courseId = ?`, [courseId]);
+        return rows.map(r => r.username);
+    }
+
+    async getRepositoriesForUser(courseId: number, username: string): Promise<Repo[]> {
+        const rows = await this.#allProm<RepoDb>(`
+            select r.* from repositories r
+                join repository_members rm on r.organization = rm.organization and r.name = rm.name
+                where rm.username = ? and r.courseId = ?`, [username, courseId]);
+        return rows.map(r => new Repo(r.name, r.organization, r.api_url, r.ssh_url, r.html_url, new Date(Date.parse(r.lastMemberCheck))));
     }
 
     //TODO: uitzoeken hoe je dit netter promisified...
@@ -374,8 +404,9 @@ export class Db {
             canvasId: rows[0].courseCId,
             assignments: as.map(a => ({
                 canvasId: a.canvasId,
-                githubAssignment: a.githubAssignment,
-                groupAssignment: a.groupAssignment === 1
+                name: a.githubAssignment,
+                groupAssignment: a.groupAssignment === 1,
+                parts: a.partsCSV ? a.partsCSV.split(',').map(s => s.trim()) : []
             })),
             sections: {}
         };
@@ -397,11 +428,11 @@ export class Db {
         return courseDTO;
     }
 
-    async exists(){
-        try{
+    async exists() {
+        try {
             await this.#getProm('select 1 from courses limit 1;');
             return true;
-        }catch(e){
+        } catch (e) {
             return false;
         }
     }

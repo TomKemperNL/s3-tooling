@@ -6,7 +6,7 @@ require('@dotenvx/dotenvx').config({path: ['.dev.env', '.env']})
 import { writeFile } from "fs/promises";
 
 let settings : Settings = {
-    githubToken: process.env.ACCES_TOKEN,
+    githubToken: process.env.ACCESS_TOKEN,
     canvasToken: process.env.CANVAS_TOKEN,
     dataPath: 'C:/s3-tooling-data2',
     keepDB: true,
@@ -15,7 +15,6 @@ let settings : Settings = {
 }
 
 async function main(){
-
     let app = new S3App(settings);
     await app.init();
     console.time("start")

@@ -4,15 +4,17 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { createApp } from "./main/index"
 import { setupIpcMainHandlers } from "./electron-setup";
 import "./electron-setup";
+import { existsSync } from "fs";
 import { s3 } from "./temp";
 
 
 config();
 
-async function createWindow(courseId: number, assignment: string, organisation: string, repository: string, user: string) {
+async function createWindow(courseId: number, user: string) {
+    console.log(`Creating window for ${user}`);
     const win = new BrowserWindow({
         width: 1200,
-        height: 500,
+        height: 700,
         webPreferences: {
             sandbox: false, //We gebruiken nu imports & requires in de reload, (vanwege de decorators)... voorlopig een goede deal, maar misschien kan dit beter?
             preload: path.join(__dirname, 'preload.js'),
@@ -22,53 +24,49 @@ async function createWindow(courseId: number, assignment: string, organisation: 
     });
 
     await win.loadFile('./renderer/screenshot.html');
-    win.webContents.send('load-user-stats', { courseId, assignment, organisation, repository, user })
+    console.log(`Sending load-user-stats for ${courseId} and ${user}`);
+    win.webContents.send('load-user-stats', { courseId, user })
 }
 
 
 async function main() {
+    const courseId = 50055;
     const s3App = await createApp();
     await setupIpcMainHandlers(s3App);
 
+    let todoQueue: string[] = [];
+
     ipcMain.handle("request:screenshot", async (e, fileName: string) => {
         await s3App.screenshotController.requestScreenshot(e.sender, fileName);
+
+        if (todoQueue.length == 0) {
+            app.quit();
+        } else {
+            let next = todoQueue.pop();
+            createWindow(courseId, next);            
+        }
     });
 
     app.whenReady().then(async () => {
+        todoQueue = await s3App.db.selectDistinctUsernames(courseId);
 
-        const courseId = 50055;
-        const assignment = 's3-project';
-        const organization = 'HU-SD-S3-Studenten-S2526';
-        const repo = process.argv[2];
-
-        console.log(process.argv);
-
-        // let repos = await s3App.db.selectReposByCourse(courseId);
-        // repos = repos.filter(r => r.name.startsWith(assignment));
-        // repos.sort((a, b) => a.name.localeCompare(b.name));
-
-        // console.log(repos.map(r => r.name).join('\n'));
-
-        // for (let repo of repos) {
-        //     console.log(`Repo: ${repo.name}`);
-            //prefill cache once per repo:
-        
-        await s3App.statisticsController.getRepoStats(courseId, assignment, repo);
-        await s3App.statisticsController.getGroupPie(courseId, assignment, repo);
-    
-        const members = await s3App.db.getCollaborators(organization, repo);
-        for (const member of members) {
-            console.log(`\tMember: ${member.login}`);
-            createWindow(courseId, assignment, organization, repo, member.login);
+        let existingMembers : string[] = [];
+        for(let member of todoQueue) {
+            if(existsSync(path.join('.', 'screenshots', `${member}-screenshot.png`))) {
+                existingMembers.push(member);
+            }
         }
-    
-    });
+        for(let member of existingMembers) {
+            const index = todoQueue.indexOf(member);
+            if(index > -1) {
+                todoQueue.splice(index, 1);
+            }
+        }
 
-    //Om op Linux/Windows lekkende processen te voorkomen:
-    app.on('window-all-closed', () => {
-        app.quit();
+        console.log(todoQueue)
+        let next = todoQueue.pop();
+        createWindow(courseId, next);
     });
-
 
 }
 main();

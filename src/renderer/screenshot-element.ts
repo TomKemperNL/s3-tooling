@@ -8,50 +8,48 @@ import { RepoDTO } from "../shared";
 @customElement('screenshot-element')
 export class ScreenShotElement extends LitElement {
 
-    
-    @provide({ context: ipcContext})    
+
+    @provide({ context: ipcContext })
     ipc: BackendApi & ScreenshotApi;
 
-    @property({ type: Object })
-    repo: RepoDTO;
-    
+    @property({ type: String })
+    user: string;
+    @property({ type: Number })
+    courseId: number;
 
-    constructor(){
+
+    constructor() {
         super();
         this.ipc = window.electron;
     }
 
-    @property({ type: String })
-    author: string;
-
     connectedCallback(): void {
         super.connectedCallback();
-        this.ipc.onLoadUserStats((data: ScreenshotArgs) => {            
-            this.ipc.loadRepo(data.courseId, data.assignment, data.repository).then(repo => {
-                this.author = data.user;
-                this.repo = repo;
-            });            
+        this.ipc.onLoadUserStats((data: ScreenshotArgs) => {
+            console.log("onLoadUserStats callback", data);
+            this.courseId = data.courseId;
+            this.user = data.user;
         });
-
     }
 
-    async takeScreenshot(){
+    async takeScreenshot() {
         setTimeout(async () => {
-            await this.ipc.requestScreenshot(`${this.author}-screenshot`);
-            window.close();    
-        }, 100); //Hmm, hij heeft toch nog een wait nodig, om niet midden in een render te screenshotten of zoiets?
-        
+            await this.ipc.requestScreenshot(`${this.user}-screenshot`);
+            window.close();
+        }, 1000); //Hmm, hij heeft toch nog een wait nodig, om niet midden in een render te screenshotten of zoiets?
+
     }
 
     render() {
-        if(this.repo){
+        if (this.user && this.courseId) {
+            console.log("Rendering student-progress for", this.user, this.courseId);
             return html`
-            <author-details @author-details-rendered=${this.takeScreenshot} readonly .repo=${this.repo} .author=${this.author} ></author-details>            
-            `;    
-        }else{
-            return html`            
-            Loading...
+            <student-progress @author-details-rendered=${this.takeScreenshot} readonly user=${this.user} courseId=${this.courseId} ></student-progress>            
             `;
+        } else {
+            return html`<p>Loading...</p>`;
         }
+
+
     }
 }

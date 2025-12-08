@@ -3,15 +3,6 @@ import { StringDict } from "./canvas-client";
 import { LoggedChange, LoggedCommit } from "./filesystem-client";
 import { CombinedStats, ExportingArray, GroupDefinition, GroupedCollection, Statistics } from "./statistics";
 
-export let ignoredAuthors = [
-    'github-classroom[bot]'
-]
-
-const ignoredAuthorsEnv = process.env.IGNORE_AUTHORS;
-if (ignoredAuthorsEnv) {
-    ignoredAuthors = ignoredAuthors.concat(ignoredAuthorsEnv.split(',').map(a => a.trim()));
-}
-
 function partition<T>(array: T[], predicate: (value: T) => boolean): [T[], T[]] {
     return array.reduce((acc, item) => {
         if(predicate(item)) {
@@ -53,8 +44,8 @@ export class RepositoryStatistics implements Statistics {
 
     constructor(rawData: LoggedCommit[], public options: { ignoredExtensions: string[] } = {
         ignoredExtensions: ['.json', '.pdf'] //TODO: dit is dubbelop met de package-json. Even nadenken wat we willen
-    }) {
-        this.data = rawData.filter(c => !ignoredAuthors.includes(c.author));
+    }) {        
+        this.data = rawData.filter(c => !c.author.endsWith('[bot]'));
     }
 
     concat(other: RepositoryStatistics): RepositoryStatistics {

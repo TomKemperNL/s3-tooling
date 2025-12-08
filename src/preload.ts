@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('electron', Object.assign(setupIpcPreloadHandler
         return ipcRenderer.invoke('request:screenshot', name);
     },
     onLoadUserStats: (callback: (data: ScreenshotArgs) => void) => ipcRenderer.on('load-user-stats', (event: any, data: ScreenshotArgs) => {
+        console.log("Received load-user-stats", data);
+
         callback(data);
     })
 }));

@@ -4,9 +4,9 @@ import * as path from 'path';
 import { readdir } from 'fs/promises'
 
 import { promisify } from 'util';
-import { ignoredAuthors } from './repository-statistics';
 import { Repo } from '../shared';
 import { GroupDefinition } from './statistics';
+import { GroupAuthorPie } from './pie';
 
 const exec = promisify(proc.exec);
 const exists = promisify(fs.exists);
@@ -62,9 +62,9 @@ export function parseLog(logLines: string[]): LoggedCommit[] {
                 })
             }
         }
-    }
-    commits.push(currentCommit);
+    }    
 
+    commits.push(currentCommit);
     return commits;
 }
 
@@ -113,10 +113,26 @@ class GitCli implements GitCommands {
 
 }
 
+function clone<T>(obj: T): T {
+    let result: any = JSON.parse(JSON.stringify(obj));
+    if(result.date){
+        result.date = new Date(result.date);
+    }
+    if(Array.isArray(result)){
+        for(let item of <any[]>result){
+            if(item.date){
+                item.date = new Date(item.date);
+            }
+        }
+    }
+    return result;
+}
+
 export class FileSystem {
     #basePath: string;
     cloneStyle: CloneStyle = 'ssh'
     gitCli: GitCommands = new GitCli();
+    ignoredAuthors: string[] = [];
 
     constructor(basePath: string) {
         if (!basePath) {
@@ -152,23 +168,23 @@ export class FileSystem {
     async runCommands(commands: string[], ...repoPath: string[]) {
         const target = path.join(this.#basePath, ...repoPath);
         const result = [];
-        for(const command of commands){
+        for (const command of commands) {
             const commandResult = await exec(command, { cwd: target, encoding: 'utf8' });
-            result.push({ command, result: commandResult.stdout});
+            result.push({ command, result: commandResult.stdout });
         }
-        
+
         return result;
     }
 
     async getRepoPath(org: string, assignment: string, repoName: string) {
         const target = path.join(this.#basePath, org, assignment, repoName);
-        if(await exists(target)){
+        if (await exists(target)) {
             return target;
-        }else{
+        } else {
             return null;
         }
     }
-    
+
 
     async getRepoPaths(...prefPath: string[]) {
         const target = path.join(this.#basePath, ...prefPath);
@@ -199,7 +215,7 @@ export class FileSystem {
 
     branchCache: { [path: string]: any } = {};
 
-    async getCurrentBranch(...repoPath: string[]) {
+    async getCurrentBranch(...repoPath: string[]) : Promise<string> {
         if (this.branchCache[repoPath.join('/')] && this.branchCache[repoPath.join('/')].current) {
             return this.branchCache[repoPath.join('/')].current;
         }
@@ -213,7 +229,7 @@ export class FileSystem {
         return output;
     }
 
-    async getDefaultBranch(...repoPath: string[]) {
+    async getDefaultBranch(...repoPath: string[]) : Promise<string> {
         if (this.branchCache[repoPath.join('/')] && this.branchCache[repoPath.join('/')].default) {
             return this.branchCache[repoPath.join('/')].default;
         }
@@ -236,7 +252,7 @@ export class FileSystem {
 
     async getBranches(defaultBranch: string, ...repoPath: string[]) {
         if (this.branchCache[repoPath.join('/')] && this.branchCache[repoPath.join('/')].branches) {
-            return this.branchCache[repoPath.join('/')].branches;
+            return [...this.branchCache[repoPath.join('/')].branches];
         }
 
         const target = path.join(this.#basePath, ...repoPath);
@@ -268,12 +284,12 @@ export class FileSystem {
         const target = path.join(this.#basePath, ...repoPath);
         if (this.repoCache[target]) {
             // console.log('cache-hit: repo for', target);
-            return this.repoCache[target];
+            return clone(this.repoCache[target]);
         }
         const result = await exec(`git log --all ${logFormat}`, { cwd: target, encoding: 'utf8' });
         const logLines = result.stdout.split('\n');
 
-        const parsedLog = parseLog(logLines);
+        const parsedLog = parseLog(logLines).filter(c => this.ignoredAuthors.indexOf(c.author) === -1);
         this.repoCache[target] = parsedLog;
         return parsedLog;
     }
@@ -296,7 +312,7 @@ export class FileSystem {
 
         let parsedLog: LoggedCommit[] = null;
         try {
-            parsedLog = await this.gitCli.getFileLog(path, file);
+            parsedLog = (await this.gitCli.getFileLog(path, file)).filter(c => this.ignoredAuthors.indexOf(c.author) === -1);
             //basically willen we files ignoren die altijd binary zijn, of alleen maar merge-commits hebben.
             //hmm, dat klinkt niet heel logisch: TODO, wat wouden we hier eigenlijk?:)
         } catch (e) {
@@ -312,7 +328,7 @@ export class FileSystem {
         } else if (parsedLog.every(l => l.changes.some(c => c.added === '-' || c.removed === '-'))) {
             return false;; //Ignore binary files
         }
-        else if (!parsedLog.every(l => ignoredAuthors.some(ia => ia === l.author))) {
+        else if (!parsedLog.every(l => this.ignoredAuthors.some(ia => ia === l.author))) {
             return true;
         } else {
             return false;
@@ -320,12 +336,12 @@ export class FileSystem {
     }
 
 
-    
+
     pieCache: { [repoPath: string]: Record<string, Record<string, number>> } = {};
-    async getLinesByGroupThenAuthor(groups: GroupDefinition[], ...repoPath: string[]): Promise<Record<string, Record<string, number>>> {
+    async getLinesByGroupThenAuthor(groups: GroupDefinition[], ...repoPath: string[]): Promise<GroupAuthorPie> {
         const target = path.join(this.#basePath, ...repoPath);
-        if (this.pieCache[target]) {            
-            return this.pieCache[target];
+        if (this.pieCache[target]) {
+            return new GroupAuthorPie(clone(this.pieCache[target]));
         }
         const files = await this.gitCli.listFiles(target);
         const repoGroups = groups.filter(g => g.extensions && g.extensions.length > 0);
@@ -334,7 +350,7 @@ export class FileSystem {
 
         const otherGroup = groups.find(g => g.other);
 
-        async function parseFile(file: string){
+        async function parseFile(file: string) {
             if (await this.#includeFileInBlames(target, file)) {
                 const matchingGroup = repoGroups.find(g => g.extensions.some(ext => file.toLowerCase().endsWith(ext.toLowerCase())));
                 const blameLines: string[] = await this.gitCli.getBlame(target, file);
@@ -361,7 +377,7 @@ export class FileSystem {
         }
 
         await Promise.all(files.map(f => parseFile.apply(this, [f])));
-        
+
         const orderedReport = {} as Record<string, Record<string, number>>;
         for (const group of groups) {
             if (report[group.name]) {
@@ -372,6 +388,6 @@ export class FileSystem {
         }
 
         this.pieCache[target] = orderedReport;
-        return orderedReport;
+        return new GroupAuthorPie(orderedReport);
     }
 }

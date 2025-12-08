@@ -2,18 +2,14 @@ import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { LinesStatistics, RepoDTO, RepoStatisticsDTO, GroupPieDTO } from "../../shared";
 import { when } from "lit/directives/when.js";
-import { map } from "lit/directives/map.js";
 import { BackendApi } from "../../backend-api";
 import { classMap } from "lit/directives/class-map.js";
 import { ipcContext } from "../contexts";
 import { consume } from "@lit/context";
-import { HTMLInputEvent } from "../events";
-import { AuthorMappedEvent, EnabledAuthorsChanged, RemoveAliasEvent } from "./author-list";
-import { EnabledItemsChanged } from "./group-list";
 
 
 @customElement('author-details')
-export class RepositoryDetails extends LitElement {
+export class AuthorDetails extends LitElement {
     @consume({context: ipcContext})
     ipc: BackendApi;
     
@@ -58,17 +54,15 @@ export class RepositoryDetails extends LitElement {
             const gettingGroupPie = this.ipc.getGroupPie(this.repo.courseId, this.repo.assignment, this.repo.name, { authors: [this.author] });
 
             Promise.all([gettingRepos, gettingGroupPie]).then(([repoStats, groupPie]) => {
-                this.repoStats = repoStats;                
+                console.log(repoStats);                
+                this.repoStats = repoStats;
+                this.allGroups = repoStats.groups;
+                this.enabledGroups = repoStats.groups;
+                console.log(groupPie);
                 this.groupPie = groupPie;
                 this.loading = false;
                 
             });
-        }
-        if (_changedProperties.has('repoStats')) {            
-            if(this.repoStats){                
-                this.allGroups = this.repoStats.groups;
-                this.enabledGroups = this.repoStats.groups;
-            }            
         }
     }        
 
@@ -209,7 +203,7 @@ export class RepositoryDetails extends LitElement {
                 }
                 groupLabels.push(g);
 
-                const authorTotals = 0;                
+                const authorTotals = this.groupPie?.groupedPie[g][this.author] || 0;
                 groupValues.push(authorTotals);
                 groupColors.push(this.groupToColor(g));
             }

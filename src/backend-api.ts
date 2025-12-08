@@ -8,15 +8,12 @@ export interface BackendApi extends CourseApi, RepoApi, StatsApi, AppApi, Settin
 
 export interface ScreenshotArgs {
     courseId: number,
-    assignment: string,
-    organisation: string, 
-    repository: string, 
     user: string 
 }
 
 export interface ScreenshotApi {
     onLoadUserStats: (callback: (data: ScreenshotArgs) => void) => void;
-    requestScreenshot: (author: string) => Promise<void>;
+    requestScreenshot: (filename: string) => Promise<void>;
 }
 
 export interface AppApi {
@@ -49,7 +46,7 @@ export interface StatsApi {
     getRepoStats: (courseId: number, assignment: string, name: string, filter?: StatsFilter) => Promise<RepoStatisticsDTO>        
     getGroupPie: (courseId: number, assignment: string, name: string, filter?: StatsFilter) => Promise<GroupPieDTO>
     getSectionStats(courseId: number, assignment: string, section: string) : Promise<any>
-    
+    getStudentStats(courseId: number, username: string): Promise<any>
 }
 
 

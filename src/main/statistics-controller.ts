@@ -1,24 +1,16 @@
-import { combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, StatsFilter, GroupPieDTO } from "../shared";
+import { combineStats, CourseConfig, LinesStatistics, RepoDTO, RepoStatisticsDTO, StatsFilter, GroupPieDTO, Assignment } from "../shared";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";
 import { GithubClient } from "./github-client";
 import { ProjectStatistics } from "./project-statistics";
 import { RepositoryStatistics } from "./repository-statistics";
-import { ReposController } from "./repos-controller";
+import { ReposController, getUsernameFromNameAndAssignment } from "./repos-controller";
 import { CombinedStats, GroupDefinition, Statistics, StatsBuilder } from "./statistics";
 import { ipc } from "../electron-setup";
 import { StatsApi } from "../backend-api";
 import { get, path } from "../web-setup";
 import { CoursesController } from "./courses-controller";
-
-function mergeAuthors(pie: { [name: string]: number }, mapping: { [name: string]: string }) {
-    const merged: { [name: string]: number } = {};
-    for (const key in pie) {
-        const mapped = mapping[key] || key; // Als er geen mapping is, gebruik de originele naam
-        merged[mapped] = (merged[mapped] || 0) + pie[key];
-    }
-    return merged;
-}
+import { GroupAuthorPie } from "./pie";
 
 function merge<T>(a: { [key: string]: T[] }, b: { [key: string]: T[] }) {
     let result = { ...a };
@@ -43,6 +35,23 @@ function mappingToAliases(mapping: { [name: string]: string }): { [canonical: st
     return aliases;
 }
 
+
+function findAssignment(repoName: string, courseConfig: CourseConfig): Assignment {
+    for (const assignment of courseConfig.assignments) {
+        if (repoName.startsWith(assignment.name)) {
+            return assignment;
+        }
+        if (assignment.parts && assignment.parts.length > 0) {
+            for (const part of assignment.parts) {
+                if (repoName.startsWith(part)) {
+                    return assignment;
+                }
+            }
+        }
+    }
+    throw new Error(`No assignment found for repo ${repoName}`);
+}
+
 export class StatisticsController implements StatsApi {
     constructor(private db: Db, private githubClient: GithubClient, private fileSystem: FileSystem,
         private repoController: ReposController, //TODO: deze willen we niet als dep, maar voor nu...
@@ -64,10 +73,10 @@ export class StatisticsController implements StatsApi {
         ];
     }
 
-    async #getCombinedStats(savedCourseConfig: CourseConfig, assignment: string, name: string) {
+    async #getCombinedStats(savedCourseConfig: CourseConfig, assignment: Assignment, name: string) {
         const [coreStats, projectStats] = await Promise.all([
-            this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, name),
-            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name),
+            this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment.name, name),
+            this.#getProjectStats(assignment.groupAssignment, savedCourseConfig.githubStudentOrg, name),
         ]);
         const stats = new CombinedStats([coreStats, projectStats]);
         return stats;
@@ -78,12 +87,23 @@ export class StatisticsController implements StatsApi {
         return new RepositoryStatistics(commits);
     }
 
-    async #getProjectStats(org: string, name: string) {
-        const [issues, prs] = await Promise.all([
-            this.githubClient.listIssues(org, name),
-            this.githubClient.listPullRequests(org, name)
-        ]);
-        return new ProjectStatistics(issues, prs);
+    async #getProjectStats(isGroupAssignment: boolean, org: string, name: string) {
+        // Hacky hackmans:
+        // We zijn begonnen met heel veel indivduele oefenopdrachten uitdelen
+        // Daar willen we stats van tracken
+        // Maar als we daar elke keer deze Github API calls voor gaan doen
+        // Dan lopen we tegen rate limits aan
+        // Dus we nemen even aan dat we voor individuele opdrachten geen Issues & PRs willen uitvragen
+        // Als we dat wel willen, dan moeten we de project-stats robuust lokaal gaan opslaan en synchen
+        if (!isGroupAssignment) {
+            return new ProjectStatistics([], []);
+        } else {
+            const [issues, prs] = await Promise.all([
+                this.githubClient.listIssues(org, name),
+                this.githubClient.listPullRequests(org, name)
+            ]);
+            return new ProjectStatistics(issues, prs);
+        }
     }
 
     async getCourseStats(courseId: number, assignment: string) {
@@ -130,6 +150,10 @@ export class StatisticsController implements StatsApi {
 
     async getClassStats(courseId: number, assignment: string, section: string): Promise<any> {
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
+        const foundAssignment = savedCourseConfig.assignments.find(a => a.name === assignment);
+        if (!foundAssignment) {
+            throw new Error(`Assignment ${assignment} not found in course config`);
+        }
         const groups = this.#getGroups(savedCourseConfig);
 
         const repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
@@ -138,7 +162,7 @@ export class StatisticsController implements StatsApi {
         const addRepo = async (repo: RepoDTO) => {
             const [coreStats, projectStats] = await Promise.all([
                 this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment, repo.name),
-                this.#getProjectStats(savedCourseConfig.githubStudentOrg, repo.name)
+                this.#getProjectStats(foundAssignment.groupAssignment, savedCourseConfig.githubStudentOrg, repo.name)
             ]);
 
             const totals = coreStats.getLinesTotal();
@@ -202,9 +226,77 @@ export class StatisticsController implements StatsApi {
         return;
     }
 
+
+    @ipc("studentstats:get")
+    async getStudentStats(courseId: number, username: string) {
+        const savedCourseConfig = await this.db.getCourseConfig(courseId);
+        const repos = await this.db.getRepositoriesForUser(courseId, username);
+        
+        const groups = this.#getGroups(savedCourseConfig);        
+        const comGroup = groups.find(g => g.extensions === undefined);        
+        
+        const gatheredStats: Statistics[] = [];
+        const gatheredProjectStats: Statistics[] = [];
+        const pie = new GroupAuthorPie();
+        for (const repo of repos) {            
+            const assignment = findAssignment(repo.name, savedCourseConfig);
+            const [coreStats, projectStats, gitPie] = await Promise.all([
+                this.#getRepoStats(savedCourseConfig.githubStudentOrg, assignment.name, repo.name),
+                this.#getProjectStats(assignment.groupAssignment, savedCourseConfig.githubStudentOrg, repo.name),
+                this.fileSystem.getLinesByGroupThenAuthor(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment.name, repo.name),
+            ]);
+            
+            gatheredStats.push(coreStats);
+            if(assignment.groupAssignment){
+                gatheredProjectStats.push(projectStats);
+            }            
+
+            if (comGroup) {
+                const comPie: Record<string, number> = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
+                gitPie.addGroup(comGroup.name, comPie);
+            }
+
+            pie.addPie(gitPie);
+        }
+        let allTheStats: CombinedStats = new CombinedStats(gatheredProjectStats.concat(gatheredStats));
+
+        const firstDate = savedCourseConfig.startDate;
+        const lastDate = new Date(); //TODO: beter bepalen
+
+        const authorMapping = await this. db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg);
+        allTheStats.mapAuthors(authorMapping);
+        pie.mapAuthors(authorMapping);
+        allTheStats.filterAuthors([username]);
+        pie.filterAuthors([username]);
+
+        const builder = new StatsBuilder(allTheStats);
+
+        const week_group = builder
+            .groupByWeek(firstDate, lastDate)
+            .thenBy(groups)
+            .build();
+
+        let filteredMapping : any = {};
+        for(const key of Object.keys(authorMapping)){
+            if(authorMapping[key] === username){
+                filteredMapping[key] = authorMapping[key];
+            }
+        }
+
+        return {
+            repos: repos.map(r => r.name),
+            authors: [username],
+            groups: groups.map(g => g.name),
+            aliases: mappingToAliases(filteredMapping),
+            week_group: week_group,
+            groupedPie: pie.export()
+        }
+
+
+    }
+
     @ipc("sectionstats:get")
     async getSectionStats(courseId: number, assignment: string, section: string) {
-
         let [savedCourseConfig,
             savedCourse] = await Promise.all([
                 this.db.getCourseConfig(courseId),
@@ -216,16 +308,19 @@ export class StatisticsController implements StatsApi {
             savedCourse = await this.db.getCourse(courseId);
         }
 
-        const repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
-        const mapping = await this.db.getStudentMailToGHUserMapping(courseId);  
+        const foundAssignment = savedCourseConfig.assignments.find(a => a.name === assignment);
+        if (!foundAssignment) {
+            throw new Error(`Assignment ${assignment} not found in course config`);
+        }
 
-        console.log('??????????', mapping);
+        const repos = await this.repoController.loadRepos(courseId, assignment, { sections: [section] });
+        const mapping = await this.db.getStudentMailToGHUserMapping(courseId);
 
         const gatheredStats: Statistics[] = [];
         let gatheredAliases: { [canonical: string]: string[] } = {};
         const addRepo = async (repo: RepoDTO) => {
-            const combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, repo.name);
-            const authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, repo.name);
+            const combinedStats = await this.#getCombinedStats(savedCourseConfig, foundAssignment, repo.name);
+            const authorMapping = await this.db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg);
             combinedStats.mapAuthors(authorMapping);
             gatheredAliases = merge(gatheredAliases, mappingToAliases(authorMapping));
             gatheredStats.push(combinedStats);
@@ -235,7 +330,13 @@ export class StatisticsController implements StatsApi {
         let allTheStats: CombinedStats = new CombinedStats(gatheredStats);
 
         let usersInSection = savedCourse.sections[section].map(m => mapping[m.email]);
+        usersInSection.sort();
+        let authors = allTheStats.getDistinctAuthors();
+        authors.sort();
+        console.log('Users in section:', usersInSection);
+        console.log('All authors before filtering:', authors);
         allTheStats.filterAuthors(usersInSection);
+        console.log('authors missing', authors.filter(a => usersInSection.indexOf(a) === -1));
 
         let distinctAuthors = allTheStats.getDistinctAuthors();
 
@@ -256,21 +357,32 @@ export class StatisticsController implements StatsApi {
     @get('/stats/:cid/:assignment/:name/weekly')
     async getRepoStats(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter?: StatsFilter): Promise<RepoStatisticsDTO> {
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
-        const combinedStats = await this.#getCombinedStats(savedCourseConfig, assignment, name);
+        const foundAssignment = savedCourseConfig.assignments.find(a => a.name === assignment);
+        if (!foundAssignment) {
+            throw new Error(`Assignment ${assignment} not found in course config`);
+        }
+        const combinedStats = await this.#getCombinedStats(savedCourseConfig, foundAssignment, name);
 
         const firstDate = savedCourseConfig.startDate;
         const lastDate = combinedStats.getDateRange().end;
 
         const groups = this.#getGroups(savedCourseConfig);
 
-        const authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name);
+        const authorMapping = await this.db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg);
         combinedStats.mapAuthors(authorMapping);
 
         if (filter && filter.authors) {
             combinedStats.filterAuthors(filter.authors);
         }
 
-        const members = await this.githubClient.getMembers(savedCourseConfig.githubStudentOrg, name);
+        let members = [];
+        if (foundAssignment.groupAssignment) {
+            members = await this.githubClient.getMembers(savedCourseConfig.githubStudentOrg, name);
+        } else {
+            let login = getUsernameFromNameAndAssignment(name, foundAssignment)
+            members = [{ login: login }];
+        }
+
         const allAuthors = combinedStats.getDistinctAuthors();
         members.map(m => m.login).forEach(login => {
             if (allAuthors.indexOf(login) === -1) {
@@ -283,7 +395,6 @@ export class StatisticsController implements StatsApi {
                 }
             }
         });
-
         const builder = new StatsBuilder(combinedStats);
 
         const week_group_author = builder
@@ -300,50 +411,43 @@ export class StatisticsController implements StatsApi {
 
     }
 
+
+
     @get('/stats/:cid/:assignment/:name/pie')
     @ipc("repostats-group-pie:get")
-    async getGroupPie(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter?: StatsFilter): Promise<GroupPieDTO> {
+    async getGroupPie(@path(":cid") courseId: number, @path(":assignment") assignment: string, @path(":name") name: string, filter?: StatsFilter): Promise<GroupPieDTO> {        
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
-        const authorMapping = await this.db.getAuthorMapping(savedCourseConfig.githubStudentOrg, name)
+        const foundAssignment = savedCourseConfig.assignments.find(a => a.name === assignment);
+        if (!foundAssignment) {
+            throw new Error(`Assignment ${assignment} not found in course config`);
+        }
+        const authorMapping = await this.db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg)
+        const groups = this.#getGroups(savedCourseConfig);
+        const comGroup = groups.find(g => g.extensions === undefined);        
+
         const [gitPie, projectStats] = await Promise.all([
             this.fileSystem.getLinesByGroupThenAuthor(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment, name),
-            this.#getProjectStats(savedCourseConfig.githubStudentOrg, name)
+            this.#getProjectStats(foundAssignment.groupAssignment, savedCourseConfig.githubStudentOrg, name)
         ]);
 
         if (filter && filter.authors) {
             projectStats.filterAuthors(filter.authors);
         }
 
-        const groups = this.#getGroups(savedCourseConfig);
-        const comGroup = groups.find(g => g.extensions === undefined);
-        const pie = gitPie;
         if (comGroup) {
-            const comPie: { [name: string]: number } = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
-            pie[comGroup.name] = comPie;
+            const comPie: Record<string, number> = projectStats.groupByAuthor(projectStats.getDistinctAuthors()).map(st => st.getLinesTotal().added).export();
+            gitPie.addGroup(comGroup.name, comPie);
         }
 
-        for (const group of Object.keys(pie)) {
-            let groupPie = pie[group];
-            groupPie = mergeAuthors(groupPie, authorMapping);
-            pie[group] = groupPie;
-        }
+        gitPie.mapAuthors(authorMapping);
 
         if (filter && filter.authors) {
-            for (const group of Object.keys(pie)) {
-                const groupPie = pie[group];
-                const filteredGroupPie: { [name: string]: number } = {};
-                for (const author of Object.keys(groupPie)) {
-                    if (filter.authors.indexOf(author) !== -1) {
-                        filteredGroupPie[author] = groupPie[author];
-                    }
-                }
-                pie[group] = filteredGroupPie;
-            }
+            gitPie.filterAuthors(filter.authors);           
         }
 
         return {
             aliases: mappingToAliases(authorMapping),
-            groupedPie: pie
+            groupedPie: gitPie.export()
         };
     }
 }

@@ -13,15 +13,14 @@ export const s2: CourseConfig = {
     lastSectionCheck: null,
     assignments: [
         {
-            githubAssignment: 'sd-s2-verantwoording',
+            name: 'sd-s2-verantwoording',
             groupAssignment: false,
             canvasId: 331688
 
         },
         {
-            githubAssignment: 'sd-s2-project',
+            name: 'sd-s2-project',
             groupAssignment: true
-
         },
     ]
 }
@@ -37,16 +36,29 @@ export const s3: CourseConfig = {
     lastSectionCheck: null,
     assignments: [
         {
-            githubAssignment: 's3-portfolio',
+            name: 's3-portfolio',
             groupAssignment: false,
             canvasId: 373167
-
         },
         {
-            githubAssignment: 's3-project',
+            name: 's3-focus',
+            parts: ['s3-focus-galgje', 's3-focus-kluizen', 's3-focus-trains', 's3-focus-musica', 's3-focus-bedrijf', 's3-focus-battlesnake'],
+            groupAssignment: false,
+        },
+        {
+            name: 's3-frontend',
+            parts: ['s3-frontend-guilde-challenge-1', 's3-frontend-gilde-challenge-2', 's3-frontend-gilde-challenge-3'],
+            groupAssignment: false,
+        },
+        {
+            name: 's3-backend',
+            parts: ['s3-backend-uno', 's3-backend-crew', 's3-backend-wizard'],
+            groupAssignment: false,
+        },
+        {
+            name: 's3-project',
             groupAssignment: true,
             canvasId: 373168
-
         },
     ],
     canvasOverview: [
@@ -90,7 +102,7 @@ export const cisq1: CourseConfig = {
     lastSectionCheck: null,
     assignments: [
         {
-            githubAssignment: 'cisq1-lingo',
+            name: 'cisq1-lingo',
             groupAssignment: false,
             canvasId: 343090
 
@@ -109,32 +121,32 @@ export const bep2: CourseConfig = {
     lastSectionCheck: null,
     assignments: [
         {
-            githubAssignment: 'bep2-v2a-full',
+            name: 'bep2-v2a-full',
             groupAssignment: false,
             canvasId: 315778
         },
         {
-            githubAssignment: 'bep2-v2b-full',
+            name: 'bep2-v2b-full',
             groupAssignment: false,
             canvasId: 315778
         },
         {
-            githubAssignment: 'bep2-v2c-full',
+            name: 'bep2-v2c-full',
             groupAssignment: false,
             canvasId: 315778
         },
         {
-            githubAssignment: 'bep2-v2d-full',
+            name: 'bep2-v2d-full',
             groupAssignment: false,
             canvasId: 315778
         },
         {
-            githubAssignment: 'bep2-v2e-full',
+            name: 'bep2-v2e-full',
             groupAssignment: false,
             canvasId: 315778
         },
         {
-            githubAssignment: 'bep2-roulette-herkansing',
+            name: 'bep2-roulette-herkansing',
             groupAssignment: false,
             canvasId: 332209
         }
@@ -152,7 +164,7 @@ export const bep1: CourseConfig = {
     lastSectionCheck: null,
     assignments: [
         {
-            githubAssignment: 'finalassignment',
+            name: 'finalassignment',
             groupAssignment: false,
             canvasId: 301506
         }
@@ -170,7 +182,7 @@ export const cisq2: CourseConfig = {
     lastSectionCheck: null,
     assignments: [
         {
-            githubAssignment: 'hupol',
+            name: 'hupol',
             groupAssignment: true,
             canvasId: 349939
         }
@@ -190,7 +202,7 @@ export const feb2024: CourseConfig = {
     lastSectionCheck: null,
     assignments: [
         {
-            githubAssignment: 'frontend-project',
+            name: 'frontend-project',
             groupAssignment: true
         }
     ]

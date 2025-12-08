@@ -9,9 +9,10 @@ export type Author = {
 }
 
 export type Assignment = {
-    githubAssignment: string,
+    name: string,
     canvasId?: number,
-    groupAssignment: boolean
+    groupAssignment: boolean,
+    parts?: string[]
 }
 
 export type Startup = {
@@ -28,12 +29,17 @@ export class Repo {
                 public api_url: string, 
                 public ssh_url: string, 
                 public http_url: string,
-                public lastMemberCheck: Date) {
-        
+                public lastMemberCheck: Date) {        
     }   
     
     matchesAssignment(assignment: Assignment) {
-        return this.name.startsWith(assignment.githubAssignment);
+        if(assignment.parts && assignment.parts.length >0){
+            return assignment.parts.some(part => this.name.startsWith(part));
+        }
+        else{
+            return this.name.startsWith(assignment.name);
+        }
+        
     }
 }
 
@@ -130,6 +136,14 @@ export type RepoStatisticsDTO = {
     groups: string[],
     aliases: { [name: string]: string[] },
     week_group_author: Record<string, Record<string, LinesStatistics>>[],
+}
+
+export type StudentStatisticsDTO = {
+    repos: string[],
+    authors: string[],
+    groups: string[],
+    aliases: { [name: string]: string[] },
+    week_group: Record<string, LinesStatistics>[],
 }
 
 export type RepoStatisticsDTOPerGroup = {
