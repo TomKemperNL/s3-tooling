@@ -34,15 +34,15 @@ async function main() {
 
 
                 await s3App.fileSystem.runCommands([                    
-                    "git push origin sprint-3-stats",
+                    "git push origin sprint-b-1-stats",
                     "git checkout main"
                 ],
                     organization, portfolio, portfolioRepo
                 )
 
                 await s3App.githubClient.createPr(organization, portfolioRepo, 
-                    "Stats toevoegen voor Sprint 3", "Deze PR voegt de stats screenshot toe voor sprint 3... Hoop ik. Sinds vorige week zitten studenten soms in meerdere project-repos, en daar was deze code -duidelijk- niet op voorbereid... Dus vandaar ook deze keer wat later. Het is handig als je dit iig. voor je peilmomentgesprek kan mergen.", 
-                    "sprint-3-stats", "main");
+                    "Stats toevoegen voor Sprint B-1", "Deze PR voegt de stats screenshot toe voor sprint B1... Hoop ik. Sinds vorige keer zitten er nu meerdere repos in hetzelfde screenshot, omdat men nu in verschillende project & oefening-repos heeft gewerkt", 
+                    "sprint-b-1-stats", "main");
             } catch (err) {
                 console.error(`\t\tError processing ${portfolioRepo}: ${err}`);
                 continue;

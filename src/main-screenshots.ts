@@ -4,6 +4,7 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { createApp } from "./main/index"
 import { setupIpcMainHandlers } from "./electron-setup";
 import "./electron-setup";
+import { existsSync } from "fs";
 import { s3 } from "./temp";
 
 
@@ -48,6 +49,20 @@ async function main() {
 
     app.whenReady().then(async () => {
         todoQueue = await s3App.db.selectDistinctUsernames(courseId);
+
+        let existingMembers : string[] = [];
+        for(let member of todoQueue) {
+            if(existsSync(path.join('.', 'screenshots', `${member}-screenshot.png`))) {
+                existingMembers.push(member);
+            }
+        }
+        for(let member of existingMembers) {
+            const index = todoQueue.indexOf(member);
+            if(index > -1) {
+                todoQueue.splice(index, 1);
+            }
+        }
+
         console.log(todoQueue)
         let next = todoQueue.pop();
         createWindow(courseId, next);

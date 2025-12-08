@@ -13,7 +13,7 @@ async function main() {
 
 
     const courseId = s3.canvasId;
-    const sprint = 3;
+    const sprint = "b-1";
     const assignment = 's3-project';
     const portfolio = 's3-portfolio';
     const organization = 'HU-SD-S3-Studenten-S2526';
