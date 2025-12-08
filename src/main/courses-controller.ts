@@ -44,19 +44,26 @@ export class CoursesController implements CourseApi {
                 let assignment = assignments.find(a => a.id === assignmentId);
                 if (assignment) {
                     let submissionsForAssignment = submissions.filter(s => s.assignment_id === assignment.id);
-
-                    for (let rubric of assignment.rubrics || []) {
-                        let rubricData = {
-                            description: rubric.description,
-                            points: rubric.points,
-                            levels: <any>[],
-                            results: <any>[]
-                        }
-
+                    console.log(`Processing assignment ${assignment.name} with ${submissionsForAssignment.length} submissions and ${assignment.rubric?.length} rubrics`);
+                    for (let rubric of assignment.rubric || []) {
+                        
+                        let existingCriterion = overviewData.criteria.find(c => c.description === rubric.description);
+                        if (!existingCriterion) {
+                            existingCriterion = {
+                                description: rubric.description,
+                                points: rubric.points,
+                                levels: <any>[],
+                                results: <any>[]        
+                            }
+                            overviewData.criteria.push(existingCriterion);
+                        }else {
+                            existingCriterion.points = Math.max(existingCriterion.points, rubric.points);
+                        };
+                        
                         for (let rating of rubric.ratings) {
-                            let existingLevel = rubricData.levels.find((l: any) => l.points === rating.points);
+                            let existingLevel = existingCriterion.levels.find((l: any) => l.points === rating.points);
                             if (!existingLevel) {
-                                rubricData.levels.push({
+                                existingCriterion.levels.push({
                                     points: rating.points,
                                     description: rating.description
                                 });
@@ -64,14 +71,14 @@ export class CoursesController implements CourseApi {
                                 if (existingLevel.description !== rating.description) {
                                     existingLevel.description += "/" + rating.description;
                                 }
-                            }
-                            overviewData.criteria.push(rubricData);
+                            }                            
                         }
 
                         for (let submission of submissionsForAssignment) {
                             if (submission.rubric_assessment && submission.rubric_assessment[rubric.id]) {
-                                rubricData.results.push({
+                                existingCriterion.results.push({
                                     points: submission.rubric_assessment[rubric.id].points,
+                                    comments: submission.rubric_assessment[rubric.id].comments,
                                     assignmentName: assignment.name,
                                     submitted_at: submission.submitted_at
                                 });
@@ -79,11 +86,11 @@ export class CoursesController implements CourseApi {
                         }
                     }
                 }
-
-
             }
             overviews.push(overviewData);
         }
+
+        console.log('Overviews', overviews);
 
         return {
             callouts: commentsWithCallouts,

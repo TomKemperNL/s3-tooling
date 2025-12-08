@@ -28,7 +28,7 @@ export interface AssignmentResponse {
     updated_at: string;
     due_at: string;
     locked_at: string;
-    rubrics?: RubricResponse[];
+    rubric?: RubricResponse[];
 }
 
 export interface SubmissionCommentResponse {

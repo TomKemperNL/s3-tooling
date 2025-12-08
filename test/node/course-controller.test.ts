@@ -137,7 +137,7 @@ test("Can get Student Progress", async () => {
             updated_at: '',
             due_at: '',
             locked_at: '',            
-            rubrics: [
+            rubric: [
                 {
                     id: 'rubric1',
                     points: 10,
@@ -158,7 +158,7 @@ test("Can get Student Progress", async () => {
             updated_at: '',
             due_at: '',
             locked_at: '',            
-            rubrics: [
+            rubric: [
                 {
                     id: 'rubric2',
                     points: 10,
@@ -180,7 +180,7 @@ test("Can get Student Progress", async () => {
             updated_at: '',
             due_at: '',
             locked_at: '',            
-            rubrics: [
+            rubric: [
                 {
                     id: 'rubric3',
                     points: 10,
