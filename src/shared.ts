@@ -205,3 +205,38 @@ export type BranchInfo = {
     currentBranch: string,
     availableBranches: string[],
 }
+
+export type Callout = {
+    comment: string,
+    author: string
+}
+
+export type LevelDTO = {
+    points: number,
+    description: string
+}
+
+export type ResultDTO = {
+    points: number,
+    comments: string,
+    grader?: string,
+    assignmentName: string,
+    submitted_at: string
+}
+
+export type CriteriaDTO = {
+    description: string,
+    points: number,
+    levels: LevelDTO[],
+    results: any[]
+}
+
+export type OverviewDTO = {
+    title: string,
+    criteria: CriteriaDTO[]
+}
+
+export type ProgressResult = {
+    callouts: Callout[]
+    overviews: OverviewDTO[]
+}

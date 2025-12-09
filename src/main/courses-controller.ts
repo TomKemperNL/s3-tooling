@@ -1,5 +1,5 @@
-import { CourseConfig, CourseDTO, StudentDetailsDTO, StudentDetailsResult } from "../shared";
-import { CanvasClient } from "./canvas-client";
+import { CourseConfig, CourseDTO, CriteriaDTO, ProgressResult, StudentDetailsDTO, StudentDetailsResult } from "../shared";
+import { CanvasClient, UserResponse } from "./canvas-client";
 import { Db } from "./db";
 import { ipc } from "../electron-setup";
 import { CourseApi } from "../backend-api";
@@ -17,10 +17,10 @@ export class CoursesController implements CourseApi {
     }
 
     @ipc('course:student:progress')
-    async getStudentProgress(courseId: number, studentCanvasId: number): Promise<any> {
+    async getStudentProgress(courseId: number, studentCanvasId: number) : Promise<ProgressResult> {
         const savedCourse = await this.db.getCourseConfig(courseId);
         if (!savedCourse.canvasOverview) {
-            return [];
+            return { callouts:[], overviews: []};
         }
 
         let [assignments, submissions] = await Promise.all([
@@ -34,26 +34,26 @@ export class CoursesController implements CourseApi {
         }));
 
         let overviews: any[] = [];
+        let graders : Record<number, UserResponse> = {};
         for (let overview of savedCourse.canvasOverview) {
             let overviewData = {
                 title: overview.title,
-                criteria: [] as any[]
+                criteria: [] as CriteriaDTO[]
             };
 
             for (let assignmentId of overview.assignments) {
                 let assignment = assignments.find(a => a.id === assignmentId);
                 if (assignment) {
                     let submissionsForAssignment = submissions.filter(s => s.assignment_id === assignment.id);
-                    console.log(`Processing assignment ${assignment.name} with ${submissionsForAssignment.length} submissions and ${assignment.rubric?.length} rubrics`);
-                    for (let rubric of assignment.rubric || []) {
-                        
+                    
+                    for (let rubric of assignment.rubric || []) {                        
                         let existingCriterion = overviewData.criteria.find(c => c.description === rubric.description);
                         if (!existingCriterion) {
                             existingCriterion = {
                                 description: rubric.description,
                                 points: rubric.points,
-                                levels: <any>[],
-                                results: <any>[]        
+                                levels: [],
+                                results: []        
                             }
                             overviewData.criteria.push(existingCriterion);
                         }else {
@@ -75,22 +75,32 @@ export class CoursesController implements CourseApi {
                         }
 
                         for (let submission of submissionsForAssignment) {
+                            if(!graders[submission.grader_id] && submission.grader_id){
+                                graders[submission.grader_id] = await this.canvasClient.getUserByCanvasId({ course_id: savedCourse.canvasId, user_id: submission.grader_id });
+                            }
+
                             if (submission.rubric_assessment && submission.rubric_assessment[rubric.id]) {
+                                let graderName = graders[submission.grader_id]?.short_name;
+                                // if(!graderName){
+                                //     console.log(`Could not find grader name for assignment ${assignment.id} submission ${submission.id} for user ${submission.user_id} and grader id ${submission.grader_id} on course ${savedCourse.canvasId}`);
+                                // }
                                 existingCriterion.results.push({
                                     points: submission.rubric_assessment[rubric.id].points,
                                     comments: submission.rubric_assessment[rubric.id].comments,
                                     assignmentName: assignment.name,
+                                    grader: graderName,
                                     submitted_at: submission.submitted_at
                                 });
                             }
+                            
+
                         }
                     }
                 }
             }
+
             overviews.push(overviewData);
         }
-
-        console.log('Overviews', overviews);
 
         return {
             callouts: commentsWithCallouts,
@@ -143,7 +153,6 @@ export class CoursesController implements CourseApi {
                 prev[canonical].push(alias);
                 return prev
             }, allIdentities);
-        console.log('Identities', allIdentities);
 
         for (let r of repos) {
             let collaborators = await this.db.getCollaborators(r.organization.login, r.name);

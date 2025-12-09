@@ -34,6 +34,7 @@ async function main() {
         let mappings = await loadJson(fileName);
         
         for(const key of Object.keys(mappings)) {
+            console.log(`Updating mapping for ${key} to ${mappings[key]}`);
             await s3App.repoController.updateAuthorMapping(courseId, key, mappings[key]);    
         }
         

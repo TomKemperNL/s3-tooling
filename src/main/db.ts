@@ -153,6 +153,7 @@ export class Db {
         await this.#inTransaction(async () => {
             for (const authorName of Object.keys(mapping)) {
                 const username = mapping[authorName];
+                console.log(`Updating author mapping for ${authorName} to ${username} in ${org}/${repo}`);
                 await this.#runProm(
                     `insert into githubCommitNames(name, githubUsername, organization, repository)
                      values(?,?,?,?);`,

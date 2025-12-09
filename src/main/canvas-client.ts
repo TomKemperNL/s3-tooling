@@ -13,6 +13,14 @@ export interface StudentResponse {
     login_id: string;
 }
 
+export interface UserResponse {
+    id: number;
+    name: string;
+    short_name: string;
+    login_id: string;
+};
+    
+
 export interface RubricResponse {
     id: string,
     points: number,
@@ -43,6 +51,7 @@ export interface SubmissionResponse {
     id: number,
     assignment_id: number,
     user_id: number,
+    grader_id?: number,
     submitted_at: string,
     rubric_assessment?: { [key: string]: { points: number, comments: string } },
     submission_comments: SubmissionCommentResponse[],
@@ -235,6 +244,10 @@ export class CanvasClient {
 
     async getUsers(params: { course_id: number }): Promise<StudentResponse[]> {
         return this.getPages(`courses/${params.course_id}/users`);
+    }
+
+    async getUserByCanvasId(params: { course_id: number, user_id: number }): Promise<UserResponse> {
+        return await this.getPages(`courses/${params.course_id}/users/${params.user_id}`);
     }
 
     // Performance too shitty
