@@ -261,7 +261,7 @@ export class StatisticsController implements StatsApi {
         let allTheStats: CombinedStats = new CombinedStats(gatheredProjectStats.concat(gatheredStats));
 
         const firstDate = savedCourseConfig.startDate;
-        const lastDate = new Date(); //TODO: beter bepalen
+        const lastDate = allTheStats.getDateRange().end;
 
         const authorMapping = await this. db.getAuthorMappingOrg(savedCourseConfig.githubStudentOrg);
         allTheStats.mapAuthors(authorMapping);

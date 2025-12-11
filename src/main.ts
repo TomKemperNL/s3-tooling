@@ -23,9 +23,12 @@ async function main() {
     } else if (process.argv.indexOf('load') !== -1) {
         
         const courseId = parseInt(process.argv[process.argv.indexOf('load') + 1]);
-        const assignmentName = process.argv[process.argv.indexOf('load') + 2];
-        await s3App.coursesController.loadCourse(courseId);
-        await s3App.repoController.loadRepos(courseId, assignmentName, { sections: [] });
+        
+        const course = await s3App.coursesController.loadCourse(courseId);
+        for(const assignment of course.assignments){
+            console.log(`Loading repos for assignment ${assignment.name}`);
+            await s3App.repoController.loadRepos(courseId, assignment.name, { sections: [] });
+        }
     } else if (process.argv.indexOf('loadMappings') !== -1) {
         
         const courseId = parseInt(process.argv[process.argv.indexOf('loadMappings') + 1]);

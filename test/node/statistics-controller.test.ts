@@ -211,7 +211,6 @@ test("Can Get Student Stats", async () => {
     }
   );
 
-  console.log(result.week_group);
   expect(result.week_group[0]["Frontend"]).toStrictEqual({ added: 20, removed: 4 });
   expect(result.week_group[0]["Communication"]).toStrictEqual({ added: 4, removed: 0}); 
     

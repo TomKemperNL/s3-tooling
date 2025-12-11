@@ -116,7 +116,8 @@ export class RepositoryDetails extends LitElement {
 
     async mapAuthors(e: AuthorMappedEvent) {
         await this.ipc.updateAuthorMapping(this.repo.courseId, this.repo.name, e.mapping);
-        await this.refresh(null);
+        // await this.refresh(null);
+        this.repo = {...this.repo}; //is dit sneller?
     }
 
     async removeAlias(e: RemoveAliasEvent){

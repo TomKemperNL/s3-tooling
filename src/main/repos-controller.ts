@@ -130,10 +130,11 @@ export class ReposController implements RepoApi {
         let repos = await this.#getRepos(savedCourseConfig)
         repos = repos.filter(r => r.matchesAssignment(assignment));
 
-        await this.#updateMembers(repos, assignment);
-        if (assignment.canvasId && filter.sections.length > 0) {
-            const usermapping: SimpleDict = await this.#getUserMapping(savedCourseConfig);
 
+        await this.#updateMembers(repos, assignment);
+        const usermapping: SimpleDict = await this.#getUserMapping(savedCourseConfig);
+
+        if (filter.sections.length > 0) {            
             const logins = filter.sections
                 .flatMap(s => savedCourse.sections[s])
                 .map(s => s.email)

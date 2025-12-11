@@ -138,6 +138,10 @@ export class RepositoryStatistics implements Statistics {
     }
 
     getDateRange(): { start: Date; end: Date; } {
+        if(this.data.length === 0){
+            return { start: null, end: null };
+        }
+        
         const start = new Date(Math.min(...this.data.map(stat => stat.date.getTime())));
         const end = new Date(Math.max(...this.data.map(stat => stat.date.getTime())));
         return { start, end };

@@ -152,8 +152,11 @@ export class CombinedStats implements Statistics {
     }
 
     getDateRange(): { start: Date; end: Date; } {
-        const start = new Date(Math.min(...this.stats.map(stat => stat.getDateRange().start.getTime())));
-        const end = new Date(Math.max(...this.stats.map(stat => stat.getDateRange().end.getTime())));
+        let minDates = this.stats.map(stat => stat.getDateRange().start).filter(d => d != null);
+        let maxDates = this.stats.map(stat => stat.getDateRange().end).filter(d => d != null);
+
+        const start = new Date(Math.min(...minDates.map(d => d.getTime())));
+        const end = new Date(Math.max(...maxDates.map(d => d.getTime())));
         return { start, end };
     }
 

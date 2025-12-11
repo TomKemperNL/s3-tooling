@@ -137,3 +137,26 @@ test('Smoke-test: Can go back & forth between repositorytypes', () => {
         }
     }]);
 });
+
+
+
+//Dit was uiteindelijk het probleem bij bovenstaande smoke-test
+test('Date-ranges are computed correctly, even if some are empty', () => {
+    let repo1 = new RepositoryStatistics([
+        {
+            author: 'Alice', subject: 'Initial commit', date: new Date('2023-10-01'), hash: '1234567890abcdef', changes: [
+                { added: 5, removed: 0, path: 'test.js' }
+            ]
+        }
+    ]);
+
+    let dateRange = repo1.getDateRange();
+
+    let repo2 = new ProjectStatistics([],[]);
+    let repo3 = new RepositoryStatistics([]);
+
+    let combined = new CombinedStats([repo1, repo2, repo3]);
+    let combinedDateRange = combined.getDateRange();
+    expect(combinedDateRange.start).toEqual(dateRange.start);
+    expect(combinedDateRange.end).toEqual(dateRange.end);
+});

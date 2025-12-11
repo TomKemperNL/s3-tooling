@@ -43,6 +43,10 @@ export class ProjectStatistics implements Statistics {
     }
 
     getDateRange(): { start: Date; end: Date; } {
+        if(this.issues.length === 0 && this.prs.length === 0 && this.comments.length === 0){
+            return { start: null, end: null };        
+        }
+        
         const start = new Date(Math.min(
             ...this.issues.map(i => i.createdAt.getTime()),
             ...this.prs.map(pr => pr.createdAt.getTime()),
