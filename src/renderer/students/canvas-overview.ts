@@ -10,9 +10,9 @@ import { CriteriaDTO, OverviewDTO, ProgressResult } from "../../shared";
 export class CanvasOverview extends LitElement {
 
     @property({ type: Number })
-    courseId: number = 50055;
+    courseId: number;
     @property({ type: Number })
-    studentCanvasId: number = 254780;
+    studentCanvasId: number;
 
 
     @consume({ context: ipcContext })
