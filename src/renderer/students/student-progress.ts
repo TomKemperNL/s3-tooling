@@ -18,6 +18,9 @@ export class StudentProgress extends LitElement {
     user: string;
 
     @property({ type: Number })
+    studentCanvasId: number
+
+    @property({ type: Number })
     courseId: number
 
     connectedCallback(): void {
@@ -136,6 +139,7 @@ export class StudentProgress extends LitElement {
         grid-template-areas:
             "title   title     title"            
             "groups  pieG      barG"            
+            "canvas  canvas    canvas"
             ;
         grid-template-columns: 1fr 1fr 3fr;
         /* grid-template-rows: min-content minmax(25%, 50%) 1fr; */
@@ -264,6 +268,16 @@ export class StudentProgress extends LitElement {
                     @chart-rendered=${this.barsRendered}></stacked-bar-chart>           
             `)}
             </div>
+
+            <div style="grid-area: canvas;">
+                ${when(this.studentCanvasId, () => html`
+                    <canvas-overview
+                        .courseId=${this.courseId}
+                        .studentCanvasId=${this.studentCanvasId}>
+                    </canvas-overview>
+                `)}
+            </div>
+
             `;
     }
 }

@@ -43,7 +43,7 @@ async function main() {
     for (let student of students) {
         write(`Student ${student.name}`);
         write('--------------------------------');
-        let result = await app.coursesController.getStudentProgress(id, student.canvasId);
+        let result = await app.coursesController.getCanvasOverview(id, student.canvasId);
 
         for (let overview of result.overviews) {
             

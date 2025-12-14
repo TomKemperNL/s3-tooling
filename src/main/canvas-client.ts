@@ -229,8 +229,17 @@ export class CanvasClient {
         return groups;
     }
 
+    assignmentCache: { [key: number]: AssignmentResponse[] } = {};
+
     async getAssignments(course: { course_id: number }): Promise<AssignmentResponse[]> {
-        return this.getPages(`courses/${course.course_id}/assignments`);
+        if (this.assignmentCache[course.course_id]) {
+            return this.assignmentCache[course.course_id]; //todo: deep clonen
+        }
+
+        let result : AssignmentResponse[] = await this.getPages(`courses/${course.course_id}/assignments`);
+        this.assignmentCache[course.course_id] = result;
+        return result;
+
     }
 
     async getSubmissions(params: { course_id: number, assignment_id: number, student_id: number }): Promise<any[]> {
@@ -265,7 +274,14 @@ export class CanvasClient {
     //     return submissions.flat();
     // }
 
+    submissionsCache: { [key: string]: SubmissionResponse[] } = {};
+
+
     async getAllSubmissionsForStudent(params: { course_id: number, student_id: number }) : Promise<SubmissionResponse[]> {        
+        if (this.submissionsCache[`${params.course_id}-${params.student_id}`]) {
+            return this.submissionsCache[`${params.course_id}-${params.student_id}`]; //todo: deep clonen
+        }
+
         let assignments = await this.getAssignments({ course_id: params.course_id });        
         let submisisonPs: Promise<any[]>[] = [];
 
@@ -274,7 +290,11 @@ export class CanvasClient {
         }
 
         let submissions = await Promise.all(submisisonPs);
-        return submissions.flat();
+        let result = submissions.flat();
+
+        this.submissionsCache[`${params.course_id}-${params.student_id}`] = result;
+
+        return result;
     }
 
     async getCalloutsForStudent(params: { course_id: number, student_id: number }) {

@@ -1,7 +1,10 @@
 import { BackendApi } from "../../backend-api";
-import { CourseConfig, CourseDTO, RepoFilter, RepoDTO, StatsFilter, RepoStatisticsDTO, GroupPieDTO, StudentFilter, Startup, Settings, BranchInfo, StudentDetailsResult } from "../../shared";
+import { CourseConfig, CourseDTO, RepoFilter, RepoDTO, StatsFilter, RepoStatisticsDTO, GroupPieDTO, StudentFilter, Startup, Settings, BranchInfo, StudentDetailsResult, ProgressResult } from "../../shared";
 
 export class WebBackend implements BackendApi {
+    getCanvasOverview(courseId: number, studentCanvasId: number): Promise<ProgressResult> {
+        throw new Error("Method not implemented.");
+    }
     getStudentStats(courseId: number, username: string): Promise<any> {
         throw new Error("Method not implemented.");
     }

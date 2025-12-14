@@ -229,7 +229,7 @@ test("Can get Student Progress", async () => {
 
     ]
 
-    let progress = await coursesController.getStudentProgress(someCourse.canvasId, 123);
+    let progress = await coursesController.getCanvasOverview(someCourse.canvasId, 123);
     expect(progress.overviews.length).toBe(2);
     expect(progress.overviews[0].title).toBe("TestA");
     expect(progress.overviews[1].title).toBe("TestB");

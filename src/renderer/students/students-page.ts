@@ -33,6 +33,9 @@ export class StudentsPage extends LitElement {
     @property({ type: Array, state: true })
     missing: string[] = [];
 
+    @property({type: String})
+    editingStudentUsername: string = null;
+
 
     updated(changedProperties: Map<string, any>) {
         if (changedProperties.has('course')) {

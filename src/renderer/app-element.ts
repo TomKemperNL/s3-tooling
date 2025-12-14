@@ -294,7 +294,8 @@ export class AppElement extends LitElement {
                 `)}
             `)}
         </nav>
-        <main style="grid-area: details;">            
+
+        <main style="grid-area: details;">                    
         ${choose(this.activePage, [[
             "settings", () => html`
                 <settings-page @settings-changed=${this.onSettingsChanged}></settings-page>
@@ -306,7 +307,7 @@ export class AppElement extends LitElement {
             `],
             ["student-progress", () => html`
                  ${when(!!this.activeStudent, () => html`
-                <student-progress courseId=${this.activeCourse.canvasId} user=${Object.keys(this.activeStudent.identities)[0]}></student-progress>
+                <student-progress courseId=${this.activeCourse.canvasId} studentCanvasId=${this.activeStudent.canvasId} user=${Object.keys(this.activeStudent.identities)[0]}></student-progress>
                 `)}
             `],
             ["section", () => html`

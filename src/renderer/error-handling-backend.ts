@@ -1,4 +1,4 @@
-import { PieDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO, StudentDetailsResult } from "../shared";
+import { PieDTO, BranchInfo, CourseConfig, CourseDTO, RepoDTO, RepoFilter, RepoStatisticsDTO, Startup, StatsFilter, StudentFilter, GroupPieDTO, StudentDetailsResult, ProgressResult } from "../shared";
 import { Settings } from "../shared";
 import { BackendApi } from "../backend-api";
 
@@ -8,6 +8,15 @@ export class ErrorHandlingBackendApi implements BackendApi {
 
     constructor(ipc: BackendApi) {
         this.ipc = ipc;
+    }
+    async getCanvasOverview(courseId: number, studentCanvasId: number): Promise<ProgressResult> {
+        try {
+            return this.ipc.getCanvasOverview(courseId, studentCanvasId);
+        } catch (error) {
+            console.error("Error fetching canvas overview:", error);
+            alert("Failed to load canvas overview:" + error.message);
+            return { callouts: [], overviews: [] }; // Return an empty object on error
+        }
     }
 
     async getStudentStats(courseId: number, username: string): Promise<any> {

@@ -16,8 +16,8 @@ export class CoursesController implements CourseApi {
         return this.db.getCourseConfigs();
     }
 
-    @ipc('course:student:progress')
-    async getStudentProgress(courseId: number, studentCanvasId: number) : Promise<ProgressResult> {
+    @ipc('course:student:canvasOverview')
+    async getCanvasOverview(courseId: number, studentCanvasId: number) : Promise<ProgressResult> {
         const savedCourse = await this.db.getCourseConfig(courseId);
         if (!savedCourse.canvasOverview) {
             return { callouts:[], overviews: []};
@@ -68,9 +68,10 @@ export class CoursesController implements CourseApi {
                                     description: rating.description
                                 });
                             } else {
-                                if (existingLevel.description !== rating.description) {
-                                    existingLevel.description += "/" + rating.description;
-                                }
+                                //Dit moet beter, nu is het niet nuttig, er komt bijv: Niet Op Niveau/Onder Niveau/Onder Niveau/Niet op Niveau/Niet op Niveau uit
+                                // if (existingLevel.description !== rating.description) {
+                                //     existingLevel.description += "/" + rating.description;
+                                // }
                             }                            
                         }
 

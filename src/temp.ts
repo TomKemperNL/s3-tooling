@@ -110,6 +110,24 @@ export const cisq1: CourseConfig = {
     ]
 }
 
+export const prbed : CourseConfig = {
+    name: 'Project Back-End Development',
+    canvasId: 44626,
+    canvasGroupsName:'',
+    startDate: new Date(Date.parse('2024-09-01')),
+    githubStudentOrg: 'HU-SD-SV2PRBED-2425',
+    lastMappingCheck: null,
+    lastRepoCheck: null,
+    lastSectionCheck: null,
+    assignments: [
+        {
+            name: 'project-back-end-development',
+            groupAssignment: true,
+        }
+    ]
+
+};
+
 export const bep2: CourseConfig = {
     name: 'Back-End Programming 2',
     canvasId: 44752,
@@ -153,6 +171,25 @@ export const bep2: CourseConfig = {
     ]
 }
 
+
+export const feb2024: CourseConfig = {
+    name: 'Front-end',
+    canvasId: 44689,
+    canvasGroupsName: '',
+    startDate: new Date(Date.parse('2024-11-01')),
+    githubStudentOrg: 'HU-SD-V2FE-studenten-2425',
+    lastMappingCheck: null,
+    lastRepoCheck: null,
+    lastSectionCheck: null,
+    assignments: [
+        {
+            name: 'frontend-project',
+            groupAssignment: true
+        }
+    ]
+}
+
+
 export const bep1: CourseConfig = {
     name: 'Back-End Programming 1',
     canvasId: 39721,
@@ -189,21 +226,3 @@ export const cisq2: CourseConfig = {
     ]
 }
 
-
-
-export const feb2024: CourseConfig = {
-    name: 'Front-end',
-    canvasId: 44689,
-    canvasGroupsName: '',
-    startDate: new Date(Date.parse('2024-11-01')),
-    githubStudentOrg: 'HU-SD-V2FE-studenten-2425',
-    lastMappingCheck: null,
-    lastRepoCheck: null,
-    lastSectionCheck: null,
-    assignments: [
-        {
-            name: 'frontend-project',
-            groupAssignment: true
-        }
-    ]
-}
