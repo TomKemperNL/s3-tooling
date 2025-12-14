@@ -36,9 +36,10 @@ export class CanvasOverview extends LitElement {
                 <ul>
                     ${resultsInLevel.map(r => {
                         let date = r.submitted_at ? new Date(r.submitted_at) : null;
-                        let tooltip = `Points: ${r.points}\nComments: ${r.comments}\nGrader: ${r.grader}\nSubmitted at: ${r.submitted_at}`;
+                        let tooltip = `Points: ${r.points}\nComments: ${r.comments}\nGrader: ${r.grader}\nSubmitted at: ${date ? `${date.getDate()}-${date.getMonth()}`  : 'No date'}`;
+
                         let hasTooltip = r.comments && r.comments.length > 0;
-                        return html`<li class="${hasTooltip ? 'has-tooltip': ''}"  title=${tooltip}>${date ? `${date.getDate()}-${date.getMonth()}`  : 'No date'}</li>`}
+                        return html`<li class="${hasTooltip ? 'has-tooltip': ''}"  title=${tooltip}>${r.assignmentName}</li>`}
                     )}
                 </ul>                
             </td>`})}
