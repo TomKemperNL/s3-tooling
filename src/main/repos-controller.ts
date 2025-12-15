@@ -212,7 +212,6 @@ export class ReposController implements RepoApi {
         await this.db.removeAliases(savedCourseConfig.githubStudentOrg, name, aliases);
     }
 
-    @get("/author-mapping/:cid/:assignment")
     async exportAuthorMapping(@path(":cid") courseId: number, @path(":assignment") assignmentName?: string): Promise<Record<string, StringDict>> {
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
         let repos = await this.db.selectReposByCourse(savedCourseConfig.canvasId);
