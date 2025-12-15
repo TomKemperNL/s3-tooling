@@ -5,7 +5,7 @@ import { RepoFilter, RepoStatisticsDTO, StatsFilter, StudentFilter } from './sha
 import { saveSettings, loadSettings } from "./main/settings";
 
 import { existsSync } from "fs";
-import { S3App } from './main/index';
+import { S3App } from './main/app';
 
 export function ipc(channel: string){
     return function(target:any, propertyKey: string, descriptor: PropertyDescriptor){        

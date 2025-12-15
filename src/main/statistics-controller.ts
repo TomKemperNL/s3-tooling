@@ -8,7 +8,7 @@ import { ReposController, getUsernameFromNameAndAssignment } from "./repos-contr
 import { CombinedStats, GroupDefinition, Statistics, StatsBuilder } from "./statistics";
 import { ipc } from "../electron-setup";
 import { StatsApi } from "../backend-api";
-import { get, path } from "../web-setup";
+import { get, path } from "./web/web-setup";
 import { CoursesController } from "./courses-controller";
 import { GroupAuthorPie } from "./pie";
 

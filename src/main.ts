@@ -1,6 +1,6 @@
 import { config } from "@dotenvx/dotenvx";
-import { createApp } from "./main/index"
-import { setupWebHandlers } from "./web-setup";
+import { createApp } from "./main/app"
+import { setupWebHandlers } from "./main/web/web-setup";
 import { readFile, writeFile } from "fs/promises";
 import { setupIpcMainHandlers } from "./electron-setup";
 import * as path from "path";

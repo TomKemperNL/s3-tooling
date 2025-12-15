@@ -1,4 +1,4 @@
-import { S3App } from "../../src/main/index";
+import { S3App } from "../../src/main/app";
 import { Settings } from "../../src/shared";
 
 require('@dotenvx/dotenvx').config({path: ['.dev.env', '.env']})

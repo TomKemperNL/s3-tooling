@@ -3,7 +3,7 @@ import { CanvasClient, UserResponse } from "./canvas-client";
 import { Db } from "./db";
 import { ipc } from "../electron-setup";
 import { CourseApi } from "../backend-api";
-import { path } from "../web-setup";
+import { path } from "./web/web-setup";
 import { readUsedSize } from "chart.js/helpers";
 
 export class CoursesController implements CourseApi {

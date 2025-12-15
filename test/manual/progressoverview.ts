@@ -1,4 +1,4 @@
-import { S3App } from "../../src/main/index";
+import { S3App } from "../../src/main/app";
 import { Settings, StudentDTO } from "../../src/shared";
 
 import { writeFileSync } from "fs";

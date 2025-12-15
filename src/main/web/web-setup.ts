@@ -1,6 +1,6 @@
 import express from "express"
 import { promisify } from "util";
-import { S3App } from "./main/index";
+import { S3App } from "../app";
 import * as fspath from "path";
 import passport from 'passport'
 import session from 'express-session'

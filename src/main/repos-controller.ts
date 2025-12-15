@@ -1,7 +1,7 @@
 import { RepoApi } from "../backend-api";
 import { ipc } from "../electron-setup";
 import { Assignment, BranchInfo, CourseConfig, Repo, RepoDTO, RepoFilter } from "../shared";
-import { get, path } from "../web-setup";
+import { get, path } from "./web/web-setup";
 import { CanvasClient, SimpleDict, StringDict } from "./canvas-client";
 import { Db } from "./db";
 import { FileSystem } from "./filesystem-client";

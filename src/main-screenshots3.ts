@@ -1,6 +1,6 @@
 import { config } from "@dotenvx/dotenvx";
 import * as path from "path";
-import { createApp } from "./main/index"
+import { createApp } from "./main/app"
 import "./electron-setup";
 import { s3 } from "./temp";
 import { copyFile } from 'fs/promises'

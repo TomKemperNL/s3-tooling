@@ -1,7 +1,7 @@
 import { config } from "@dotenvx/dotenvx";
 import * as path from "path";
 import { app, BrowserWindow, ipcMain } from 'electron'
-import { createApp } from "./main/index"
+import { createApp } from "./main/app"
 import { setupIpcMainHandlers } from "./electron-setup";
 import "./electron-setup";
 import { existsSync } from "fs";
