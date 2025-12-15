@@ -87,6 +87,10 @@ export const s3: CourseConfig = {
         {
             title: "Analist opdracht",
             assignments: [373161]
+        },
+        {
+            title: "Focus opdrachten",
+            assignments: [385680, 385681, 385682, 385683, 385684, 385686]
         }
     ]
 }

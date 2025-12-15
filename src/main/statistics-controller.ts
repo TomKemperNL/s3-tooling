@@ -238,6 +238,7 @@ export class StatisticsController implements StatsApi {
         const gatheredStats: Statistics[] = [];
         const gatheredProjectStats: Statistics[] = [];
         const pie = new GroupAuthorPie();
+        let portfolioUrl : string = '';
         for (const repo of repos) {            
             const assignment = findAssignment(repo.name, savedCourseConfig);
             const [coreStats, projectStats, gitPie] = await Promise.all([
@@ -245,6 +246,10 @@ export class StatisticsController implements StatsApi {
                 this.#getProjectStats(assignment.groupAssignment, savedCourseConfig.githubStudentOrg, repo.name),
                 this.fileSystem.getLinesByGroupThenAuthor(this.#getGroups(savedCourseConfig), savedCourseConfig.githubStudentOrg, assignment.name, repo.name),
             ]);
+
+            if(assignment.name.indexOf('portfolio') !== -1){
+                portfolioUrl = await this.githubClient.getPagesUrl(savedCourseConfig.githubStudentOrg, repo.name);
+            }
             
             gatheredStats.push(coreStats);
             if(assignment.groupAssignment){
@@ -284,6 +289,7 @@ export class StatisticsController implements StatsApi {
         }
 
         return {
+            portfolioUrl: portfolioUrl,
             repos: repos.map(r => r.name),
             authors: [username],
             groups: groups.map(g => g.name),

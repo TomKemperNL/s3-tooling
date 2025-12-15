@@ -43,7 +43,7 @@ export class StudentProgress extends LitElement {
     readonly: boolean = true;
 
     @property({ type: Object, state: true })
-    apiResult: StudentStatisticsDTO & GroupPieDTO
+    apiResult: StudentStatisticsDTO & GroupPieDTO & { portfolioUrl?: string };
 
     @property({ type: Boolean, state: true })
     loading: boolean = false;
@@ -230,6 +230,7 @@ export class StudentProgress extends LitElement {
             <div style="grid-area: title">
                 <h3>${this.user}</h3>
                 <p>${repos.join(', ')}</p>
+                ${when(this.apiResult?.portfolioUrl, () => html`<p>Portfolio: <a href="${this.apiResult?.portfolioUrl.replace("https://", "external://")}">${this.apiResult?.portfolioUrl}</a></p>`)}
              </div>        
        
             <div style="grid-area: pieG">        

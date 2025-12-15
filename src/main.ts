@@ -6,7 +6,7 @@ import { setupIpcMainHandlers } from "./electron-setup";
 import * as path from "path";
 import { app, BrowserWindow, shell } from 'electron'
 import "./electron-setup";
-import { s3 } from "./temp";
+import { bep2, prbed, s3 } from "./temp";
 
 
 export function loadJson(path: string): Promise<any> {
@@ -29,6 +29,7 @@ async function main() {
             console.log(`Loading repos for assignment ${assignment.name}`);
             await s3App.repoController.loadRepos(courseId, assignment.name, { sections: [] });
         }
+        console.log(`Loaded repos for course ${course.name}`);
     } else if (process.argv.indexOf('loadMappings') !== -1) {
         
         const courseId = parseInt(process.argv[process.argv.indexOf('loadMappings') + 1]);
@@ -64,6 +65,7 @@ async function main() {
             });
 
             win.webContents.addListener('will-navigate', (event, url) => {
+                console
                 if (url.startsWith('external://')) {
                     const newUrl = url.replace('external://', 'https://');
                     shell.openExternal(newUrl);

@@ -293,4 +293,9 @@ export class GithubClient {
     }
   }
 
+
+  async getPagesUrl(org: string, repo: string): Promise<string | null> {
+    let pages = await this.#kit.repos.getPages({ owner: org, repo: repo });
+    return pages.data.html_url
+  }
 }
