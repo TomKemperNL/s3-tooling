@@ -20,6 +20,7 @@ export class S3App {
     statisticsController: StatisticsController;
     screenshotController: ScreenshotController;
     db: Db = db;
+    
     #settings: Settings;
 
     constructor(settings: Settings) {
@@ -80,6 +81,17 @@ export class S3App {
         this.repoController = new ReposController(db, this.canvasClient, this.githubClient, this.fileSystem);
         this.coursesController = new CoursesController(db, this.canvasClient);
         this.statisticsController = new StatisticsController(db, this.githubClient, this.fileSystem, this.repoController, this.coursesController);
+    }
+
+    withReplacedGithubClient(newClient: GithubClient): S3App {
+        const newApp = new S3App(this.settings);
+        newApp.githubClient = newClient;
+        newApp.fileSystem = this.fileSystem;
+        newApp.canvasClient = this.canvasClient;
+        newApp.repoController = new ReposController(this.db, newApp.canvasClient, newClient, this.fileSystem);
+        newApp.coursesController = new CoursesController(this.db, newApp.canvasClient);
+        newApp.statisticsController = new StatisticsController(this.db, newClient, this.fileSystem, newApp.repoController, newApp.coursesController);
+        return newApp;
     }
 
     async isAdmin(user: string) {

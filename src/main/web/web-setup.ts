@@ -16,6 +16,7 @@ passport.deserializeUser((user: any, done: any) => {
 
 
 import { Strategy as GitHubStrategy } from 'passport-github2';
+import { GithubClient } from "../github-client";
 
 
 interface ExpressExtension {
@@ -23,7 +24,8 @@ interface ExpressExtension {
     parsedParams?: { [key: string]: any };
     session: {
         returnUrl?: string;
-    }
+    },
+    s3App: S3App;
 }
 
 type ExtendedRequest = ExpressExtension & express.Request;
@@ -60,7 +62,7 @@ export function get(path: string = '') {
     }
 }
 
-export async function setupWebHandlers(app: S3App) {
+export async function setupWebHandlers(base_app: S3App) {
     const SQLiteStore: any = createSessionStore(session);
     
     passport.use(new GitHubStrategy({
@@ -73,6 +75,7 @@ export async function setupWebHandlers(app: S3App) {
         return done(null, { token: accessToken, id: profile.id, username: profile.username});
       }
     ));
+
 
     expressApp.use('/assets', express.static('dist/src/web/assets'));
     expressApp.use('/favicon.ico', express.static('dist/src/web/static'));
@@ -102,7 +105,7 @@ export async function setupWebHandlers(app: S3App) {
         req.session.returnUrl = <string>req.query.returnUrl || '';
         next();
     });
-    expressApp.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email' ] }));
+    expressApp.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email', 'read:orgs', 'repo', 'read:project' ] }));
     expressApp.get('/auth/github/callback', function(req: ExtendedRequest, res, next){
         passport.authenticate('github', { 
             successRedirect: '/' + (<string> req.session.returnUrl || ''),
@@ -132,7 +135,12 @@ export async function setupWebHandlers(app: S3App) {
         req.parsedParams = req.parsedParams || {};
         req.parsedParams['name'] = name;
         next(); 
-    });    
+    });
+    
+    expressApp.use((req: ExtendedRequest, res, next) => {
+        req.s3App = base_app.withReplacedGithubClient(new GithubClient(req.user ? req.user.token : 'onzin-token'));
+        next();
+    });
     
     for(const path of Object.keys(getRegistry)) {
         expressApp.get(path, (req, res, next) => {
@@ -144,6 +152,7 @@ export async function setupWebHandlers(app: S3App) {
     }
 
     expressApp.use(async (req: ExtendedRequest, res, next) => {
+        let app = req.s3App;
         
         const requestedPathWithoutLeadingSlash = req.path.substring(1);
         // console.debug('Checking auth for ', req.path, req.parsedParams, req.user);
@@ -183,7 +192,7 @@ export async function setupWebHandlers(app: S3App) {
 
 
 
-    const appAsAny = <any> app;
+    
     for(const registeredParam of paramRegistry){
         for(const key of Object.keys(getRegistry)){
             const entry = getRegistry[key];
@@ -198,16 +207,22 @@ export async function setupWebHandlers(app: S3App) {
     
     for(const path of Object.keys(getRegistry)) {
         const entry = getRegistry[path];
-        let owningObject = app;
         
-        for(const key of Object.keys(app)){
-            if(entry.target.constructor === appAsAny[key].constructor){
-                owningObject = appAsAny[key];
-                break;
-            }
-        }
         console.log('Adding GET for ', path);
-        apiRouter.get(path, async (req, res) => {            
+        apiRouter.get(path, async (req : ExtendedRequest, res) => {           
+            
+            const appAsAny = <any> req.s3App;
+            let app = req.s3App;
+
+            let owningObject = app;
+        
+            for(const key of Object.keys(app)){
+                if(entry.target.constructor === appAsAny[key].constructor){
+                    owningObject = appAsAny[key];
+                    break;
+                }
+            }
+
             const params : any[] = [];            
             for(const param of entry.params){                
                 let value = undefined;
