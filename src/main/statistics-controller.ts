@@ -248,7 +248,11 @@ export class StatisticsController implements StatsApi {
             ]);
 
             if(assignment.name.indexOf('portfolio') !== -1){
-                portfolioUrl = await this.githubClient.getPagesUrl(savedCourseConfig.githubStudentOrg, repo.name);
+                try{
+                    portfolioUrl = await this.githubClient.getPagesUrl(savedCourseConfig.githubStudentOrg, repo.name);
+                }catch(e){
+                    console.error('Error fetching portfolio pages url', e);
+                }                
             }
             
             gatheredStats.push(coreStats);
