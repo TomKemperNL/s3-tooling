@@ -6,7 +6,7 @@ import { setupIpcMainHandlers } from "./electron-setup";
 import * as path from "path";
 import { app, BrowserWindow, shell } from 'electron'
 import "./electron-setup";
-import { bep2, prbed, s3 } from "./temp";
+import { bep2, prbed, s2s25, s3 } from "./temp";
 
 
 export function loadJson(path: string): Promise<any> {
@@ -18,6 +18,7 @@ export function loadJson(path: string): Promise<any> {
 config();
 async function main() {
     const s3App = await createApp();
+
     if (process.argv.indexOf('webonly') !== -1) {
         await setupWebHandlers(s3App);
     } else if (process.argv.indexOf('load') !== -1) {

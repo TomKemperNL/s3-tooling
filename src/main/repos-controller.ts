@@ -128,6 +128,7 @@ export class ReposController implements RepoApi {
         }
         const savedCourseConfig = await this.db.getCourseConfig(courseId);
         let repos = await this.#getRepos(savedCourseConfig)
+        console.log(`Found ${repos.length} repos for course ${savedCourseConfig.name}`);
         repos = repos.filter(r => r.matchesAssignment(assignment));
 
 

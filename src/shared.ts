@@ -51,13 +51,13 @@ export type CanvasAssignmentOverview = {
 export type CourseConfig = {
     name: string;
     canvasId: number;    
-    canvasGroupsName: string;
+    canvasGroupsName?: string;
     startDate: Date,
     githubStudentOrg: string;    
     assignments: Assignment[],
-    lastRepoCheck: Date,
-    lastSectionCheck: Date,
-    lastMappingCheck: Date,
+    lastRepoCheck?: Date,
+    lastSectionCheck?: Date,
+    lastMappingCheck?: Date,
     canvasOverview?: CanvasAssignmentOverview[]
 }
 

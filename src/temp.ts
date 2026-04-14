@@ -2,6 +2,20 @@ import { CourseConfig } from './shared';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 
+export const s2s25: CourseConfig = {
+    name: 'SD Fundamentals sept 2025',
+    canvasId: 50056,
+    startDate: new Date(Date.parse('2025-09-01')),
+    githubStudentOrg: 'HU-SD-S2-Studenten-S2526',
+    assignments: [
+        {
+            name: 'sds2-project-2025',
+            groupAssignment: true,            
+        }
+    ]
+
+}
+
 export const s2: CourseConfig = {
     name: 'Software Development Fundamentals',
     canvasId: 44633,
