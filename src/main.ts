@@ -6,7 +6,7 @@ import { setupIpcMainHandlers } from "./electron-setup";
 import * as path from "path";
 import { app, BrowserWindow, shell } from 'electron'
 import "./electron-setup";
-import { bep2, prbed, s2s25, s3 } from "./temp";
+import { bep2, prbed, s2s25, s3, s3f26, s4 } from "./temp";
 
 
 export function loadJson(path: string): Promise<any> {
