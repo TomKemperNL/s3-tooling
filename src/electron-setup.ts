@@ -18,7 +18,7 @@ export function ipc(channel: string){
 }
 
 export function setupIpcPreloadHandlers(){
-    require('./main/index')  //De Electron-preload require doet aan 'tree-shaking' (deeeenk ik? Who knows, het is niet gedocumenteerd), en anders ziet ie de @ipc-decorators niet, daarom staat deze bullshit regel hier.
+    require('./main/app')  //De Electron-preload require doet aan 'tree-shaking' (deeeenk ik? Who knows, het is niet gedocumenteerd), en anders ziet ie de @ipc-decorators niet, daarom staat deze bullshit regel hier.
     const result : {[funcName: string]: any} = {};
     for(const channel of Object.keys(decoratorRegistry)){ 
         const entry = decoratorRegistry[channel];
