@@ -52,28 +52,12 @@ export async function setupIpcMainHandlers(app: S3App ) {
     ipcMain.handle("startup", async (e) => {
         const settings = app.settings;
 
-        
-
         const allSettings = !!settings.canvasToken && !!settings.githubToken && !!settings.dataPath;
         if(allSettings){
-            let githubUser, canvasUser;
-            try{
-                githubUser = await app.githubClient.getSelf();
-            }catch(e){
-                console.error('Error fetching github user:', e);
-                githubUser = null;
-            }
-            try{
-                canvasUser = await app.canvasClient.getSelf();
-            }catch(e){
-                console.error('Error fetching canvas user:', e);
-                canvasUser = null;
-            }
-            
             return {
                 validSettings: existsSync(settings.dataPath),
-                githubUser: githubUser?.login ?? '-',
-                canvasUser: canvasUser?.name ?? '-'                
+                githubUser: (await app.githubClient.getSelf())?.login ?? '-',
+                canvasUser: (await app.canvasClient.getSelf())?.name ?? '-'                
             }
         }else{
             return {

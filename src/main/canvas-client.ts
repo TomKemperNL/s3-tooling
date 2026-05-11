@@ -19,14 +19,14 @@ export interface UserResponse {
     short_name: string;
     login_id: string;
 };
-    
+
 
 export interface RubricResponse {
     id: string,
     points: number,
     description: string,
     long_description: string,
-    ratings: { points: number, description: string, long_description: string }[];    
+    ratings: { points: number, description: string, long_description: string }[];
 }
 
 export interface AssignmentResponse {
@@ -120,20 +120,20 @@ export function getUsernameFromUrl(url: string, assignmentName: string) {
     }
 
     //Https url
-    if(url.startsWith('https://github.com')){
+    if (url.startsWith('https://github.com')) {
         const exp = `https://github.com/(.+?)/${assignmentName}-(.+)`;
         const match = url.match(exp);
-        if(match && match.length > 2){ 
+        if (match && match.length > 2) {
             const username = match[2].replace('.git', '').split('/')[0];
             return username;
         }
     }
 
     //SSH url
-    if(url.startsWith('git@github.com')){
+    if (url.startsWith('git@github.com')) {
         const exp = `git@github.com:(.+?)/${assignmentName}-(.+)`;
         const match = url.match(exp);
-        if(match && match.length > 2){
+        if (match && match.length > 2) {
             const username = match[2].replace('.git', '').split('/')[0];
             return username;
         }
@@ -188,14 +188,14 @@ export class CanvasClient {
         if (hasNext && isLast) {
             hasNext = false;
         }
-        const data : any = await response.json();
+        const data: any = await response.json();
         return {
             data: data,
             hasNext: hasNext
         };
     }
 
-    async getPages<T>(url: string, options = {}): Promise<T> {
+    async #getPages<T>(url: string, options = {}): Promise<T> {
         let pageNr = 1;
         let page = await this.#getPage(url, pageNr, 100, options);
         let data: any = page.data;
@@ -209,22 +209,22 @@ export class CanvasClient {
     }
 
     getCourses(): Promise<CourseResponse[]> {
-        return this.getPages('courses');
+        return this.#getPages('courses');
     }
 
     getSections(course: { course_id: number }): Promise<SectionResponse[]> {
-        return this.getPages(`courses/${course.course_id}/sections`, { 'include[]': 'students' });
+        return this.#getPages(`courses/${course.course_id}/sections`, { 'include[]': 'students' });
     }
 
     async getGroups(course: { course_id: number }, category_name: string): Promise<GroupResponse[]> {
-        const categories : any[] = await this.getPages(`courses/${course.course_id}/group_categories`);
+        const categories: any[] = await this.#getPages(`courses/${course.course_id}/group_categories`);
         const category = categories.find(c => c.name === category_name);
         if (!category) {
             throw new Error(`Category ${category_name} not found`);
         }
-        const groups : any = await this.getPages(`group_categories/${category.id}/groups`);
-        for(const g of groups){
-            g.students = await this.getPages(`groups/${g.id}/users`);
+        const groups: any = await this.#getPages(`group_categories/${category.id}/groups`);
+        for (const g of groups) {
+            g.students = await this.#getPages(`groups/${g.id}/users`);
         }
         return groups;
     }
@@ -236,7 +236,7 @@ export class CanvasClient {
             return this.assignmentCache[course.course_id]; //todo: deep clonen
         }
 
-        let result : AssignmentResponse[] = await this.getPages(`courses/${course.course_id}/assignments`);
+        let result: AssignmentResponse[] = await this.#getPages(`courses/${course.course_id}/assignments`);
         this.assignmentCache[course.course_id] = result;
         return result;
 
@@ -244,7 +244,7 @@ export class CanvasClient {
 
     async getSubmissions(params: { course_id: number, assignment_id: number, student_id: number }): Promise<any[]> {
         try {
-            return this.getPages(`courses/${params.course_id}/assignments/${params.assignment_id}/submissions/${params.student_id}`, { 'include[]': ['submission_comments', 'rubric_assessment'] });
+            return this.#getPages(`courses/${params.course_id}/assignments/${params.assignment_id}/submissions/${params.student_id}`, { 'include[]': ['submission_comments', 'rubric_assessment'] });
         } catch (e) {
             console.log(`Error fetching submission for course ${params.course_id}, assignment ${params.assignment_id}, student ${params.student_id}: ${e}`);
             return [];
@@ -252,11 +252,11 @@ export class CanvasClient {
     }
 
     async getUsers(params: { course_id: number }): Promise<StudentResponse[]> {
-        return this.getPages(`courses/${params.course_id}/users`);
+        return this.#getPages(`courses/${params.course_id}/users`);
     }
 
     async getUserByCanvasId(params: { course_id: number, user_id: number }): Promise<UserResponse> {
-        return await this.getPages(`courses/${params.course_id}/users/${params.user_id}`);
+        return await this.#getPages(`courses/${params.course_id}/users/${params.user_id}`);
     }
 
     // Performance too shitty
@@ -277,12 +277,12 @@ export class CanvasClient {
     submissionsCache: { [key: string]: SubmissionResponse[] } = {};
 
 
-    async getAllSubmissionsForStudent(params: { course_id: number, student_id: number }) : Promise<SubmissionResponse[]> {        
+    async getAllSubmissionsForStudent(params: { course_id: number, student_id: number }): Promise<SubmissionResponse[]> {
         if (this.submissionsCache[`${params.course_id}-${params.student_id}`]) {
             return this.submissionsCache[`${params.course_id}-${params.student_id}`]; //todo: deep clonen
         }
 
-        let assignments = await this.getAssignments({ course_id: params.course_id });        
+        let assignments = await this.getAssignments({ course_id: params.course_id });
         let submisisonPs: Promise<any[]>[] = [];
 
         for (let assignment of assignments) {
@@ -308,8 +308,8 @@ export class CanvasClient {
     }
 
     async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string): Promise<StringDict> {
-        const mapping : {[key: string]: string} = {};
-        const result: any = await this.getPages(`courses/${course.course_id}/assignments/${assignment.assignment_id}/submissions`, { 'include[]': 'user' });
+        const mapping: { [key: string]: string } = {};
+        const result: any = await this.#getPages(`courses/${course.course_id}/assignments/${assignment.assignment_id}/submissions`, { 'include[]': 'user' });
         for (const r of result) {
             const user = r.user;
             if (user && user.login_id) {
@@ -317,5 +317,121 @@ export class CanvasClient {
             }
         }
         return mapping;
+    }
+}
+
+
+export class OptionalCanvasClient extends CanvasClient {
+    constructor(canvasToken: string) {
+        super(canvasToken || "invalid");
+    }
+
+    async getSelf() {
+        try {
+            return await super.getSelf();
+        } catch (e) {
+            console.error("Error fetching self, returning dummy user", e);
+            return {
+                id: -1,
+                name: '-',
+                short_name: '-',
+                login_id: '-'
+            };
+        }
+    }
+
+    async getCourses() {
+        try {
+            return await super.getCourses();
+        } catch (e) {
+            console.error("Error fetching courses, returning empty list", e);
+            return [];
+        }
+    }
+
+    async getSections(course: { course_id: number }) {
+        try {
+            return await super.getSections(course);
+        } catch (e) {
+            console.error(`Error fetching sections for course ${course.course_id}, returning empty list`, e);
+            return [];
+        }
+    }
+
+    async getGroups(course: { course_id: number }, category_name: string) {
+        try {
+            return await super.getGroups(course, category_name);
+        } catch (e) {
+            console.error(`Error fetching groups for course ${course.course_id} and category ${category_name}, returning empty list`, e);
+            return [];
+        }
+    }
+
+    async getAssignments(course: { course_id: number }) {
+        try {
+            return await super.getAssignments(course);
+        } catch (e) {
+            console.error(`Error fetching assignments for course ${course.course_id}, returning empty list`, e);
+            return [];
+        }
+    }
+
+    async getSubmissions(params: { course_id: number, assignment_id: number, student_id: number }) {
+        try {
+            return await super.getSubmissions(params);
+        } catch (e) {
+            console.error(`Error fetching submissions for course ${params.course_id}, assignment ${params.assignment_id} and student ${params.student_id}, returning empty list`, e);
+            return [];
+        }
+    }
+
+    async getUsers(params: { course_id: number }) {
+        try {
+            return await super.getUsers(params);
+        } catch (e) {
+            console.error(`Error fetching users for course ${params.course_id}, returning empty list`, e);
+            return [];
+        }
+    }
+
+    async getUserByCanvasId(params: { course_id: number, user_id: number }) {
+        try {
+            return await super.getUserByCanvasId(params);
+        } catch (e) {
+            console.error(`Error fetching user by canvas id for course ${params.course_id} and user ${params.user_id}, returning dummy user`, e);
+            return {
+                id: -1,
+                name: '-',
+                short_name: '-',
+                login_id: '-'
+            };
+        }
+    }
+
+    async getGithubMapping(course: { course_id: number }, assignment: { assignment_id: number }, ghAssignmentName: string) {
+        try {
+            return await super.getGithubMapping(course, assignment, ghAssignmentName);
+        } catch (e) {
+            console.error(`Error fetching github mapping for course ${course.course_id} and assignment ${assignment.assignment_id}, returning empty mapping`, e);
+            return {};
+        }
+    }
+
+    async getCalloutsForStudent(params: { course_id: number; student_id: number; }): Promise<{ author: string; comment: string; }[]> {
+        try {
+            return await super.getCalloutsForStudent(params);
+        } catch (e) {
+            console.error(`Error fetching callouts for student ${params.student_id} in course ${params.course_id}, returning empty list`, e);
+            return [];
+        }
+    }
+
+    async getAllSubmissionsForStudent(params: { course_id: number; student_id: number; }): Promise<SubmissionResponse[]> {
+        try {
+            return await super.getAllSubmissionsForStudent(params);
+        } catch (e) {
+            console.error(`Error fetching all submissions for student ${params.student_id} in course ${params.course_id}, returning empty list`, e);
+            return [];
+        }
     }
 }

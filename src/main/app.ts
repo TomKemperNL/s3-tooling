@@ -1,6 +1,6 @@
 import { GithubClient } from "./github-client";
 import { FileSystem } from "./filesystem-client";
-import { CanvasClient } from "./canvas-client";
+import { CanvasClient, OptionalCanvasClient } from "./canvas-client";
 
 import { Db, db } from "./db";
 import { ReposController } from "./repos-controller";
@@ -59,7 +59,6 @@ export class S3App {
         this.screenshotController = new ScreenshotController();
         try{
             this.githubClient = new GithubClient(this.settings.githubToken);
-            console.log('wuuut', this.settings.ignoreAuthors);
             this.githubClient.ignoredAuthors = this.settings.ignoreAuthors;
         }catch(e){
             console.error("Unable to create github client", e);
@@ -73,7 +72,7 @@ export class S3App {
         }
         
         try{
-            this.canvasClient = new CanvasClient(this.settings.canvasToken);
+            this.canvasClient = new OptionalCanvasClient(this.settings.canvasToken);
         }catch(e){
             console.error("Unable to create canvas client", e);
         }

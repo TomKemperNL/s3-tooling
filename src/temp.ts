@@ -110,7 +110,7 @@ export const s3: CourseConfig = {
 }
 
 export const s3f26: CourseConfig = {
- name: 'Advanced Software Development',
+ name: 'Advanced Software Development-2',
     canvasId: 50054,
     canvasGroupsName: 'Project Groups',
     startDate: new Date(Date.parse('2026-02-09')),
@@ -131,8 +131,8 @@ export const s4: CourseConfig = {
  name: 'Software Quality and Architecture',
     canvasId: 50051,
     canvasGroupsName: 'Project Groups',
-    startDate: new Date(Date.parse('2025-02-09')),
-    githubStudentOrg: 'HU-SD-S3-Studenten-F2526',
+    startDate: new Date(Date.parse('2026-02-09')),
+    githubStudentOrg: 'HU-SD-S4-Studenten-F2526',
     lastMappingCheck: null,
     lastRepoCheck: null,
     lastSectionCheck: null,
