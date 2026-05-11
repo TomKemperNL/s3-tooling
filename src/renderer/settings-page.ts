@@ -26,6 +26,8 @@ export class SettingsPage extends LitElement {
         this.settings = <any>{};
     }
 
+    loadComplete: Promise<void>;
+
     @property({ type: Object, state: true })
     settings: Settings;
 
@@ -39,8 +41,9 @@ export class SettingsPage extends LitElement {
         this.loading = false;
     }
 
-    firstUpdated(): void {
-        this.loadSettings();
+    connectedCallback(): void {
+        super.connectedCallback();
+        this.loadComplete = this.loadSettings();
     }
 
     async saveSettings() {

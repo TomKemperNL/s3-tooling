@@ -50,9 +50,8 @@ export async function setupIpcMainHandlers(app: S3App ) {
 
 
     ipcMain.handle("startup", async (e) => {
+        console.log("Handling startup event");
         const settings = app.settings;
-
-        
 
         const allSettings = !!settings.canvasToken && !!settings.githubToken && !!settings.dataPath;
         if(allSettings){

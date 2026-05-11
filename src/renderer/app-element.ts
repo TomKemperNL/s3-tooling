@@ -14,6 +14,7 @@ import { choose } from "lit/directives/choose.js";
 import { Page } from "./navigation/pages";
 import { NavigationRequestedEvent } from "./navigation/events";
 import { StudentSelectedEvent } from "./students/students-page";
+import { start } from "repl";
 
 
 @customElement("app-element")
@@ -68,7 +69,7 @@ export class AppElement extends LitElement {
             this.canvasUser = startup.canvasUser;
         } else {
             this.isActive = false;
-            this.activePage = "repo";
+            this.activePage = "settings";
             this.githubUser = '';
             this.canvasUser = '';
         }
@@ -77,7 +78,9 @@ export class AppElement extends LitElement {
     protected firstUpdated(_changedProperties: PropertyValues): void {
         this.ipc.startup().then(startup => {
             this.reload(startup);
-            this.load();
+            if(startup.validSettings){
+                this.loadPreviousSession();
+            }
         });
     }
 
@@ -105,13 +108,13 @@ export class AppElement extends LitElement {
         this.activeRepo = e.repo;
         this.activePage = "repo";
         this.selectedAuthor = null;
-        this.save();
+        this.saveSession();
     }
 
     studentSelected(e: StudentSelectedEvent){
         this.activeStudent = e.student;
         this.activePage = "student-progress";
-        this.save();
+        this.saveSession();
     }
 
     repoCleared(e: Event) {
@@ -127,18 +130,18 @@ export class AppElement extends LitElement {
 
     selectAuthor(e: AuthorSelectedEvent) {
         this.selectedAuthor = e.authorName;
-        this.save();
+        this.saveSession();
     }
 
     sectionSelected(e: SectionSelectedEvent) {
         this.selectedSection = e.section;
-        this.save();
+        this.saveSession();
     }
 
     detailsSelected(e: { assignment: string, section: string }) {
         this.selectedAssignment = e.assignment;
         this.selectedSection = e.section;
-        this.save();
+        this.saveSession();
     }
 
     static styles = css`
@@ -202,13 +205,13 @@ export class AppElement extends LitElement {
     goTo(page: Page) {
         return () => {
             this.activePage = page;
-            this.save();
+            this.saveSession();
         }
     }
 
     async handleNavigation(e: NavigationRequestedEvent) {
         this.activePage = e.page;
-        this.save();
+        this.saveSession();
     }
 
 
@@ -217,7 +220,7 @@ export class AppElement extends LitElement {
         this.reload(startup);
     }
 
-    save() {
+    saveSession() {
         const memento = {
             activeRepo: this.activeRepo,
             activeCourse: this.activeCourse,
@@ -232,7 +235,7 @@ export class AppElement extends LitElement {
         window.localStorage.setItem('app-element-memento', JSON.stringify(memento));
     }
 
-    load() {
+    loadPreviousSession() {
         try {
             const memento = window.localStorage.getItem('app-element-memento');
             if (memento) {
