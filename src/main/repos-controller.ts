@@ -45,18 +45,23 @@ export class ReposController implements RepoApi {
     }
 
     async #getUserMapping(savedCourseConfig: CourseConfig): Promise<SimpleDict> {
-        let usermapping: StringDict = null;
+        let usermapping: StringDict = {};
 
         if (savedCourseConfig.lastMappingCheck && (savedCourseConfig.lastMappingCheck.valueOf() + cacheTimeMs) > new Date().valueOf()) {
             usermapping = await this.db.getStudentMailToGHUserMapping(savedCourseConfig.canvasId);
         } else {
             for (const a of savedCourseConfig.assignments) {
                 if (!a.groupAssignment && a.canvasId) {
-                    usermapping = await this.canvasClient.getGithubMapping(
-                        { course_id: savedCourseConfig.canvasId },
-                        { assignment_id: a.canvasId }
-                        , a.name);
-                    await this.db.updateUserMapping(savedCourseConfig.canvasId, usermapping);
+                    try{
+
+                        usermapping = await this.canvasClient.getGithubMapping(
+                            { course_id: savedCourseConfig.canvasId },
+                            { assignment_id: a.canvasId }
+                            , a.name);
+                        await this.db.updateUserMapping(savedCourseConfig.canvasId, usermapping);
+                    }catch(e){
+                        console.error(`Error fetching user mapping for assignment ${a.name} in course ${savedCourseConfig.name}:`, e);
+                    }
                 }
             }
         }
